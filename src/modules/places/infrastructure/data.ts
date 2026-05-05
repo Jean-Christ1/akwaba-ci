@@ -1,4 +1,4 @@
-import type { City, Place, Itinerary } from "./types";
+import type { City, Place, Itinerary } from "../domain/types";
 
 import heroAbidjan from "@/assets/hero-abidjan.jpg";
 import imgHotel from "@/assets/place-hotel-cocody.jpg";
