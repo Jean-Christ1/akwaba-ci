@@ -1,96 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+@import 'maplibre-gl/dist/maplibre-gl.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* ------------------------------------------------------------------
+   Akwaba — Design System
+   Palette: Lagune profonde + Or discret + Ivoire minéral
+   ------------------------------------------------------------------ */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Surfaces */
+    --background: 36 33% 97%;          /* ivoire minéral */
+    --foreground: 220 25% 12%;         /* encre profonde */
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 25% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 25% 12%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Brand — Vert lagune profond */
+    --primary: 175 55% 22%;
+    --primary-foreground: 36 33% 97%;
+    --primary-soft: 175 35% 92%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Or discret — usage ponctuel uniquement (badges premium) */
+    --accent: 38 55% 52%;
+    --accent-foreground: 220 25% 12%;
+    --accent-soft: 38 55% 94%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Sable chaud — surfaces secondaires */
+    --secondary: 34 35% 92%;
+    --secondary-foreground: 220 25% 18%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Bleu nuit éditorial */
+    --editorial: 220 45% 18%;
+    --editorial-foreground: 36 33% 97%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Terre chaude — culture */
+    --terra: 18 35% 38%;
+    --terra-foreground: 36 33% 97%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --muted: 34 25% 95%;
+    --muted-foreground: 220 12% 42%;
 
-    --radius: 0.5rem;
+    --destructive: 0 65% 45%;
+    --destructive-foreground: 36 33% 97%;
 
-    --sidebar-background: 0 0% 98%;
+    --success: 155 50% 32%;
+    --success-foreground: 36 33% 97%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --warning: 32 85% 48%;
+    --warning-foreground: 220 25% 12%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    --border: 34 20% 88%;
+    --input: 34 20% 88%;
+    --ring: 175 55% 22%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    --radius: 0.875rem;
 
-    --sidebar-accent: 240 4.8% 95.9%;
+    /* Typographie */
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    /* Élévations — 2 niveaux uniquement, ombres neutres */
+    --elevation-1: 0 1px 2px hsl(220 25% 12% / 0.04), 0 4px 16px hsl(220 25% 12% / 0.06);
+    --elevation-2: 0 4px 12px hsl(220 25% 12% / 0.08), 0 16px 48px hsl(220 25% 12% / 0.12);
 
-    --sidebar-border: 220 13% 91%;
+    /* Gradients éditoriaux */
+    --gradient-hero: linear-gradient(180deg, transparent 0%, hsl(220 45% 8% / 0.65) 100%);
+    --gradient-premium: linear-gradient(135deg, hsl(175 55% 22%) 0%, hsl(175 60% 16%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(38 55% 58%) 0%, hsl(38 60% 45%) 100%);
 
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Motion */
+    --ease-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --duration-fast: 120ms;
+    --duration-base: 200ms;
+    --duration-slow: 320ms;
+
+    --sidebar-background: 36 33% 97%;
+    --sidebar-foreground: 220 25% 18%;
+    --sidebar-primary: 175 55% 22%;
+    --sidebar-primary-foreground: 36 33% 97%;
+    --sidebar-accent: 34 25% 93%;
+    --sidebar-accent-foreground: 220 25% 12%;
+    --sidebar-border: 34 20% 88%;
+    --sidebar-ring: 175 55% 22%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 220 25% 9%;
+    --foreground: 36 20% 92%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 25% 11%;
+    --card-foreground: 36 20% 92%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 25% 11%;
+    --popover-foreground: 36 20% 92%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 175 45% 55%;
+    --primary-foreground: 220 25% 9%;
+    --primary-soft: 175 35% 16%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --accent: 38 60% 60%;
+    --accent-foreground: 220 25% 9%;
+    --accent-soft: 38 30% 18%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --secondary: 220 20% 16%;
+    --secondary-foreground: 36 20% 92%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --editorial: 220 45% 24%;
+    --editorial-foreground: 36 20% 92%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --terra: 18 35% 55%;
+    --terra-foreground: 220 25% 9%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --muted: 220 15% 14%;
+    --muted-foreground: 36 15% 70%;
+
+    --destructive: 0 60% 55%;
+    --destructive-foreground: 36 20% 92%;
+
+    --success: 155 45% 55%;
+    --success-foreground: 220 25% 9%;
+
+    --warning: 32 85% 60%;
+    --warning-foreground: 220 25% 9%;
+
+    --border: 220 15% 20%;
+    --input: 220 15% 20%;
+    --ring: 175 45% 55%;
+
+    --elevation-1: 0 1px 2px hsl(0 0% 0% / 0.3), 0 4px 16px hsl(0 0% 0% / 0.4);
+    --elevation-2: 0 4px 12px hsl(0 0% 0% / 0.4), 0 16px 48px hsl(0 0% 0% / 0.6);
+
+    --sidebar-background: 220 25% 9%;
+    --sidebar-foreground: 36 20% 92%;
+    --sidebar-primary: 175 45% 55%;
+    --sidebar-primary-foreground: 220 25% 9%;
+    --sidebar-accent: 220 20% 14%;
+    --sidebar-accent-foreground: 36 20% 92%;
+    --sidebar-border: 220 15% 20%;
+    --sidebar-ring: 175 45% 55%;
   }
 }
 
@@ -99,7 +153,90 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
+  }
+
+  h1, h2, h3, h4, h5 {
+    @apply font-display tracking-tight;
+    font-feature-settings: 'ss01';
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.15);
+    color: hsl(var(--primary));
+  }
+}
+
+@layer components {
+  .akw-container {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .akw-card {
+    @apply bg-card rounded-2xl border border-border/60 overflow-hidden transition-all duration-200;
+    box-shadow: var(--elevation-1);
+  }
+
+  .akw-card-hover {
+    @apply akw-card hover:-translate-y-0.5;
+  }
+
+  .akw-card-hover:hover {
+    box-shadow: var(--elevation-2);
+  }
+
+  .akw-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-background px-3.5 py-1.5 text-sm font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-primary-soft;
+  }
+
+  .akw-chip-active {
+    @apply border-primary bg-primary text-primary-foreground hover:bg-primary hover:border-primary;
+  }
+
+  .akw-badge-premium {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider;
+    background: var(--gradient-gold);
+    color: hsl(220 25% 12%);
+  }
+
+  .akw-eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground;
+  }
+
+  .akw-section-title {
+    @apply font-display text-2xl sm:text-3xl font-semibold tracking-tight text-foreground;
+  }
+
+  .akw-prose {
+    @apply text-[15px] leading-relaxed text-muted-foreground;
+  }
+
+  .akw-divider-soft {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-border to-transparent;
+  }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .text-pretty { text-wrap: pretty; }
+
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+  .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .gradient-hero { background: var(--gradient-hero); }
+  .gradient-premium { background: var(--gradient-premium); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }
