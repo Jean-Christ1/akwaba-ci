@@ -14,6 +14,9 @@ import {
 import { getPlaceBySlug, PLACES } from "@/modules/places/infrastructure/data";
 import { PlaceCard } from "@/modules/places/ui/PlaceCard";
 import { useFavorites } from "@/modules/favorites/application/useFavorites";
+import { LeadRequestForm } from "@/modules/leads/ui/LeadRequestForm";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { CalendarCheck } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -209,6 +212,20 @@ export default function PlaceDetailPage() {
               <div className="akw-card p-6">
                 <p className="akw-eyebrow mb-4">Contacter directement</p>
                 <div className="space-y-2.5">
+                  {(place.type === "lodging" || place.type === "restaurant") && (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <button className="flex w-full items-center justify-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-semibold text-accent-foreground transition-transform hover:-translate-y-0.5">
+                          <CalendarCheck className="h-4 w-4" />
+                          {place.type === "lodging" ? "Demander une réservation" : "Réserver une table"}
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                        <DialogHeader><DialogTitle className="font-display">Demande de réservation</DialogTitle></DialogHeader>
+                        <LeadRequestForm placeId={place.id} placeName={place.name} kind={place.type === "lodging" ? "lodging" : "restaurant"} />
+                      </DialogContent>
+                    </Dialog>
+                  )}
                   <a
                     href={mapsUrl}
                     target="_blank"
