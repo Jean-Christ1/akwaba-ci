@@ -14,16 +14,260 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      leads: {
+        Row: {
+          budget: string | null
+          created_at: string
+          date_from: string | null
+          date_to: string | null
+          email: string
+          full_name: string
+          id: string
+          kind: Database["public"]["Enums"]["lead_kind"]
+          message: string
+          partner_note: string | null
+          party_size: number | null
+          phone: string | null
+          place_id: string | null
+          status: Database["public"]["Enums"]["lead_status"]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          budget?: string | null
+          created_at?: string
+          date_from?: string | null
+          date_to?: string | null
+          email: string
+          full_name: string
+          id?: string
+          kind?: Database["public"]["Enums"]["lead_kind"]
+          message: string
+          partner_note?: string | null
+          party_size?: number | null
+          phone?: string | null
+          place_id?: string | null
+          status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          budget?: string | null
+          created_at?: string
+          date_from?: string | null
+          date_to?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["lead_kind"]
+          message?: string
+          partner_note?: string | null
+          party_size?: number | null
+          phone?: string | null
+          place_id?: string | null
+          status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      places: {
+        Row: {
+          address: string
+          average_duration: string | null
+          best_for: Json
+          best_time: string | null
+          city: string
+          created_at: string
+          cuisines: Json
+          curator_note: string | null
+          description: string
+          email: string | null
+          gallery: Json
+          id: string
+          image: string | null
+          lat: number
+          lng: number
+          name: string
+          owner_id: string | null
+          phone: string | null
+          practical_tips: Json
+          premium: boolean
+          price_band: string
+          services: Json
+          slug: string
+          standing: number
+          status: Database["public"]["Enums"]["place_status"]
+          story: string | null
+          tagline: string | null
+          tags: Json
+          type: Database["public"]["Enums"]["place_type"]
+          updated_at: string
+          website: string | null
+          whatsapp: string | null
+          why_visit: Json
+          zone: string | null
+        }
+        Insert: {
+          address: string
+          average_duration?: string | null
+          best_for?: Json
+          best_time?: string | null
+          city: string
+          created_at?: string
+          cuisines?: Json
+          curator_note?: string | null
+          description: string
+          email?: string | null
+          gallery?: Json
+          id?: string
+          image?: string | null
+          lat: number
+          lng: number
+          name: string
+          owner_id?: string | null
+          phone?: string | null
+          practical_tips?: Json
+          premium?: boolean
+          price_band?: string
+          services?: Json
+          slug: string
+          standing?: number
+          status?: Database["public"]["Enums"]["place_status"]
+          story?: string | null
+          tagline?: string | null
+          tags?: Json
+          type: Database["public"]["Enums"]["place_type"]
+          updated_at?: string
+          website?: string | null
+          whatsapp?: string | null
+          why_visit?: Json
+          zone?: string | null
+        }
+        Update: {
+          address?: string
+          average_duration?: string | null
+          best_for?: Json
+          best_time?: string | null
+          city?: string
+          created_at?: string
+          cuisines?: Json
+          curator_note?: string | null
+          description?: string
+          email?: string | null
+          gallery?: Json
+          id?: string
+          image?: string | null
+          lat?: number
+          lng?: number
+          name?: string
+          owner_id?: string | null
+          phone?: string | null
+          practical_tips?: Json
+          premium?: boolean
+          price_band?: string
+          services?: Json
+          slug?: string
+          standing?: number
+          status?: Database["public"]["Enums"]["place_status"]
+          story?: string | null
+          tagline?: string | null
+          tags?: Json
+          type?: Database["public"]["Enums"]["place_type"]
+          updated_at?: string
+          website?: string | null
+          whatsapp?: string | null
+          why_visit?: Json
+          zone?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          locale: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          locale?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          locale?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "partner" | "user"
+      lead_kind: "lodging" | "restaurant" | "generic"
+      lead_status: "new" | "in_review" | "contacted" | "closed"
+      place_status: "draft" | "pending" | "published" | "rejected"
+      place_type:
+        | "lodging"
+        | "restaurant"
+        | "maquis"
+        | "attraction"
+        | "beach"
+        | "nightlife"
+        | "culture"
+        | "shopping"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +394,21 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "partner", "user"],
+      lead_kind: ["lodging", "restaurant", "generic"],
+      lead_status: ["new", "in_review", "contacted", "closed"],
+      place_status: ["draft", "pending", "published", "rejected"],
+      place_type: [
+        "lodging",
+        "restaurant",
+        "maquis",
+        "attraction",
+        "beach",
+        "nightlife",
+        "culture",
+        "shopping",
+      ],
+    },
   },
 } as const
