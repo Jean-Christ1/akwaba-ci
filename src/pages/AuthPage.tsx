@@ -109,16 +109,6 @@ export default function AuthPage() {
           </Button>
         </form>
 
-        {mode !== "reset" && (
-          <>
-            <div className="my-4 flex items-center gap-2 text-xs text-muted-foreground">
-              <div className="flex-1 h-px bg-border" /> ou <div className="flex-1 h-px bg-border" />
-            </div>
-            <Button variant="outline" className="w-full" onClick={handleGoogle}>
-              Continuer avec Google
-            </Button>
-          </>
-        )}
 
         <div className="mt-6 text-center text-sm space-y-2">
           {mode === "signin" && (
