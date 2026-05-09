@@ -18,6 +18,8 @@ import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AdminPage from "./pages/admin/AdminPage";
 import PlaceEditorPage from "./pages/admin/PlaceEditorPage";
+import BootstrapAdminPage from "./pages/admin/BootstrapAdminPage";
+import PartnerSignupPage from "./pages/PartnerSignupPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
