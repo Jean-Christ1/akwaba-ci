@@ -45,7 +45,9 @@ const App = () => (
               <Route path="/favoris" element={<FavoritesPage />} />
               <Route path="/profil" element={<ProfilePage />} />
               <Route path="/admin" element={<AdminPage />} />
+              <Route path="/admin/bootstrap" element={<BootstrapAdminPage />} />
               <Route path="/admin/places/:id" element={<PlaceEditorPage />} />
+              <Route path="/partner/signup" element={<PartnerSignupPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
