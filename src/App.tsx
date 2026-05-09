@@ -18,6 +18,8 @@ import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AdminPage from "./pages/admin/AdminPage";
 import PlaceEditorPage from "./pages/admin/PlaceEditorPage";
+import BootstrapAdminPage from "./pages/admin/BootstrapAdminPage";
+import PartnerSignupPage from "./pages/PartnerSignupPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,7 +45,9 @@ const App = () => (
               <Route path="/favoris" element={<FavoritesPage />} />
               <Route path="/profil" element={<ProfilePage />} />
               <Route path="/admin" element={<AdminPage />} />
+              <Route path="/admin/bootstrap" element={<BootstrapAdminPage />} />
               <Route path="/admin/places/:id" element={<PlaceEditorPage />} />
+              <Route path="/partner/signup" element={<PartnerSignupPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
