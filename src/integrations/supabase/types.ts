@@ -79,6 +79,33 @@ export type Database = {
           },
         ]
       }
+      place_moderation_events: {
+        Row: {
+          action: Database["public"]["Enums"]["moderation_action"]
+          created_at: string
+          id: string
+          moderator_id: string
+          note: string | null
+          place_id: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["moderation_action"]
+          created_at?: string
+          id?: string
+          moderator_id: string
+          note?: string | null
+          place_id: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["moderation_action"]
+          created_at?: string
+          id?: string
+          moderator_id?: string
+          note?: string | null
+          place_id?: string
+        }
+        Relationships: []
+      }
       places: {
         Row: {
           address: string
@@ -258,6 +285,7 @@ export type Database = {
       app_role: "admin" | "moderator" | "partner" | "user"
       lead_kind: "lodging" | "restaurant" | "generic"
       lead_status: "new" | "in_review" | "contacted" | "closed"
+      moderation_action: "approved" | "rejected" | "pending" | "note"
       place_status: "draft" | "pending" | "published" | "rejected"
       place_type:
         | "lodging"
@@ -398,6 +426,7 @@ export const Constants = {
       app_role: ["admin", "moderator", "partner", "user"],
       lead_kind: ["lodging", "restaurant", "generic"],
       lead_status: ["new", "in_review", "contacted", "closed"],
+      moderation_action: ["approved", "rejected", "pending", "note"],
       place_status: ["draft", "pending", "published", "rejected"],
       place_type: [
         "lodging",
