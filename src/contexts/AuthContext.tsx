@@ -56,6 +56,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshRoles = async () => {
+    // Force a session refresh so any DB-side role change becomes effective
+    // and re-load roles from the user_roles table without requiring sign-out.
+    try {
+      const { data } = await supabase.auth.refreshSession();
+      if (data.session) {
+        setSession(data.session);
+        setUser(data.session.user);
+        await loadRoles(data.session.user.id);
+        return;
+      }
+    } catch {
+      // ignore — fallback to local refresh
+    }
     if (user) await loadRoles(user.id);
   };
 
