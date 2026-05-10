@@ -55,7 +55,10 @@ export default function AdminPage() {
     const { data: l } = await supabase.from("leads").select("*, places(name)").order("created_at", { ascending: false });
     setLeads(l ?? []);
     if (isModerator) {
-      const { data: pend } = await supabase.from("places").select("*").eq("status", "pending");
+      const { data: pend } = await supabase
+        .from("places").select("*")
+        .in("status", ["pending", "rejected"])
+        .order("created_at", { ascending: false });
       setPending(pend ?? []);
     }
     if (isAdmin) {
