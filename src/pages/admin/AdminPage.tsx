@@ -42,6 +42,12 @@ export default function AdminPage() {
   const [modBusy, setModBusy] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
   const [historyPlace, setHistoryPlace] = useState<any>(null);
+  // Moderation queue filters
+  const [modSearch, setModSearch] = useState("");
+  const [modCity, setModCity] = useState("all");
+  const [modType, setModType] = useState("all");
+  const [modStatus, setModStatus] = useState<"pending" | "rejected" | "all">("pending");
+  const [modSince, setModSince] = useState("");
 
   const load = async () => {
     const { data: p } = await supabase.from("places").select("*").order("created_at", { ascending: false });
