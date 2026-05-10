@@ -36,6 +36,11 @@ export default function AdminPage() {
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [partnerNote, setPartnerNote] = useState("");
   const [searchUid, setSearchUid] = useState("");
+  const [modTarget, setModTarget] = useState<{ place: any; action: "approved" | "rejected" } | null>(null);
+  const [modNote, setModNote] = useState("");
+  const [modBusy, setModBusy] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+  const [historyPlace, setHistoryPlace] = useState<any>(null);
 
   const load = async () => {
     const { data: p } = await supabase.from("places").select("*").order("created_at", { ascending: false });
@@ -77,6 +82,30 @@ export default function AdminPage() {
     const { error } = await supabase.from("places").update({ status: status as any }).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Statut mis à jour"); load();
+  };
+  const submitModeration = async () => {
+    if (!modTarget) return;
+    setModBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("moderate-place", {
+        body: { place_id: modTarget.place.id, action: modTarget.action, note: modNote.trim() || null },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(modTarget.action === "approved" ? "Fiche publiée et partenaire notifié" : "Fiche refusée et partenaire notifié");
+      setModTarget(null); setModNote(""); load();
+    } catch (e: any) {
+      toast.error(e.message ?? "Erreur");
+    } finally { setModBusy(false); }
+  };
+  const openHistory = async (place: any) => {
+    setHistoryPlace(place);
+    const { data } = await supabase
+      .from("place_moderation_events")
+      .select("*")
+      .eq("place_id", place.id)
+      .order("created_at", { ascending: false });
+    setHistory(data ?? []);
   };
   const updateLeadStatus = async (id: string, status: string) => {
     const { error } = await supabase.from("leads").update({ status: status as any }).eq("id", id);
