@@ -240,16 +240,21 @@ export default function AdminPage() {
           {view === "moderation" && isModerator && (
             <div className="space-y-3">
               {pending.map((p) => (
-                <Card key={p.id} className="p-4 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
+                <Card key={p.id} className="p-4 flex items-center justify-between gap-3 flex-wrap">
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium truncate">{p.name}</p>
                     <p className="text-xs text-muted-foreground">{p.city} · {p.type} · {p.address}</p>
                     <p className="text-xs mt-1 line-clamp-2">{p.description}</p>
                   </div>
-                  <div className="flex gap-2 shrink-0">
+                  <div className="flex gap-2 shrink-0 flex-wrap">
                     <Link to={`/admin/places/${p.id}`}><Button size="sm" variant="ghost"><Pencil className="h-4 w-4" /></Button></Link>
-                    <Button size="sm" variant="outline" onClick={() => updatePlaceStatus(p.id, "rejected")}><X className="h-4 w-4" /> Refuser</Button>
-                    <Button size="sm" onClick={() => updatePlaceStatus(p.id, "published")}><Check className="h-4 w-4" /> Publier</Button>
+                    <Button size="sm" variant="ghost" onClick={() => openHistory(p)}>Historique</Button>
+                    <Button size="sm" variant="outline" onClick={() => { setModTarget({ place: p, action: "rejected" }); setModNote(""); }}>
+                      <X className="h-4 w-4" /> Refuser
+                    </Button>
+                    <Button size="sm" onClick={() => { setModTarget({ place: p, action: "approved" }); setModNote(""); }}>
+                      <Check className="h-4 w-4" /> Valider
+                    </Button>
                   </div>
                 </Card>
               ))}
