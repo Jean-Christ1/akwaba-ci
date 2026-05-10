@@ -54,7 +54,7 @@ const initial: FormState = {
 const STEPS = ["Compte", "Type", "Identité", "Localisation", "Contact", "Détails", "Médias", "Validation"];
 
 export default function PartnerSignupPage() {
-  const { user } = useAuth();
+  const { user, refreshRoles } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(user ? 1 : 0);
   const [form, setForm] = useState<FormState>({ ...initial, email: user?.email ?? "" });
@@ -117,6 +117,7 @@ export default function PartnerSignupPage() {
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
+      await refreshRoles();
       toast.success("Inscription envoyée ! Votre fiche est en modération.");
       navigate("/profil");
     } catch (e: any) {

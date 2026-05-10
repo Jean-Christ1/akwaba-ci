@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,7 @@ import { ShieldCheck } from "lucide-react";
 
 export default function BootstrapAdminPage() {
   const navigate = useNavigate();
+  const { refreshRoles } = useAuth();
   const [userId, setUserId] = useState("");
   const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,8 +31,9 @@ export default function BootstrapAdminPage() {
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      toast.success("Admin créé. Reconnectez-vous pour rafraîchir vos rôles.");
-      setTimeout(() => navigate("/admin"), 800);
+      await refreshRoles();
+      toast.success("Admin créé. Vos accès sont actifs immédiatement.");
+      setTimeout(() => navigate("/admin"), 600);
     } catch (e: any) {
       toast.error(e.message ?? "Erreur");
     } finally {

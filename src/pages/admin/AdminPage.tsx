@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   Pencil, Plus, Check, X, LayoutDashboard, Store, Inbox, MessageSquare,
@@ -36,6 +37,11 @@ export default function AdminPage() {
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [partnerNote, setPartnerNote] = useState("");
   const [searchUid, setSearchUid] = useState("");
+  const [modTarget, setModTarget] = useState<{ place: any; action: "approved" | "rejected" } | null>(null);
+  const [modNote, setModNote] = useState("");
+  const [modBusy, setModBusy] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+  const [historyPlace, setHistoryPlace] = useState<any>(null);
 
   const load = async () => {
     const { data: p } = await supabase.from("places").select("*").order("created_at", { ascending: false });
@@ -77,6 +83,30 @@ export default function AdminPage() {
     const { error } = await supabase.from("places").update({ status: status as any }).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Statut mis à jour"); load();
+  };
+  const submitModeration = async () => {
+    if (!modTarget) return;
+    setModBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("moderate-place", {
+        body: { place_id: modTarget.place.id, action: modTarget.action, note: modNote.trim() || null },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(modTarget.action === "approved" ? "Fiche publiée et partenaire notifié" : "Fiche refusée et partenaire notifié");
+      setModTarget(null); setModNote(""); load();
+    } catch (e: any) {
+      toast.error(e.message ?? "Erreur");
+    } finally { setModBusy(false); }
+  };
+  const openHistory = async (place: any) => {
+    setHistoryPlace(place);
+    const { data } = await supabase
+      .from("place_moderation_events")
+      .select("*")
+      .eq("place_id", place.id)
+      .order("created_at", { ascending: false });
+    setHistory(data ?? []);
   };
   const updateLeadStatus = async (id: string, status: string) => {
     const { error } = await supabase.from("leads").update({ status: status as any }).eq("id", id);
@@ -211,16 +241,21 @@ export default function AdminPage() {
           {view === "moderation" && isModerator && (
             <div className="space-y-3">
               {pending.map((p) => (
-                <Card key={p.id} className="p-4 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
+                <Card key={p.id} className="p-4 flex items-center justify-between gap-3 flex-wrap">
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium truncate">{p.name}</p>
                     <p className="text-xs text-muted-foreground">{p.city} · {p.type} · {p.address}</p>
                     <p className="text-xs mt-1 line-clamp-2">{p.description}</p>
                   </div>
-                  <div className="flex gap-2 shrink-0">
+                  <div className="flex gap-2 shrink-0 flex-wrap">
                     <Link to={`/admin/places/${p.id}`}><Button size="sm" variant="ghost"><Pencil className="h-4 w-4" /></Button></Link>
-                    <Button size="sm" variant="outline" onClick={() => updatePlaceStatus(p.id, "rejected")}><X className="h-4 w-4" /> Refuser</Button>
-                    <Button size="sm" onClick={() => updatePlaceStatus(p.id, "published")}><Check className="h-4 w-4" /> Publier</Button>
+                    <Button size="sm" variant="ghost" onClick={() => openHistory(p)}>Historique</Button>
+                    <Button size="sm" variant="outline" onClick={() => { setModTarget({ place: p, action: "rejected" }); setModNote(""); }}>
+                      <X className="h-4 w-4" /> Refuser
+                    </Button>
+                    <Button size="sm" onClick={() => { setModTarget({ place: p, action: "approved" }); setModNote(""); }}>
+                      <Check className="h-4 w-4" /> Valider
+                    </Button>
                   </div>
                 </Card>
               ))}
@@ -283,6 +318,57 @@ export default function AdminPage() {
                   <Textarea rows={4} value={partnerNote} onChange={(e) => setPartnerNote(e.target.value)} />
                   <Button onClick={saveNote} size="sm">Enregistrer</Button>
                 </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      <Dialog open={!!modTarget} onOpenChange={(o) => !o && setModTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {modTarget?.action === "approved" ? "Valider la fiche" : "Refuser la fiche"}
+            </DialogTitle>
+            <DialogDescription>
+              {modTarget?.place?.name} — un email sera envoyé au partenaire avec le lien vers son profil.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Note pour le partenaire {modTarget?.action === "rejected" && <span className="text-destructive">*</span>}</p>
+            <Textarea rows={5} value={modNote} onChange={(e) => setModNote(e.target.value)}
+              placeholder={modTarget?.action === "approved" ? "Bienvenue sur Akwaba…" : "Expliquez ce qui doit être ajusté…"} />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setModTarget(null)}>Annuler</Button>
+            <Button
+              disabled={modBusy || (modTarget?.action === "rejected" && !modNote.trim())}
+              onClick={submitModeration}
+              variant={modTarget?.action === "rejected" ? "destructive" : "default"}>
+              {modBusy ? "Envoi…" : modTarget?.action === "approved" ? "Publier et notifier" : "Refuser et notifier"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Sheet open={!!historyPlace} onOpenChange={(o) => !o && setHistoryPlace(null)}>
+        <SheetContent className="w-full sm:max-w-md">
+          {historyPlace && (
+            <>
+              <SheetHeader><SheetTitle>Historique — {historyPlace.name}</SheetTitle></SheetHeader>
+              <div className="mt-4 space-y-3">
+                {history.length === 0 && <p className="text-sm text-muted-foreground">Aucun événement.</p>}
+                {history.map((h) => (
+                  <Card key={h.id} className="p-3">
+                    <div className="flex items-center justify-between">
+                      <Badge variant={h.action === "approved" ? "default" : h.action === "rejected" ? "destructive" : "secondary"}>
+                        {h.action}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">{new Date(h.created_at).toLocaleString("fr-FR")}</span>
+                    </div>
+                    {h.note && <p className="text-sm mt-2 whitespace-pre-wrap">{h.note}</p>}
+                  </Card>
+                ))}
               </div>
             </>
           )}
