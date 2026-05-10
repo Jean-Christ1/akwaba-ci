@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   Pencil, Plus, Check, X, LayoutDashboard, Store, Inbox, MessageSquare,
@@ -317,6 +318,57 @@ export default function AdminPage() {
                   <Textarea rows={4} value={partnerNote} onChange={(e) => setPartnerNote(e.target.value)} />
                   <Button onClick={saveNote} size="sm">Enregistrer</Button>
                 </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      <Dialog open={!!modTarget} onOpenChange={(o) => !o && setModTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {modTarget?.action === "approved" ? "Valider la fiche" : "Refuser la fiche"}
+            </DialogTitle>
+            <DialogDescription>
+              {modTarget?.place?.name} — un email sera envoyé au partenaire avec le lien vers son profil.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Note pour le partenaire {modTarget?.action === "rejected" && <span className="text-destructive">*</span>}</p>
+            <Textarea rows={5} value={modNote} onChange={(e) => setModNote(e.target.value)}
+              placeholder={modTarget?.action === "approved" ? "Bienvenue sur Akwaba…" : "Expliquez ce qui doit être ajusté…"} />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setModTarget(null)}>Annuler</Button>
+            <Button
+              disabled={modBusy || (modTarget?.action === "rejected" && !modNote.trim())}
+              onClick={submitModeration}
+              variant={modTarget?.action === "rejected" ? "destructive" : "default"}>
+              {modBusy ? "Envoi…" : modTarget?.action === "approved" ? "Publier et notifier" : "Refuser et notifier"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Sheet open={!!historyPlace} onOpenChange={(o) => !o && setHistoryPlace(null)}>
+        <SheetContent className="w-full sm:max-w-md">
+          {historyPlace && (
+            <>
+              <SheetHeader><SheetTitle>Historique — {historyPlace.name}</SheetTitle></SheetHeader>
+              <div className="mt-4 space-y-3">
+                {history.length === 0 && <p className="text-sm text-muted-foreground">Aucun événement.</p>}
+                {history.map((h) => (
+                  <Card key={h.id} className="p-3">
+                    <div className="flex items-center justify-between">
+                      <Badge variant={h.action === "approved" ? "default" : h.action === "rejected" ? "destructive" : "secondary"}>
+                        {h.action}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">{new Date(h.created_at).toLocaleString("fr-FR")}</span>
+                    </div>
+                    {h.note && <p className="text-sm mt-2 whitespace-pre-wrap">{h.note}</p>}
+                  </Card>
+                ))}
               </div>
             </>
           )}
