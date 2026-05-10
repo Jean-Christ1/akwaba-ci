@@ -101,8 +101,22 @@ export default function AdminPage() {
         body: { place_id: modTarget.place.id, action: modTarget.action, note: modNote.trim() || null },
       });
       if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      toast.success(modTarget.action === "approved" ? "Fiche publiée et partenaire notifié" : "Fiche refusée et partenaire notifié");
+      const res = data as any;
+      if (res?.error) throw new Error(res.error);
+      const baseMsg = modTarget.action === "approved" ? "Fiche publiée" : "Fiche refusée";
+      const em = res?.email;
+      if (em?.status === "sent") {
+        toast.success(`${baseMsg} — email envoyé à ${em.recipient}`);
+      } else if (em?.status === "failed") {
+        toast.error(`${baseMsg} mais l'email a échoué : ${em.detail ?? "?"}`);
+      } else if (em?.status === "no_recipient") {
+        toast.warning(`${baseMsg} — aucun email partenaire connu`);
+      } else if (em?.status === "not_configured") {
+        toast.warning(`${baseMsg} — connecteur Resend non configuré`);
+      } else {
+        toast.success(baseMsg);
+      }
+      console.info("[moderate-place] result", res);
       setModTarget(null); setModNote(""); load();
     } catch (e: any) {
       toast.error(e.message ?? "Erreur");
@@ -247,30 +261,71 @@ export default function AdminPage() {
             </div>
           )}
 
-          {view === "moderation" && isModerator && (
-            <div className="space-y-3">
-              {pending.map((p) => (
-                <Card key={p.id} className="p-4 flex items-center justify-between gap-3 flex-wrap">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">{p.city} · {p.type} · {p.address}</p>
-                    <p className="text-xs mt-1 line-clamp-2">{p.description}</p>
-                  </div>
-                  <div className="flex gap-2 shrink-0 flex-wrap">
-                    <Link to={`/admin/places/${p.id}`}><Button size="sm" variant="ghost"><Pencil className="h-4 w-4" /></Button></Link>
-                    <Button size="sm" variant="ghost" onClick={() => openHistory(p)}>Historique</Button>
-                    <Button size="sm" variant="outline" onClick={() => { setModTarget({ place: p, action: "rejected" }); setModNote(""); }}>
-                      <X className="h-4 w-4" /> Refuser
-                    </Button>
-                    <Button size="sm" onClick={() => { setModTarget({ place: p, action: "approved" }); setModNote(""); }}>
-                      <Check className="h-4 w-4" /> Valider
-                    </Button>
+          {view === "moderation" && isModerator && (() => {
+            const cities = Array.from(new Set(pending.map((p) => p.city).filter(Boolean))).sort();
+            const types = Array.from(new Set(pending.map((p) => p.type).filter(Boolean))).sort();
+            const q = modSearch.trim().toLowerCase();
+            const sinceTs = modSince ? new Date(modSince).getTime() : 0;
+            const filtered = pending.filter((p) =>
+              (modStatus === "all" || p.status === modStatus) &&
+              (modCity === "all" || p.city === modCity) &&
+              (modType === "all" || p.type === modType) &&
+              (!sinceTs || new Date(p.created_at).getTime() >= sinceTs) &&
+              (!q || `${p.name} ${p.city} ${p.address} ${p.zone ?? ""}`.toLowerCase().includes(q))
+            );
+            return (
+              <div className="space-y-3">
+                <Card className="p-3 grid gap-2 sm:grid-cols-5">
+                  <Input placeholder="Recherche nom, adresse…" value={modSearch} onChange={(e) => setModSearch(e.target.value)} className="sm:col-span-2" />
+                  <select className="h-10 rounded-md border border-input bg-background px-2 text-sm" value={modCity} onChange={(e) => setModCity(e.target.value)}>
+                    <option value="all">Toutes villes</option>
+                    {cities.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <select className="h-10 rounded-md border border-input bg-background px-2 text-sm" value={modType} onChange={(e) => setModType(e.target.value)}>
+                    <option value="all">Tous types</option>
+                    {types.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <select className="h-10 rounded-md border border-input bg-background px-2 text-sm" value={modStatus} onChange={(e) => setModStatus(e.target.value as any)}>
+                    <option value="pending">En attente</option>
+                    <option value="rejected">Refusées</option>
+                    <option value="all">Toutes</option>
+                  </select>
+                  <Input type="date" value={modSince} onChange={(e) => setModSince(e.target.value)} className="sm:col-span-2" placeholder="Depuis" />
+                  <div className="flex items-center justify-between sm:col-span-3 text-xs text-muted-foreground">
+                    <span>{filtered.length} fiche(s)</span>
+                    {(modSearch || modCity !== "all" || modType !== "all" || modStatus !== "pending" || modSince) && (
+                      <button className="hover:text-foreground underline" onClick={() => { setModSearch(""); setModCity("all"); setModType("all"); setModStatus("pending"); setModSince(""); }}>
+                        Réinitialiser
+                      </button>
+                    )}
                   </div>
                 </Card>
-              ))}
-              {pending.length === 0 && <p className="text-center text-muted-foreground py-8">File vide.</p>}
-            </div>
-          )}
+                {filtered.map((p) => (
+                  <Card key={p.id} className="p-4 flex items-center justify-between gap-3 flex-wrap">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium truncate">{p.name}</p>
+                        <StatusBadge status={p.status} />
+                      </div>
+                      <p className="text-xs text-muted-foreground">{p.city} · {p.type} · {p.address}</p>
+                      <p className="text-xs mt-1 line-clamp-2">{p.description}</p>
+                    </div>
+                    <div className="flex gap-2 shrink-0 flex-wrap">
+                      <Link to={`/admin/places/${p.id}`}><Button size="sm" variant="ghost"><Pencil className="h-4 w-4" /></Button></Link>
+                      <Button size="sm" variant="ghost" onClick={() => openHistory(p)}>Historique</Button>
+                      <Button size="sm" variant="outline" onClick={() => { setModTarget({ place: p, action: "rejected" }); setModNote(""); }}>
+                        <X className="h-4 w-4" /> Refuser
+                      </Button>
+                      <Button size="sm" onClick={() => { setModTarget({ place: p, action: "approved" }); setModNote(""); }}>
+                        <Check className="h-4 w-4" /> Valider
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+                {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">Aucune fiche ne correspond.</p>}
+              </div>
+            );
+          })()}
 
           {view === "users" && isAdmin && (
             <div className="space-y-4">
