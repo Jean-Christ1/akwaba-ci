@@ -48,6 +48,13 @@ export default function AdminPage() {
   const [modType, setModType] = useState("all");
   const [modStatus, setModStatus] = useState<"pending" | "rejected" | "all">("pending");
   const [modSince, setModSince] = useState("");
+  const [modSort, setModSort] = useState<"date_desc" | "date_asc" | "status" | "city">("date_desc");
+  const [modPage, setModPage] = useState(1);
+  const MOD_PAGE_SIZE = 10;
+  // Email verification
+  const [testEmail, setTestEmail] = useState("");
+  const [testBusy, setTestBusy] = useState(false);
+  const [testResult, setTestResult] = useState<any>(null);
 
   const load = async () => {
     const { data: p } = await supabase.from("places").select("*").order("created_at", { ascending: false });
