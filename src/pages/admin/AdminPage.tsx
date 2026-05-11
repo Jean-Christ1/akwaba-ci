@@ -48,6 +48,13 @@ export default function AdminPage() {
   const [modType, setModType] = useState("all");
   const [modStatus, setModStatus] = useState<"pending" | "rejected" | "all">("pending");
   const [modSince, setModSince] = useState("");
+  const [modSort, setModSort] = useState<"date_desc" | "date_asc" | "status" | "city">("date_desc");
+  const [modPage, setModPage] = useState(1);
+  const MOD_PAGE_SIZE = 10;
+  // Email verification
+  const [testEmail, setTestEmail] = useState("");
+  const [testBusy, setTestBusy] = useState(false);
+  const [testResult, setTestResult] = useState<any>(null);
 
   const load = async () => {
     const { data: p } = await supabase.from("places").select("*").order("created_at", { ascending: false });
@@ -151,6 +158,28 @@ export default function AdminPage() {
     const { error } = await supabase.from("user_roles").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Rôle révoqué"); load();
+  };
+
+
+  const sendTestEmail = async () => {
+    if (!testEmail) return;
+    setTestBusy(true); setTestResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("test-email", {
+        body: { recipient: testEmail.trim() },
+      });
+      if (error) throw error;
+      setTestResult(data);
+      const s = (data as any)?.status;
+      if (s === "sent") toast.success(`Email envoyé à ${(data as any).recipient}`);
+      else if (s === "failed") toast.error("Envoi échoué — voir les détails");
+      else if (s === "no_recipient") toast.warning("Adresse invalide");
+      else if (s === "not_configured") toast.warning("Connecteur Resend non configuré");
+      else toast.info(`Statut : ${s ?? "?"}`);
+    } catch (e: any) {
+      setTestResult({ status: "failed", detail: e.message });
+      toast.error(e.message ?? "Erreur");
+    } finally { setTestBusy(false); }
   };
 
   const myLeads = isAdmin || isModerator ? leads : leads.filter((l) => places.some((p) => p.id === l.place_id));
@@ -273,34 +302,71 @@ export default function AdminPage() {
               (!sinceTs || new Date(p.created_at).getTime() >= sinceTs) &&
               (!q || `${p.name} ${p.city} ${p.address} ${p.zone ?? ""}`.toLowerCase().includes(q))
             );
+            const sorted = [...filtered].sort((a, b) => {
+              if (modSort === "date_asc") return +new Date(a.created_at) - +new Date(b.created_at);
+              if (modSort === "status") return String(a.status).localeCompare(String(b.status));
+              if (modSort === "city") return String(a.city).localeCompare(String(b.city));
+              return +new Date(b.created_at) - +new Date(a.created_at);
+            });
+            const totalPages = Math.max(1, Math.ceil(sorted.length / MOD_PAGE_SIZE));
+            const page = Math.min(modPage, totalPages);
+            const paged = sorted.slice((page - 1) * MOD_PAGE_SIZE, page * MOD_PAGE_SIZE);
             return (
               <div className="space-y-3">
-                <Card className="p-3 grid gap-2 sm:grid-cols-5">
-                  <Input placeholder="Recherche nom, adresse…" value={modSearch} onChange={(e) => setModSearch(e.target.value)} className="sm:col-span-2" />
-                  <select className="h-10 rounded-md border border-input bg-background px-2 text-sm" value={modCity} onChange={(e) => setModCity(e.target.value)}>
+                <Card className="p-3 grid gap-2 sm:grid-cols-6">
+                  <Input placeholder="Recherche nom, adresse…" value={modSearch} onChange={(e) => { setModSearch(e.target.value); setModPage(1); }} className="sm:col-span-2" />
+                  <select className="h-10 rounded-md border border-input bg-background px-2 text-sm" value={modCity} onChange={(e) => { setModCity(e.target.value); setModPage(1); }}>
                     <option value="all">Toutes villes</option>
                     {cities.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
-                  <select className="h-10 rounded-md border border-input bg-background px-2 text-sm" value={modType} onChange={(e) => setModType(e.target.value)}>
+                  <select className="h-10 rounded-md border border-input bg-background px-2 text-sm" value={modType} onChange={(e) => { setModType(e.target.value); setModPage(1); }}>
                     <option value="all">Tous types</option>
                     {types.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
-                  <select className="h-10 rounded-md border border-input bg-background px-2 text-sm" value={modStatus} onChange={(e) => setModStatus(e.target.value as any)}>
+                  <select className="h-10 rounded-md border border-input bg-background px-2 text-sm" value={modStatus} onChange={(e) => { setModStatus(e.target.value as any); setModPage(1); }}>
                     <option value="pending">En attente</option>
                     <option value="rejected">Refusées</option>
                     <option value="all">Toutes</option>
                   </select>
-                  <Input type="date" value={modSince} onChange={(e) => setModSince(e.target.value)} className="sm:col-span-2" placeholder="Depuis" />
-                  <div className="flex items-center justify-between sm:col-span-3 text-xs text-muted-foreground">
-                    <span>{filtered.length} fiche(s)</span>
+                  <select className="h-10 rounded-md border border-input bg-background px-2 text-sm" value={modSort} onChange={(e) => setModSort(e.target.value as any)}>
+                    <option value="date_desc">Tri : Date ↓</option>
+                    <option value="date_asc">Tri : Date ↑</option>
+                    <option value="status">Tri : Statut</option>
+                    <option value="city">Tri : Ville</option>
+                  </select>
+                  <Input type="date" value={modSince} onChange={(e) => { setModSince(e.target.value); setModPage(1); }} className="sm:col-span-2" placeholder="Depuis" />
+                  <div className="flex items-center justify-between sm:col-span-4 text-xs text-muted-foreground">
+                    <span>{sorted.length} fiche(s) — page {page}/{totalPages}</span>
                     {(modSearch || modCity !== "all" || modType !== "all" || modStatus !== "pending" || modSince) && (
-                      <button className="hover:text-foreground underline" onClick={() => { setModSearch(""); setModCity("all"); setModType("all"); setModStatus("pending"); setModSince(""); }}>
+                      <button className="hover:text-foreground underline" onClick={() => { setModSearch(""); setModCity("all"); setModType("all"); setModStatus("pending"); setModSince(""); setModPage(1); }}>
                         Réinitialiser
                       </button>
                     )}
                   </div>
                 </Card>
-                {filtered.map((p) => (
+
+                <Card className="p-3 space-y-2">
+                  <p className="text-sm font-medium">Vérifier l'envoi d'email</p>
+                  <p className="text-xs text-muted-foreground">Envoie un email de test via Resend et affiche le statut.</p>
+                  <div className="flex gap-2 flex-wrap">
+                    <Input type="email" placeholder="adresse@exemple.com" value={testEmail} onChange={(e) => setTestEmail(e.target.value)} className="flex-1 min-w-[220px]" />
+                    <Button onClick={sendTestEmail} disabled={testBusy || !testEmail}>{testBusy ? "Envoi…" : "Envoyer le test"}</Button>
+                  </div>
+                  {testResult && (
+                    <div className="text-xs rounded-md border p-2 bg-muted/30">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={testResult.status === "sent" ? "default" : testResult.status === "failed" ? "destructive" : "secondary"}>
+                          {testResult.status}
+                        </Badge>
+                        {testResult.recipient && <span className="text-muted-foreground">→ {testResult.recipient}</span>}
+                      </div>
+                      {testResult.detail && <p className="mt-1 text-muted-foreground break-all">{testResult.detail}</p>}
+                      {testResult.provider_id && <p className="mt-1 font-mono text-[10px]">id: {testResult.provider_id}</p>}
+                    </div>
+                  )}
+                </Card>
+
+                {paged.map((p) => (
                   <Card key={p.id} className="p-4 flex items-center justify-between gap-3 flex-wrap">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
@@ -322,7 +388,14 @@ export default function AdminPage() {
                     </div>
                   </Card>
                 ))}
-                {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">Aucune fiche ne correspond.</p>}
+                {sorted.length === 0 && <p className="text-center text-muted-foreground py-8">Aucune fiche ne correspond.</p>}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 pt-2">
+                    <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setModPage(page - 1)}>← Précédent</Button>
+                    <span className="text-xs text-muted-foreground">Page {page} / {totalPages}</span>
+                    <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setModPage(page + 1)}>Suivant →</Button>
+                  </div>
+                )}
               </div>
             );
           })()}
