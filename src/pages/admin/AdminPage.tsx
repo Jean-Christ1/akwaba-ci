@@ -160,6 +160,28 @@ export default function AdminPage() {
     toast.success("Rôle révoqué"); load();
   };
 
+
+  const sendTestEmail = async () => {
+    if (!testEmail) return;
+    setTestBusy(true); setTestResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("test-email", {
+        body: { recipient: testEmail.trim() },
+      });
+      if (error) throw error;
+      setTestResult(data);
+      const s = (data as any)?.status;
+      if (s === "sent") toast.success(`Email envoyé à ${(data as any).recipient}`);
+      else if (s === "failed") toast.error("Envoi échoué — voir les détails");
+      else if (s === "no_recipient") toast.warning("Adresse invalide");
+      else if (s === "not_configured") toast.warning("Connecteur Resend non configuré");
+      else toast.info(`Statut : ${s ?? "?"}`);
+    } catch (e: any) {
+      setTestResult({ status: "failed", detail: e.message });
+      toast.error(e.message ?? "Erreur");
+    } finally { setTestBusy(false); }
+  };
+
   const myLeads = isAdmin || isModerator ? leads : leads.filter((l) => places.some((p) => p.id === l.place_id));
   const messages = leads.filter((l) => l.partner_note);
 
