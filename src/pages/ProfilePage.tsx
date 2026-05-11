@@ -17,6 +17,9 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<any>({ display_name: "", phone: "", locale: "fr" });
   const [pwd, setPwd] = useState("");
   const [saving, setSaving] = useState(false);
+  const [myPlaces, setMyPlaces] = useState<any[]>([]);
+  const [eventsByPlace, setEventsByPlace] = useState<Record<string, any[]>>({});
+  const [openPlaceId, setOpenPlaceId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -25,7 +28,25 @@ export default function ProfilePage() {
       .then(({ data }) => setLeads(data ?? []));
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle()
       .then(({ data }) => data && setProfile(data));
-  }, [user]);
+    if (isPartner || isAdmin) {
+      supabase.from("places").select("id, name, status, city")
+        .eq("owner_id", user.id).order("created_at", { ascending: false })
+        .then(async ({ data }) => {
+          const list = data ?? [];
+          setMyPlaces(list);
+          if (list.length) {
+            const { data: ev } = await supabase.from("place_moderation_events")
+              .select("*").in("place_id", list.map((p) => p.id))
+              .order("created_at", { ascending: false });
+            const grouped: Record<string, any[]> = {};
+            (ev ?? []).forEach((e) => {
+              (grouped[e.place_id] ??= []).push(e);
+            });
+            setEventsByPlace(grouped);
+          }
+        });
+    }
+  }, [user, isPartner, isAdmin]);
 
   const saveProfile = async () => {
     if (!user) return;
