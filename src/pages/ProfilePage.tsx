@@ -158,6 +158,51 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
+
+          {(isPartner || isAdmin) && myPlaces.length > 0 && (
+            <div className="space-y-3">
+              <p className="akw-eyebrow flex items-center gap-2"><ShieldCheck className="h-3.5 w-3.5" /> Historique de modération</p>
+              <div className="space-y-2">
+                {myPlaces.map((p) => {
+                  const events = eventsByPlace[p.id] ?? [];
+                  const last = events[0];
+                  const open = openPlaceId === p.id;
+                  return (
+                    <div key={p.id} className="akw-card p-4">
+                      <button
+                        onClick={() => setOpenPlaceId(open ? null : p.id)}
+                        className="w-full flex items-center justify-between gap-3 text-left">
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{p.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {p.city} · statut : <span className="font-medium">{p.status}</span>
+                            {last && <> · dernier événement : {last.action} ({new Date(last.created_at).toLocaleDateString("fr-FR")})</>}
+                          </p>
+                        </div>
+                        <span className="text-xs text-primary">{open ? "Masquer" : `Voir (${events.length})`}</span>
+                      </button>
+                      {open && (
+                        <div className="mt-3 space-y-2 border-t pt-3">
+                          {events.length === 0 && <p className="text-xs text-muted-foreground">Aucun événement de modération.</p>}
+                          {events.map((e) => (
+                            <div key={e.id} className="rounded-md bg-muted/40 p-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <Badge variant={e.action === "approved" ? "default" : e.action === "rejected" ? "destructive" : "secondary"}>
+                                  {e.action}
+                                </Badge>
+                                <span className="text-[11px] text-muted-foreground">{new Date(e.created_at).toLocaleString("fr-FR")}</span>
+                              </div>
+                              {e.note && <p className="text-xs mt-2 whitespace-pre-wrap">{e.note}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         <aside className="akw-card p-6 h-fit">
