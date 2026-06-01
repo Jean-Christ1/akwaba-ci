@@ -107,16 +107,11 @@ describe("buildModerationCsv", () => {
     expect(lines[1]).toContain("2026-05-03T12:30:45Z");
   });
   it("surfaces email_status when known", () => {
-    const idx = CSV_HEADERS.indexOf("email_status" as any);
-    expect(lines[1].split(",")[idx]).toBe("sent");
+    expect(lines[1].endsWith(",sent")).toBe(true);
   });
   it("leaves event columns empty when no event for the place (RLS-hidden case)", () => {
-    const cols = lines[2].split(",");
-    const i = (k: string) => CSV_HEADERS.indexOf(k as any);
-    expect(cols[i("action")]).toBe("");
-    expect(cols[i("note")]).toBe("");
-    expect(cols[i("event_date")]).toBe("");
-    expect(cols[i("email_status")]).toBe("");
+    // p2 row has no event — last 4 columns must be empty (trailing commas)
+    expect(lines[2].endsWith(",,,,")).toBe(true);
   });
 });
 
