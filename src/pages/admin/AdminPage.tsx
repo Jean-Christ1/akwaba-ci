@@ -13,8 +13,9 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { toast } from "sonner";
 import {
   Pencil, Plus, Check, X, LayoutDashboard, Store, Inbox, MessageSquare,
-  ShieldCheck, Users, MapPin, TrendingUp,
+  ShieldCheck, Users, MapPin, TrendingUp, Radio, RefreshCw, AlertTriangle,
 } from "lucide-react";
+import { buildModerationCsv, type ModerationEvent } from "./moderation-utils";
 
 type View = "dashboard" | "places" | "leads" | "messages" | "moderation" | "users";
 
