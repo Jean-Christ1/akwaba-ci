@@ -77,9 +77,14 @@ describe("buildModerationCsv", () => {
     mkPlace({ id: "p2", name: 'Le "Bon" Spot', city: "Abidjan", status: "pending", created_at: "2026-05-02T10:00:00.000Z" }),
   ];
   const events: Record<string, ModerationEvent | undefined> = {
-    p1: { id: "e1", place_id: "p1", action: "rejected", note: "manque photos\nmerci", created_at: "2026-05-03T12:30:45.000Z", email_status: "sent" },
+    p1: { id: "e1", place_id: "p1", action: "rejected", note: "manque photos merci", created_at: "2026-05-03T12:30:45.000Z", email_status: "sent" },
     // p2 has no event
   };
+  // Use the raw CSV string for newline-aware assertions, lines[] for column-positional ones.
+  const csvWithNewlineNote = buildModerationCsv(
+    [mkPlace({ id: "x", name: "X" })],
+    { x: { id: "e", place_id: "x", action: "rejected", note: "ligne1\nligne2", created_at: "2026-05-03T12:30:45Z" } },
+  );
   const csv = buildModerationCsv(places, events);
   const lines = csv.replace(/^\uFEFF/, "").split("\n");
 
