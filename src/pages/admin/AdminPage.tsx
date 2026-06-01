@@ -56,6 +56,11 @@ export default function AdminPage() {
   const [testEmail, setTestEmail] = useState("");
   const [testBusy, setTestBusy] = useState(false);
   const [testResult, setTestResult] = useState<any>(null);
+  // Realtime status
+  const [rtStatus, setRtStatus] = useState<"idle" | "connecting" | "connected" | "error">("idle");
+  const [rtAttempt, setRtAttempt] = useState(0);
+  const [rtError, setRtError] = useState<string | null>(null);
+  const [csvBusy, setCsvBusy] = useState(false);
 
   const load = async () => {
     const { data: p } = await supabase.from("places").select("*").order("created_at", { ascending: false });
@@ -77,40 +82,90 @@ export default function AdminPage() {
 
   useEffect(() => { if (user) load(); /* eslint-disable-next-line */ }, [user, isAdmin, isModerator]);
 
-  // Realtime: refresh moderation queue and places when places change
+  // Realtime: refresh queue when places change. Includes retry/backoff + status surface.
   useEffect(() => {
     if (!user || !isModerator) return;
-    const channel = supabase
-      .channel("admin-places-rt")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "places" },
-        (payload) => {
-          console.info("[realtime places]", payload.eventType, (payload.new as any)?.id ?? (payload.old as any)?.id);
-          load();
-        },
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let attempt = 0;
+
+    const connect = () => {
+      attempt += 1;
+      setRtAttempt(attempt);
+      setRtStatus("connecting");
+      setRtError(null);
+      channel = supabase
+        .channel(`admin-places-rt-${attempt}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "places" },
+          (payload) => {
+            console.info("[realtime places]", payload.eventType, (payload.new as any)?.id ?? (payload.old as any)?.id);
+            load();
+          },
+        )
+        .subscribe((status, err) => {
+          if (cancelled) return;
+          if (status === "SUBSCRIBED") {
+            setRtStatus("connected"); setRtError(null);
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            const msg = err?.message ?? status;
+            console.warn("[realtime] failed", status, err);
+            setRtStatus("error"); setRtError(msg);
+            if (channel) supabase.removeChannel(channel);
+            const delay = Math.min(30_000, 1000 * 2 ** Math.min(attempt - 1, 5));
+            retryTimer = setTimeout(connect, delay);
+          }
+        });
+    };
+    connect();
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+      if (channel) supabase.removeChannel(channel);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isModerator]);
 
-  const exportModerationCsv = (rows: any[]) => {
-    const esc = (v: any) => {
-      const s = v == null ? "" : String(v);
-      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const header = ["id", "name", "city", "type", "status", "address", "created_at", "updated_at", "owner_id", "email"];
-    const lines = [header.join(",")];
-    for (const r of rows) lines.push(header.map((k) => esc(r[k])).join(","));
-    const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `moderation-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
-    toast.success(`${rows.length} ligne(s) exportée(s)`);
+  const retryRealtime = () => {
+    // Force re-subscribe by toggling state — easiest: reload page-level data + bump attempt
+    setRtAttempt((a) => a + 1);
+    setRtStatus("connecting");
+    setRtError(null);
+    // Effect cleanup runs on deps change; simpler: just reload now + the running socket will recover
+    supabase.realtime.connect();
+    load();
+  };
+
+  const exportModerationCsv = async (rows: any[]) => {
+    setCsvBusy(true);
+    try {
+      const ids = rows.map((r) => r.id);
+      const eventsByPlace: Record<string, ModerationEvent | undefined> = {};
+      if (ids.length) {
+        const { data: events, error } = await supabase
+          .from("place_moderation_events")
+          .select("id, place_id, action, note, created_at")
+          .in("place_id", ids)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        for (const e of events ?? []) {
+          if (!eventsByPlace[e.place_id]) eventsByPlace[e.place_id] = e as ModerationEvent;
+        }
+      }
+      const csv = buildModerationCsv(rows, eventsByPlace);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `moderation-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      toast.success(`${rows.length} ligne(s) exportée(s)`);
+    } catch (e: any) {
+      toast.error(`Export CSV échoué : ${e.message ?? e}`);
+    } finally { setCsvBusy(false); }
   };
 
   const stats = useMemo(() => ({
