@@ -405,6 +405,22 @@ export default function AdminPage() {
             const paged = sorted.slice((page - 1) * MOD_PAGE_SIZE, page * MOD_PAGE_SIZE);
             return (
               <div className="space-y-3">
+                <div data-testid="rt-status" className={`flex items-center gap-2 text-xs rounded-md border px-3 py-2 ${
+                  rtStatus === "connected" ? "bg-success/10 text-success border-success/30" :
+                  rtStatus === "error" ? "bg-destructive/10 text-destructive border-destructive/30" :
+                  "bg-muted/40 text-muted-foreground"
+                }`}>
+                  {rtStatus === "connected" && <><Radio className="h-3.5 w-3.5" /><span>Temps réel actif — la file se met à jour automatiquement.</span></>}
+                  {rtStatus === "connecting" && <><RefreshCw className="h-3.5 w-3.5 animate-spin" /><span>Connexion temps réel… (tentative {rtAttempt})</span></>}
+                  {rtStatus === "error" && (
+                    <>
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      <span className="flex-1">Temps réel indisponible{rtError ? ` : ${rtError}` : ""}. Nouvelle tentative automatique…</span>
+                      <Button size="sm" variant="outline" className="h-7" onClick={retryRealtime}>Réessayer</Button>
+                    </>
+                  )}
+                  {rtStatus === "idle" && <span>Temps réel en attente d'activation…</span>}
+                </div>
                 <Card className="p-3 grid gap-2 sm:grid-cols-6">
                   <Input placeholder="Recherche nom, adresse…" value={modSearch} onChange={(e) => { setModSearch(e.target.value); setModPage(1); }} className="sm:col-span-2" />
                   <select className="h-10 rounded-md border border-input bg-background px-2 text-sm" value={modCity} onChange={(e) => { setModCity(e.target.value); setModPage(1); }}>
