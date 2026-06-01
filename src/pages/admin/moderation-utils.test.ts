@@ -101,7 +101,7 @@ describe("buildModerationCsv", () => {
     expect(lines.length).toBe(3);
     expect(lines[1]).toContain('"Chez, Akwaba"');
     expect(lines[2]).toContain('"Le ""Bon"" Spot"');
-    expect(lines[1]).toContain('"manque photos\nmerci"');
+    expect(csvWithNewlineNote).toContain('"ligne1\nligne2"');
   });
   it("formats event_date as ISO UTC without milliseconds", () => {
     expect(lines[1]).toContain("2026-05-03T12:30:45Z");
