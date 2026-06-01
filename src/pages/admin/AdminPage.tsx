@@ -371,13 +371,18 @@ export default function AdminPage() {
                     <option value="city">Tri : Ville</option>
                   </select>
                   <Input type="date" value={modSince} onChange={(e) => { setModSince(e.target.value); setModPage(1); }} className="sm:col-span-2" placeholder="Depuis" />
-                  <div className="flex items-center justify-between sm:col-span-4 text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between sm:col-span-4 text-xs text-muted-foreground gap-2 flex-wrap">
                     <span>{sorted.length} fiche(s) — page {page}/{totalPages}</span>
-                    {(modSearch || modCity !== "all" || modType !== "all" || modStatus !== "pending" || modSince) && (
-                      <button className="hover:text-foreground underline" onClick={() => { setModSearch(""); setModCity("all"); setModType("all"); setModStatus("pending"); setModSince(""); setModPage(1); }}>
-                        Réinitialiser
-                      </button>
-                    )}
+                    <div className="flex items-center gap-3">
+                      <Button size="sm" variant="outline" onClick={() => exportModerationCsv(sorted)} disabled={sorted.length === 0}>
+                        Exporter CSV
+                      </Button>
+                      {(modSearch || modCity !== "all" || modType !== "all" || modStatus !== "pending" || modSince) && (
+                        <button className="hover:text-foreground underline" onClick={() => { setModSearch(""); setModCity("all"); setModType("all"); setModStatus("pending"); setModSince(""); setModPage(1); }}>
+                          Réinitialiser
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </Card>
 
