@@ -76,6 +76,42 @@ export default function AdminPage() {
 
   useEffect(() => { if (user) load(); /* eslint-disable-next-line */ }, [user, isAdmin, isModerator]);
 
+  // Realtime: refresh moderation queue and places when places change
+  useEffect(() => {
+    if (!user || !isModerator) return;
+    const channel = supabase
+      .channel("admin-places-rt")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "places" },
+        (payload) => {
+          console.info("[realtime places]", payload.eventType, (payload.new as any)?.id ?? (payload.old as any)?.id);
+          load();
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, isModerator]);
+
+  const exportModerationCsv = (rows: any[]) => {
+    const esc = (v: any) => {
+      const s = v == null ? "" : String(v);
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const header = ["id", "name", "city", "type", "status", "address", "created_at", "updated_at", "owner_id", "email"];
+    const lines = [header.join(",")];
+    for (const r of rows) lines.push(header.map((k) => esc(r[k])).join(","));
+    const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `moderation-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    toast.success(`${rows.length} ligne(s) exportée(s)`);
+  };
+
   const stats = useMemo(() => ({
     total: places.length,
     published: places.filter((p) => p.status === "published").length,
@@ -335,13 +371,18 @@ export default function AdminPage() {
                     <option value="city">Tri : Ville</option>
                   </select>
                   <Input type="date" value={modSince} onChange={(e) => { setModSince(e.target.value); setModPage(1); }} className="sm:col-span-2" placeholder="Depuis" />
-                  <div className="flex items-center justify-between sm:col-span-4 text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between sm:col-span-4 text-xs text-muted-foreground gap-2 flex-wrap">
                     <span>{sorted.length} fiche(s) — page {page}/{totalPages}</span>
-                    {(modSearch || modCity !== "all" || modType !== "all" || modStatus !== "pending" || modSince) && (
-                      <button className="hover:text-foreground underline" onClick={() => { setModSearch(""); setModCity("all"); setModType("all"); setModStatus("pending"); setModSince(""); setModPage(1); }}>
-                        Réinitialiser
-                      </button>
-                    )}
+                    <div className="flex items-center gap-3">
+                      <Button size="sm" variant="outline" onClick={() => exportModerationCsv(sorted)} disabled={sorted.length === 0}>
+                        Exporter CSV
+                      </Button>
+                      {(modSearch || modCity !== "all" || modType !== "all" || modStatus !== "pending" || modSince) && (
+                        <button className="hover:text-foreground underline" onClick={() => { setModSearch(""); setModCity("all"); setModType("all"); setModStatus("pending"); setModSince(""); setModPage(1); }}>
+                          Réinitialiser
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </Card>
 
