@@ -99,3 +99,17 @@ export function buildModerationCsv(
 }
 
 export { CSV_HEADERS };
+
+// Build a descriptive CSV filename including date + active filters.
+// Example: moderation_2026-06-02_city-Abidjan_status-pending_since-2026-05-01.csv
+export function buildCsvFilename(f: Partial<Filters> = {}, now: Date = new Date()): string {
+  const date = now.toISOString().slice(0, 10);
+  const parts = [`moderation_${date}`];
+  if (f.city && f.city !== "all") parts.push(`city-${slug(f.city)}`);
+  if (f.status && f.status !== "all") parts.push(`status-${slug(f.status)}`);
+  if (f.type && f.type !== "all") parts.push(`type-${slug(f.type)}`);
+  if (f.since) parts.push(`since-${slug(f.since)}`);
+  return `${parts.join("_")}.csv`;
+}
+const slug = (s: string) => String(s).trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "");
+

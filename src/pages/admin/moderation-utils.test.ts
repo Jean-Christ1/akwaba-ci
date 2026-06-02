@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
-  buildModerationCsv, CSV_HEADERS, filterPlaces, paginate, sortPlaces, toIsoDate,
+  buildModerationCsv, buildCsvFilename, CSV_HEADERS, filterPlaces, paginate, sortPlaces, toIsoDate,
   type ModerationEvent, type PlaceRow,
 } from "@/pages/admin/moderation-utils";
+
 
 const mkPlace = (over: Partial<PlaceRow> = {}): PlaceRow => ({
   id: over.id ?? crypto.randomUUID(),
@@ -127,5 +128,45 @@ describe("RLS partner export shape", () => {
     const csv = buildModerationCsv(partnerPlaces, eventsForeignFiltered);
     expect(csv).toContain("own");
     expect(csv).not.toContain("stranger");
+  });
+});
+
+describe("buildCsvFilename", () => {
+  const now = new Date("2026-06-02T10:00:00Z");
+  it("uses date prefix and .csv extension", () => {
+    expect(buildCsvFilename({}, now)).toBe("moderation_2026-06-02.csv");
+  });
+  it("includes active filters and slugifies values", () => {
+    const name = buildCsvFilename(
+      { city: "Abidjan", status: "pending", type: "all", since: "2026-05-01" },
+      now,
+    );
+    expect(name).toBe("moderation_2026-06-02_city-abidjan_status-pending_since-2026-05-01.csv");
+  });
+  it("omits filters set to 'all' or empty", () => {
+    const name = buildCsvFilename({ city: "all", status: "all", type: "all", since: "" }, now);
+    expect(name).toBe("moderation_2026-06-02.csv");
+  });
+});
+
+describe("CSV date format guarantees", () => {
+  it("every event_date cell is ISO UTC without milliseconds", () => {
+    const places: PlaceRow[] = Array.from({ length: 5 }).map((_, i) => ({
+      id: `p${i}`, name: `N${i}`, city: "Abidjan", type: "restaurant",
+      status: "pending", created_at: `2026-05-0${i + 1}T10:00:00.${i}23Z`,
+    } as PlaceRow));
+    const events: Record<string, ModerationEvent> = Object.fromEntries(
+      places.map((p, i) => [p.id, {
+        id: `e${i}`, place_id: p.id, action: "approved",
+        note: null, created_at: `2026-05-0${i + 1}T12:34:56.789Z`,
+      }]),
+    );
+    const csv = buildModerationCsv(places, events);
+    const eventDates = csv.replace(/^\uFEFF/, "").split("\n").slice(1)
+      .map((line) => line.split(",")[10]); // event_date column
+    for (const d of eventDates) {
+      expect(d).toMatch(/^2026-05-0\dT12:34:56Z$/);
+      expect(d).not.toMatch(/\.\d{3}Z$/);
+    }
   });
 });

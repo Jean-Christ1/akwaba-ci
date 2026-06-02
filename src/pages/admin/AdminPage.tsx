@@ -15,7 +15,7 @@ import {
   Pencil, Plus, Check, X, LayoutDashboard, Store, Inbox, MessageSquare,
   ShieldCheck, Users, MapPin, TrendingUp, Radio, RefreshCw, AlertTriangle,
 } from "lucide-react";
-import { buildModerationCsv, type ModerationEvent } from "./moderation-utils";
+import { buildModerationCsv, buildCsvFilename, type ModerationEvent } from "./moderation-utils";
 
 type View = "dashboard" | "places" | "leads" | "messages" | "moderation" | "users";
 
@@ -159,7 +159,7 @@ export default function AdminPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `moderation-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = buildCsvFilename({ city: modCity, status: modStatus, type: modType, since: modSince });
       document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(url);
       toast.success(`${rows.length} ligne(s) exportée(s)`);
