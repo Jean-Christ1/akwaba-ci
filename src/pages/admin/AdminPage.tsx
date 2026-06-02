@@ -159,7 +159,7 @@ export default function AdminPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `moderation-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = buildCsvFilename({ city: modCity, status: modStatus, type: modType, since: modSince });
       document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(url);
       toast.success(`${rows.length} ligne(s) exportée(s)`);
