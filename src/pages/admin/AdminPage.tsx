@@ -15,6 +15,7 @@ import {
   Pencil, Plus, Check, X, LayoutDashboard, Store, Inbox, MessageSquare,
   ShieldCheck, Users, MapPin, TrendingUp, Radio, RefreshCw, AlertTriangle,
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { buildModerationCsv, buildCsvFilename, type ModerationEvent } from "./moderation-utils";
 
 type View = "dashboard" | "places" | "leads" | "messages" | "moderation" | "users";
@@ -60,24 +61,34 @@ export default function AdminPage() {
   const [rtStatus, setRtStatus] = useState<"idle" | "connecting" | "connected" | "error">("idle");
   const [rtAttempt, setRtAttempt] = useState(0);
   const [rtError, setRtError] = useState<string | null>(null);
+  const [rtLastRetryAt, setRtLastRetryAt] = useState<Date | null>(null);
+  const [rtNextRetryAt, setRtNextRetryAt] = useState<Date | null>(null);
+  const [rtNextDelayMs, setRtNextDelayMs] = useState<number | null>(null);
+  const [lastLoadedAt, setLastLoadedAt] = useState<Date | null>(null);
+  const [loadBusy, setLoadBusy] = useState(false);
   const [csvBusy, setCsvBusy] = useState(false);
+  const [csvProgress, setCsvProgress] = useState<{ step: string; pct: number } | null>(null);
 
   const load = async () => {
-    const { data: p } = await supabase.from("places").select("*").order("created_at", { ascending: false });
-    setPlaces(p ?? []);
-    const { data: l } = await supabase.from("leads").select("*, places(name)").order("created_at", { ascending: false });
-    setLeads(l ?? []);
-    if (isModerator) {
-      const { data: pend } = await supabase
-        .from("places").select("*")
-        .in("status", ["pending", "rejected"])
-        .order("created_at", { ascending: false });
-      setPending(pend ?? []);
-    }
-    if (isAdmin) {
-      const { data: ur } = await supabase.from("user_roles").select("*, profiles(display_name)").order("created_at", { ascending: false });
-      setUsers(ur ?? []);
-    }
+    setLoadBusy(true);
+    try {
+      const { data: p } = await supabase.from("places").select("*").order("created_at", { ascending: false });
+      setPlaces(p ?? []);
+      const { data: l } = await supabase.from("leads").select("*, places(name)").order("created_at", { ascending: false });
+      setLeads(l ?? []);
+      if (isModerator) {
+        const { data: pend } = await supabase
+          .from("places").select("*")
+          .in("status", ["pending", "rejected"])
+          .order("created_at", { ascending: false });
+        setPending(pend ?? []);
+      }
+      if (isAdmin) {
+        const { data: ur } = await supabase.from("user_roles").select("*, profiles(display_name)").order("created_at", { ascending: false });
+        setUsers(ur ?? []);
+      }
+      setLastLoadedAt(new Date());
+    } finally { setLoadBusy(false); }
   };
 
   useEffect(() => { if (user) load(); /* eslint-disable-next-line */ }, [user, isAdmin, isModerator]);
@@ -109,12 +120,20 @@ export default function AdminPage() {
           if (cancelled) return;
           if (status === "SUBSCRIBED") {
             setRtStatus("connected"); setRtError(null);
+            setRtNextRetryAt(null); setRtNextDelayMs(null);
           } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-            const msg = err?.message ?? status;
+            const raw = err?.message ?? status;
+            const safe = String(raw)
+              .replace(/eyJ[\w-]+\.[\w-]+\.[\w-]+/g, "[token]")
+              .replace(/https?:\/\/\S+/g, "[url]")
+              .slice(0, 160);
             console.warn("[realtime] failed", status, err);
-            setRtStatus("error"); setRtError(msg);
+            setRtStatus("error"); setRtError(safe);
+            setRtLastRetryAt(new Date());
             if (channel) supabase.removeChannel(channel);
             const delay = Math.min(30_000, 1000 * 2 ** Math.min(attempt - 1, 5));
+            setRtNextDelayMs(delay);
+            setRtNextRetryAt(new Date(Date.now() + delay));
             retryTimer = setTimeout(connect, delay);
           }
         });
@@ -129,21 +148,32 @@ export default function AdminPage() {
   }, [user, isModerator]);
 
   const retryRealtime = () => {
-    // Force re-subscribe by toggling state — easiest: reload page-level data + bump attempt
     setRtAttempt((a) => a + 1);
     setRtStatus("connecting");
     setRtError(null);
-    // Effect cleanup runs on deps change; simpler: just reload now + the running socket will recover
+    setRtLastRetryAt(new Date());
+    setRtNextRetryAt(null); setRtNextDelayMs(null);
     supabase.realtime.connect();
     load();
   };
 
+  const fmtTime = (d: Date | null) => d ? d.toLocaleTimeString("fr-FR") : "—";
+  const fmtDelay = (ms: number | null) => ms == null ? "—" : ms >= 1000 ? `${Math.round(ms / 1000)}s` : `${ms}ms`;
+
   const exportModerationCsv = async (rows: any[]) => {
     setCsvBusy(true);
+    setCsvProgress({ step: "Préparation…", pct: 5 });
+    const filtersLabel = [
+      modCity !== "all" && `ville=${modCity}`,
+      modStatus !== "all" && `statut=${modStatus}`,
+      modType !== "all" && `type=${modType}`,
+      modSince && `depuis=${modSince}`,
+    ].filter(Boolean).join(", ") || "aucun filtre";
     try {
       const ids = rows.map((r) => r.id);
       const eventsByPlace: Record<string, ModerationEvent | undefined> = {};
       if (ids.length) {
+        setCsvProgress({ step: "Chargement des événements…", pct: 35 });
         const { data: events, error } = await supabase
           .from("place_moderation_events")
           .select("id, place_id, action, note, created_at")
@@ -154,6 +184,7 @@ export default function AdminPage() {
           if (!eventsByPlace[e.place_id]) eventsByPlace[e.place_id] = e as ModerationEvent;
         }
       }
+      setCsvProgress({ step: "Génération du fichier…", pct: 75 });
       const csv = buildModerationCsv(rows, eventsByPlace);
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
@@ -162,10 +193,14 @@ export default function AdminPage() {
       a.download = buildCsvFilename({ city: modCity, status: modStatus, type: modType, since: modSince });
       document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(url);
-      toast.success(`${rows.length} ligne(s) exportée(s)`);
+      setCsvProgress({ step: "Terminé", pct: 100 });
+      toast.success(`Export CSV — ${rows.length} ligne(s) (${filtersLabel})`);
     } catch (e: any) {
-      toast.error(`Export CSV échoué : ${e.message ?? e}`);
-    } finally { setCsvBusy(false); }
+      toast.error(`Export CSV échoué (${filtersLabel}) : ${e.message ?? e}`);
+    } finally {
+      setCsvBusy(false);
+      setTimeout(() => setCsvProgress(null), 800);
+    }
   };
 
   const stats = useMemo(() => ({
@@ -405,21 +440,32 @@ export default function AdminPage() {
             const paged = sorted.slice((page - 1) * MOD_PAGE_SIZE, page * MOD_PAGE_SIZE);
             return (
               <div className="space-y-3">
-                <div data-testid="rt-status" className={`flex items-center gap-2 text-xs rounded-md border px-3 py-2 ${
+                <div data-testid="rt-status" className={`rounded-md border px-3 py-2 text-xs space-y-1 ${
                   rtStatus === "connected" ? "bg-success/10 text-success border-success/30" :
                   rtStatus === "error" ? "bg-destructive/10 text-destructive border-destructive/30" :
                   "bg-muted/40 text-muted-foreground"
                 }`}>
-                  {rtStatus === "connected" && <><Radio className="h-3.5 w-3.5" /><span>Temps réel actif — la file se met à jour automatiquement.</span></>}
-                  {rtStatus === "connecting" && <><RefreshCw className="h-3.5 w-3.5 animate-spin" /><span>Connexion temps réel… (tentative {rtAttempt})</span></>}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {rtStatus === "connected" && <><Radio className="h-3.5 w-3.5" /><span className="flex-1">Connecté — temps réel actif.</span></>}
+                    {rtStatus === "connecting" && <><RefreshCw className="h-3.5 w-3.5 animate-spin" /><span className="flex-1">Connexion temps réel… (tentative {rtAttempt})</span></>}
+                    {rtStatus === "error" && <><AlertTriangle className="h-3.5 w-3.5" /><span className="flex-1">Déconnecté — les mises à jour peuvent être retardées.</span></>}
+                    {rtStatus === "idle" && <span className="flex-1">Temps réel en attente d'activation…</span>}
+                    <span className="text-muted-foreground">Dernière maj : {fmtTime(lastLoadedAt)}</span>
+                    <Button size="sm" variant="outline" className="h-7" onClick={load} disabled={loadBusy} data-testid="manual-refresh">
+                      <RefreshCw className={`h-3.5 w-3.5 ${loadBusy ? "animate-spin" : ""}`} /> Rafraîchir
+                    </Button>
+                    {rtStatus === "error" && (
+                      <Button size="sm" variant="outline" className="h-7" onClick={retryRealtime}>Réessayer temps réel</Button>
+                    )}
+                  </div>
                   {rtStatus === "error" && (
-                    <>
-                      <AlertTriangle className="h-3.5 w-3.5" />
-                      <span className="flex-1">Temps réel indisponible{rtError ? ` : ${rtError}` : ""}. Nouvelle tentative automatique…</span>
-                      <Button size="sm" variant="outline" className="h-7" onClick={retryRealtime}>Réessayer</Button>
-                    </>
+                    <div className="text-[11px] opacity-90 flex flex-wrap gap-x-4 gap-y-0.5 pl-5" data-testid="rt-diagnostics">
+                      <span>Tentatives : {rtAttempt}</span>
+                      <span>Dernière tentative : {fmtTime(rtLastRetryAt)}</span>
+                      <span>Prochaine : {fmtTime(rtNextRetryAt)} (dans {fmtDelay(rtNextDelayMs)})</span>
+                      {rtError && <span className="break-all">Motif : {rtError}</span>}
+                    </div>
                   )}
-                  {rtStatus === "idle" && <span>Temps réel en attente d'activation…</span>}
                 </div>
                 <Card className="p-3 grid gap-2 sm:grid-cols-6">
                   <Input placeholder="Recherche nom, adresse…" value={modSearch} onChange={(e) => { setModSearch(e.target.value); setModPage(1); }} className="sm:col-span-2" />
@@ -447,7 +493,7 @@ export default function AdminPage() {
                     <span>{sorted.length} fiche(s) — page {page}/{totalPages}</span>
                     <div className="flex items-center gap-3">
                       <Button size="sm" variant="outline" data-testid="csv-export" onClick={() => exportModerationCsv(sorted)} disabled={sorted.length === 0 || csvBusy}>
-                        {csvBusy ? "Export…" : "Exporter CSV"}
+                        {csvBusy ? <><RefreshCw className="h-3.5 w-3.5 animate-spin" /> Export…</> : "Exporter CSV"}
                       </Button>
                       {(modSearch || modCity !== "all" || modType !== "all" || modStatus !== "pending" || modSince) && (
                         <button className="hover:text-foreground underline" onClick={() => { setModSearch(""); setModCity("all"); setModType("all"); setModStatus("pending"); setModSince(""); setModPage(1); }}>
@@ -457,6 +503,13 @@ export default function AdminPage() {
                     </div>
                   </div>
                 </Card>
+
+                {csvProgress && (
+                  <div className="rounded-md border p-2 space-y-1" data-testid="csv-progress">
+                    <div className="flex justify-between text-xs"><span>{csvProgress.step}</span><span>{csvProgress.pct}%</span></div>
+                    <Progress value={csvProgress.pct} className="h-1.5" />
+                  </div>
+                )}
 
                 <Card className="p-3 space-y-2">
                   <p className="text-sm font-medium">Vérifier l'envoi d'email</p>
