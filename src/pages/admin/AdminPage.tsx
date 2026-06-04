@@ -60,7 +60,13 @@ export default function AdminPage() {
   const [rtStatus, setRtStatus] = useState<"idle" | "connecting" | "connected" | "error">("idle");
   const [rtAttempt, setRtAttempt] = useState(0);
   const [rtError, setRtError] = useState<string | null>(null);
+  const [rtLastRetryAt, setRtLastRetryAt] = useState<Date | null>(null);
+  const [rtNextRetryAt, setRtNextRetryAt] = useState<Date | null>(null);
+  const [rtNextDelayMs, setRtNextDelayMs] = useState<number | null>(null);
+  const [lastLoadedAt, setLastLoadedAt] = useState<Date | null>(null);
+  const [loadBusy, setLoadBusy] = useState(false);
   const [csvBusy, setCsvBusy] = useState(false);
+  const [csvProgress, setCsvProgress] = useState<{ step: string; pct: number } | null>(null);
 
   const load = async () => {
     const { data: p } = await supabase.from("places").select("*").order("created_at", { ascending: false });
