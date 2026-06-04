@@ -119,12 +119,20 @@ export default function AdminPage() {
           if (cancelled) return;
           if (status === "SUBSCRIBED") {
             setRtStatus("connected"); setRtError(null);
+            setRtNextRetryAt(null); setRtNextDelayMs(null);
           } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-            const msg = err?.message ?? status;
+            const raw = err?.message ?? status;
+            const safe = String(raw)
+              .replace(/eyJ[\w-]+\.[\w-]+\.[\w-]+/g, "[token]")
+              .replace(/https?:\/\/\S+/g, "[url]")
+              .slice(0, 160);
             console.warn("[realtime] failed", status, err);
-            setRtStatus("error"); setRtError(msg);
+            setRtStatus("error"); setRtError(safe);
+            setRtLastRetryAt(new Date());
             if (channel) supabase.removeChannel(channel);
             const delay = Math.min(30_000, 1000 * 2 ** Math.min(attempt - 1, 5));
+            setRtNextDelayMs(delay);
+            setRtNextRetryAt(new Date(Date.now() + delay));
             retryTimer = setTimeout(connect, delay);
           }
         });
@@ -139,21 +147,32 @@ export default function AdminPage() {
   }, [user, isModerator]);
 
   const retryRealtime = () => {
-    // Force re-subscribe by toggling state — easiest: reload page-level data + bump attempt
     setRtAttempt((a) => a + 1);
     setRtStatus("connecting");
     setRtError(null);
-    // Effect cleanup runs on deps change; simpler: just reload now + the running socket will recover
+    setRtLastRetryAt(new Date());
+    setRtNextRetryAt(null); setRtNextDelayMs(null);
     supabase.realtime.connect();
     load();
   };
 
+  const fmtTime = (d: Date | null) => d ? d.toLocaleTimeString("fr-FR") : "—";
+  const fmtDelay = (ms: number | null) => ms == null ? "—" : ms >= 1000 ? `${Math.round(ms / 1000)}s` : `${ms}ms`;
+
   const exportModerationCsv = async (rows: any[]) => {
     setCsvBusy(true);
+    setCsvProgress({ step: "Préparation…", pct: 5 });
+    const filtersLabel = [
+      modCity !== "all" && `ville=${modCity}`,
+      modStatus !== "all" && `statut=${modStatus}`,
+      modType !== "all" && `type=${modType}`,
+      modSince && `depuis=${modSince}`,
+    ].filter(Boolean).join(", ") || "aucun filtre";
     try {
       const ids = rows.map((r) => r.id);
       const eventsByPlace: Record<string, ModerationEvent | undefined> = {};
       if (ids.length) {
+        setCsvProgress({ step: "Chargement des événements…", pct: 35 });
         const { data: events, error } = await supabase
           .from("place_moderation_events")
           .select("id, place_id, action, note, created_at")
@@ -164,6 +183,7 @@ export default function AdminPage() {
           if (!eventsByPlace[e.place_id]) eventsByPlace[e.place_id] = e as ModerationEvent;
         }
       }
+      setCsvProgress({ step: "Génération du fichier…", pct: 75 });
       const csv = buildModerationCsv(rows, eventsByPlace);
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
@@ -172,10 +192,14 @@ export default function AdminPage() {
       a.download = buildCsvFilename({ city: modCity, status: modStatus, type: modType, since: modSince });
       document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(url);
-      toast.success(`${rows.length} ligne(s) exportée(s)`);
+      setCsvProgress({ step: "Terminé", pct: 100 });
+      toast.success(`Export CSV — ${rows.length} ligne(s) (${filtersLabel})`);
     } catch (e: any) {
-      toast.error(`Export CSV échoué : ${e.message ?? e}`);
-    } finally { setCsvBusy(false); }
+      toast.error(`Export CSV échoué (${filtersLabel}) : ${e.message ?? e}`);
+    } finally {
+      setCsvBusy(false);
+      setTimeout(() => setCsvProgress(null), 800);
+    }
   };
 
   const stats = useMemo(() => ({
