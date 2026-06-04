@@ -15,6 +15,7 @@ import {
   Pencil, Plus, Check, X, LayoutDashboard, Store, Inbox, MessageSquare,
   ShieldCheck, Users, MapPin, TrendingUp, Radio, RefreshCw, AlertTriangle,
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { buildModerationCsv, buildCsvFilename, type ModerationEvent } from "./moderation-utils";
 
 type View = "dashboard" | "places" | "leads" | "messages" | "moderation" | "users";
