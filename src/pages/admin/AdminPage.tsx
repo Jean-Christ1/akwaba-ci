@@ -440,21 +440,32 @@ export default function AdminPage() {
             const paged = sorted.slice((page - 1) * MOD_PAGE_SIZE, page * MOD_PAGE_SIZE);
             return (
               <div className="space-y-3">
-                <div data-testid="rt-status" className={`flex items-center gap-2 text-xs rounded-md border px-3 py-2 ${
+                <div data-testid="rt-status" className={`rounded-md border px-3 py-2 text-xs space-y-1 ${
                   rtStatus === "connected" ? "bg-success/10 text-success border-success/30" :
                   rtStatus === "error" ? "bg-destructive/10 text-destructive border-destructive/30" :
                   "bg-muted/40 text-muted-foreground"
                 }`}>
-                  {rtStatus === "connected" && <><Radio className="h-3.5 w-3.5" /><span>Temps réel actif — la file se met à jour automatiquement.</span></>}
-                  {rtStatus === "connecting" && <><RefreshCw className="h-3.5 w-3.5 animate-spin" /><span>Connexion temps réel… (tentative {rtAttempt})</span></>}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {rtStatus === "connected" && <><Radio className="h-3.5 w-3.5" /><span className="flex-1">Connecté — temps réel actif.</span></>}
+                    {rtStatus === "connecting" && <><RefreshCw className="h-3.5 w-3.5 animate-spin" /><span className="flex-1">Connexion temps réel… (tentative {rtAttempt})</span></>}
+                    {rtStatus === "error" && <><AlertTriangle className="h-3.5 w-3.5" /><span className="flex-1">Déconnecté — les mises à jour peuvent être retardées.</span></>}
+                    {rtStatus === "idle" && <span className="flex-1">Temps réel en attente d'activation…</span>}
+                    <span className="text-muted-foreground">Dernière maj : {fmtTime(lastLoadedAt)}</span>
+                    <Button size="sm" variant="outline" className="h-7" onClick={load} disabled={loadBusy} data-testid="manual-refresh">
+                      <RefreshCw className={`h-3.5 w-3.5 ${loadBusy ? "animate-spin" : ""}`} /> Rafraîchir
+                    </Button>
+                    {rtStatus === "error" && (
+                      <Button size="sm" variant="outline" className="h-7" onClick={retryRealtime}>Réessayer temps réel</Button>
+                    )}
+                  </div>
                   {rtStatus === "error" && (
-                    <>
-                      <AlertTriangle className="h-3.5 w-3.5" />
-                      <span className="flex-1">Temps réel indisponible{rtError ? ` : ${rtError}` : ""}. Nouvelle tentative automatique…</span>
-                      <Button size="sm" variant="outline" className="h-7" onClick={retryRealtime}>Réessayer</Button>
-                    </>
+                    <div className="text-[11px] opacity-90 flex flex-wrap gap-x-4 gap-y-0.5 pl-5" data-testid="rt-diagnostics">
+                      <span>Tentatives : {rtAttempt}</span>
+                      <span>Dernière tentative : {fmtTime(rtLastRetryAt)}</span>
+                      <span>Prochaine : {fmtTime(rtNextRetryAt)} (dans {fmtDelay(rtNextDelayMs)})</span>
+                      {rtError && <span className="break-all">Motif : {rtError}</span>}
+                    </div>
                   )}
-                  {rtStatus === "idle" && <span>Temps réel en attente d'activation…</span>}
                 </div>
                 <Card className="p-3 grid gap-2 sm:grid-cols-6">
                   <Input placeholder="Recherche nom, adresse…" value={modSearch} onChange={(e) => { setModSearch(e.target.value); setModPage(1); }} className="sm:col-span-2" />
