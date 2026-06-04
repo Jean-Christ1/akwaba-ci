@@ -69,21 +69,25 @@ export default function AdminPage() {
   const [csvProgress, setCsvProgress] = useState<{ step: string; pct: number } | null>(null);
 
   const load = async () => {
-    const { data: p } = await supabase.from("places").select("*").order("created_at", { ascending: false });
-    setPlaces(p ?? []);
-    const { data: l } = await supabase.from("leads").select("*, places(name)").order("created_at", { ascending: false });
-    setLeads(l ?? []);
-    if (isModerator) {
-      const { data: pend } = await supabase
-        .from("places").select("*")
-        .in("status", ["pending", "rejected"])
-        .order("created_at", { ascending: false });
-      setPending(pend ?? []);
-    }
-    if (isAdmin) {
-      const { data: ur } = await supabase.from("user_roles").select("*, profiles(display_name)").order("created_at", { ascending: false });
-      setUsers(ur ?? []);
-    }
+    setLoadBusy(true);
+    try {
+      const { data: p } = await supabase.from("places").select("*").order("created_at", { ascending: false });
+      setPlaces(p ?? []);
+      const { data: l } = await supabase.from("leads").select("*, places(name)").order("created_at", { ascending: false });
+      setLeads(l ?? []);
+      if (isModerator) {
+        const { data: pend } = await supabase
+          .from("places").select("*")
+          .in("status", ["pending", "rejected"])
+          .order("created_at", { ascending: false });
+        setPending(pend ?? []);
+      }
+      if (isAdmin) {
+        const { data: ur } = await supabase.from("user_roles").select("*, profiles(display_name)").order("created_at", { ascending: false });
+        setUsers(ur ?? []);
+      }
+      setLastLoadedAt(new Date());
+    } finally { setLoadBusy(false); }
   };
 
   useEffect(() => { if (user) load(); /* eslint-disable-next-line */ }, [user, isAdmin, isModerator]);
