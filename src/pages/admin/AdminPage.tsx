@@ -493,7 +493,7 @@ export default function AdminPage() {
                     <span>{sorted.length} fiche(s) — page {page}/{totalPages}</span>
                     <div className="flex items-center gap-3">
                       <Button size="sm" variant="outline" data-testid="csv-export" onClick={() => exportModerationCsv(sorted)} disabled={sorted.length === 0 || csvBusy}>
-                        {csvBusy ? "Export…" : "Exporter CSV"}
+                        {csvBusy ? <><RefreshCw className="h-3.5 w-3.5 animate-spin" /> Export…</> : "Exporter CSV"}
                       </Button>
                       {(modSearch || modCity !== "all" || modType !== "all" || modStatus !== "pending" || modSince) && (
                         <button className="hover:text-foreground underline" onClick={() => { setModSearch(""); setModCity("all"); setModType("all"); setModStatus("pending"); setModSince(""); setModPage(1); }}>
