@@ -504,6 +504,13 @@ export default function AdminPage() {
                   </div>
                 </Card>
 
+                {csvProgress && (
+                  <div className="rounded-md border p-2 space-y-1" data-testid="csv-progress">
+                    <div className="flex justify-between text-xs"><span>{csvProgress.step}</span><span>{csvProgress.pct}%</span></div>
+                    <Progress value={csvProgress.pct} className="h-1.5" />
+                  </div>
+                )}
+
                 <Card className="p-3 space-y-2">
                   <p className="text-sm font-medium">Vérifier l'envoi d'email</p>
                   <p className="text-xs text-muted-foreground">Envoie un email de test via Resend et affiche le statut.</p>
