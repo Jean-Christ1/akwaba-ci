@@ -13,9 +13,10 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { toast } from "sonner";
 import {
   Pencil, Plus, Check, X, LayoutDashboard, Store, Inbox, MessageSquare,
-  ShieldCheck, Users, MapPin, TrendingUp, Radio, RefreshCw, AlertTriangle,
+  ShieldCheck, Users, MapPin, TrendingUp, Radio, RefreshCw, AlertTriangle, ChevronDown,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { buildModerationCsv, buildCsvFilename, type ModerationEvent } from "./moderation-utils";
 
 type View = "dashboard" | "places" | "leads" | "messages" | "moderation" | "users";
@@ -459,12 +460,17 @@ export default function AdminPage() {
                     )}
                   </div>
                   {rtStatus === "error" && (
-                    <div className="text-[11px] opacity-90 flex flex-wrap gap-x-4 gap-y-0.5 pl-5" data-testid="rt-diagnostics">
-                      <span>Tentatives : {rtAttempt}</span>
-                      <span>Dernière tentative : {fmtTime(rtLastRetryAt)}</span>
-                      <span>Prochaine : {fmtTime(rtNextRetryAt)} (dans {fmtDelay(rtNextDelayMs)})</span>
-                      {rtError && <span className="break-all">Motif : {rtError}</span>}
-                    </div>
+                    <Collapsible>
+                      <CollapsibleTrigger className="flex items-center gap-1 text-[11px] underline opacity-80 hover:opacity-100 pl-5">
+                        <ChevronDown className="h-3 w-3" /> Détails diagnostic
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="text-[11px] opacity-90 flex flex-wrap gap-x-4 gap-y-0.5 pl-5 pt-1" data-testid="rt-diagnostics">
+                        <span>Tentatives : {rtAttempt}</span>
+                        <span>Dernière tentative : {fmtTime(rtLastRetryAt)}</span>
+                        <span>Prochaine : {fmtTime(rtNextRetryAt)} (dans {fmtDelay(rtNextDelayMs)})</span>
+                        {rtError && <span className="break-all">Motif : {rtError}</span>}
+                      </CollapsibleContent>
+                    </Collapsible>
                   )}
                 </div>
                 <Card className="p-3 grid gap-2 sm:grid-cols-6">
@@ -511,26 +517,33 @@ export default function AdminPage() {
                   </div>
                 )}
 
-                <Card className="p-3 space-y-2">
-                  <p className="text-sm font-medium">Vérifier l'envoi d'email</p>
-                  <p className="text-xs text-muted-foreground">Envoie un email de test via Resend et affiche le statut.</p>
-                  <div className="flex gap-2 flex-wrap">
-                    <Input type="email" placeholder="adresse@exemple.com" value={testEmail} onChange={(e) => setTestEmail(e.target.value)} className="flex-1 min-w-[220px]" />
-                    <Button onClick={sendTestEmail} disabled={testBusy || !testEmail}>{testBusy ? "Envoi…" : "Envoyer le test"}</Button>
-                  </div>
-                  {testResult && (
-                    <div className="text-xs rounded-md border p-2 bg-muted/30">
-                      <div className="flex items-center gap-2">
-                        <Badge variant={testResult.status === "sent" ? "default" : testResult.status === "failed" ? "destructive" : "secondary"}>
-                          {testResult.status}
-                        </Badge>
-                        {testResult.recipient && <span className="text-muted-foreground">→ {testResult.recipient}</span>}
+                <Collapsible>
+                  <Card className="p-3">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-medium">
+                      <span>Vérifier l'envoi d'email</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-3 space-y-2">
+                      <p className="text-xs text-muted-foreground">Envoie un email de test via Resend et affiche le statut.</p>
+                      <div className="flex gap-2 flex-wrap">
+                        <Input type="email" placeholder="adresse@exemple.com" value={testEmail} onChange={(e) => setTestEmail(e.target.value)} className="flex-1 min-w-[220px]" />
+                        <Button onClick={sendTestEmail} disabled={testBusy || !testEmail}>{testBusy ? "Envoi…" : "Envoyer le test"}</Button>
                       </div>
-                      {testResult.detail && <p className="mt-1 text-muted-foreground break-all">{testResult.detail}</p>}
-                      {testResult.provider_id && <p className="mt-1 font-mono text-[10px]">id: {testResult.provider_id}</p>}
-                    </div>
-                  )}
-                </Card>
+                      {testResult && (
+                        <div className="text-xs rounded-md border p-2 bg-muted/30">
+                          <div className="flex items-center gap-2">
+                            <Badge variant={testResult.status === "sent" ? "default" : testResult.status === "failed" ? "destructive" : "secondary"}>
+                              {testResult.status}
+                            </Badge>
+                            {testResult.recipient && <span className="text-muted-foreground">→ {testResult.recipient}</span>}
+                          </div>
+                          {testResult.detail && <p className="mt-1 text-muted-foreground break-all">{testResult.detail}</p>}
+                          {testResult.provider_id && <p className="mt-1 font-mono text-[10px]">id: {testResult.provider_id}</p>}
+                        </div>
+                      )}
+                    </CollapsibleContent>
+                  </Card>
+                </Collapsible>
 
                 {paged.map((p) => (
                   <Card key={p.id} className="p-4 flex items-center justify-between gap-3 flex-wrap">
