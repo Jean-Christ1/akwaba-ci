@@ -47,33 +47,26 @@ export default function ExplorerPage() {
 
   return (
     <div className="bg-background">
-      {/* En-tête recherche */}
-      <section className="border-b border-border/60 bg-card">
-        <div className="akw-container py-6 sm:py-8">
-          <p className="akw-eyebrow mb-2">Explorer</p>
-          <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-            Trouvez le bon lieu, au bon moment
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Filtrez par type, par ville ou cherchez librement. Les résultats sont mis à jour en temps réel.
-          </p>
-
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+      {/* En-tête recherche — compact, dense */}
+      <section className="sticky top-0 z-20 border-b border-border/60 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <div className="akw-container py-3 sm:py-4 space-y-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <h1 className="sr-only">Explorer les lieux</h1>
             <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Hôtel, restaurant, quartier, ambiance…"
-                className="h-12 w-full rounded-full border border-border bg-background pl-11 pr-10 text-sm outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary"
+                className="h-10 w-full rounded-full border border-border bg-background pl-10 pr-9 text-sm outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary"
               />
               {q && (
                 <button
                   onClick={() => setQ("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 hover:bg-muted"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 hover:bg-muted"
                   aria-label="Effacer"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
@@ -83,7 +76,7 @@ export default function ExplorerPage() {
                 setCity(e.target.value);
                 updateParam("city", e.target.value);
               }}
-              className="h-12 rounded-full border border-border bg-background px-5 text-sm font-medium outline-none focus:border-primary"
+              className="h-10 rounded-full border border-border bg-background px-4 text-sm font-medium outline-none focus:border-primary"
             >
               <option value="all">Toutes les villes</option>
               {CITIES.map((c) => (
@@ -94,7 +87,7 @@ export default function ExplorerPage() {
             </select>
           </div>
 
-          <div className="scrollbar-none mt-4 flex gap-2 overflow-x-auto pb-1">
+          <div className="scrollbar-none flex gap-2 overflow-x-auto">
             {TYPES.map((t) => (
               <button
                 key={t.value}
@@ -103,7 +96,7 @@ export default function ExplorerPage() {
                   updateParam("type", t.value);
                 }}
                 className={cn(
-                  "akw-chip flex-shrink-0",
+                  "akw-chip flex-shrink-0 !py-1 !px-3 !text-xs",
                   type === t.value && "akw-chip-active"
                 )}
               >
@@ -115,9 +108,9 @@ export default function ExplorerPage() {
       </section>
 
       {/* RÉSULTATS */}
-      <section className="py-8 sm:py-10">
+      <section className="py-5 sm:py-6">
         <div className="akw-container">
-          <div className="mb-5 flex items-center justify-between">
+          <div className="mb-4 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
               <span className="font-semibold text-foreground">{results.length}</span>{" "}
               {results.length > 1 ? "lieux trouvés" : "lieu trouvé"}
