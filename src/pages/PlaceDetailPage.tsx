@@ -49,10 +49,10 @@ export default function PlaceDetailPage() {
   const telUrl = place.phone ? `tel:${place.phone}` : null;
 
   return (
-    <article className="bg-background pb-32 lg:pb-16">
-      {/* HERO */}
+    <article className="bg-background pb-32 lg:pb-12">
+      {/* HERO — compact */}
       <header className="relative">
-        <div className="relative aspect-[16/10] w-full overflow-hidden lg:aspect-[21/9] lg:max-h-[640px]">
+        <div className="relative aspect-[16/9] w-full overflow-hidden sm:aspect-[21/9] lg:aspect-[24/8] lg:max-h-[420px]">
           <img
             src={place.image}
             alt={place.name}
@@ -89,7 +89,7 @@ export default function PlaceDetailPage() {
         </div>
       </header>
 
-      <div className="akw-container -mt-16 sm:-mt-20 lg:-mt-24 relative z-10">
+      <div className="akw-container -mt-12 sm:-mt-16 lg:-mt-20 relative z-10">
         <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
           {/* COLONNE PRINCIPALE */}
           <div className="space-y-8">
@@ -144,10 +144,10 @@ export default function PlaceDetailPage() {
               </ul>
             </section>
 
-            {/* DESCRIPTION */}
+            {/* DESCRIPTION — clamp + show more via accordion below */}
             <section>
               <p className="akw-eyebrow mb-3">L'adresse</p>
-              <p className="akw-prose text-pretty">{place.description}</p>
+              <p className="akw-prose text-pretty line-clamp-3">{place.description}</p>
             </section>
 
             {/* DETAILS ACCORDION */}

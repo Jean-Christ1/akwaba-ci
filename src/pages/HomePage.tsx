@@ -28,9 +28,9 @@ export default function HomePage() {
 
   return (
     <div>
-      {/* HERO */}
+      {/* HERO — compact, sub-fold visible */}
       <section className="relative overflow-hidden">
-        <div className="relative h-[78vh] min-h-[560px] max-h-[820px] w-full">
+        <div className="relative h-[62vh] min-h-[440px] max-h-[640px] w-full">
           <img
             src={heroImg}
             alt="Abidjan vue depuis la lagune Ébrié au coucher du soleil"
@@ -41,22 +41,21 @@ export default function HomePage() {
           />
           <div className="absolute inset-0 bg-gradient-to-b from-editorial/20 via-editorial/40 to-editorial" />
 
-          <div className="akw-container relative z-10 flex h-full flex-col justify-end pb-16 sm:pb-24">
+          <div className="akw-container relative z-10 flex h-full flex-col justify-end pb-10 sm:pb-14">
             <div className="max-w-2xl animate-slide-up">
-              <p className="akw-eyebrow text-background/70 mb-4">
+              <p className="akw-eyebrow text-background/70 mb-3">
                 Côte d'Ivoire · Compagnon de voyage premium
               </p>
-              <h1 className="font-display text-4xl font-semibold leading-[1.05] text-background sm:text-5xl lg:text-6xl text-balance">
+              <h1 className="font-display text-3xl font-semibold leading-[1.05] text-background sm:text-4xl lg:text-5xl text-balance">
                 {getGreeting()}. Voici ce qui vaut le détour, près de vous.
               </h1>
-              <p className="mt-5 max-w-xl text-base text-background/85 sm:text-lg text-pretty">
-                Hôtels, tables, lieux et parcours sélectionnés à Abidjan, Grand-Bassam, Assinie et
-                Yamoussoukro. Choisis avec soin. Vérifiés régulièrement.
+              <p className="mt-3 max-w-xl text-sm text-background/85 sm:text-base text-pretty">
+                Hôtels, tables, lieux et parcours sélectionnés à Abidjan, Bassam, Assinie, Yamoussoukro.
               </p>
 
               <Link
                 to="/explorer"
-                className="mt-8 inline-flex w-full max-w-lg items-center gap-3 rounded-full bg-background/95 px-5 py-4 text-left shadow-elevation-2 backdrop-blur-md transition-transform hover:-translate-y-0.5 sm:w-auto"
+                className="mt-5 inline-flex w-full max-w-lg items-center gap-3 rounded-full bg-background/95 px-5 py-3 text-left shadow-elevation-2 backdrop-blur-md transition-transform hover:-translate-y-0.5 sm:w-auto"
               >
                 <Search className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
                 <span className="flex-1 text-sm text-muted-foreground">
@@ -83,7 +82,7 @@ export default function HomePage() {
       </section>
 
       {/* SÉLECTION AKWABA */}
-      <section className="py-12 sm:py-16">
+      <section className="py-8 sm:py-12">
         <div className="akw-container">
           <SectionHeader
             eyebrow="La sélection Akwaba"
@@ -101,7 +100,7 @@ export default function HomePage() {
       </section>
 
       {/* CE SOIR */}
-      <section className="bg-secondary/40 py-12 sm:py-16">
+      <section className="bg-secondary/40 py-8 sm:py-12">
         <div className="akw-container">
           <SectionHeader
             eyebrow="Ce soir près de vous"
@@ -119,7 +118,7 @@ export default function HomePage() {
       </section>
 
       {/* PARCOURS */}
-      <section className="py-12 sm:py-16">
+      <section className="py-8 sm:py-12">
         <div className="akw-container">
           <SectionHeader
             eyebrow="Parcours prêts à vivre"
@@ -137,21 +136,21 @@ export default function HomePage() {
       </section>
 
       {/* VILLES */}
-      <section className="bg-secondary/40 py-12 sm:py-16">
+      <section className="bg-secondary/40 py-8 sm:py-12">
         <div className="akw-container">
           <SectionHeader
             eyebrow="Destinations"
             title="Où voulez-vous aller ?"
             description="Phase 1 : nous couvrons quatre villes en profondeur. D'autres suivront."
           />
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {CITIES.map((city) => (
               <Link
                 key={city.slug}
                 to={`/explorer?city=${city.slug}`}
                 className="akw-card-hover group relative block overflow-hidden"
               >
-                <div className="relative aspect-[3/4] overflow-hidden">
+                <div className="relative aspect-[4/5] overflow-hidden">
                   <img
                     src={city.image}
                     alt={city.name}
@@ -159,10 +158,10 @@ export default function HomePage() {
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.05]"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-editorial via-editorial/20 to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 p-5 text-editorial-foreground">
+                  <div className="absolute inset-x-0 bottom-0 p-4 text-editorial-foreground">
                     <p className="akw-eyebrow text-editorial-foreground/70">{city.region}</p>
-                    <h3 className="mt-1 font-display text-2xl font-semibold">{city.name}</h3>
-                    <p className="mt-1 text-sm text-editorial-foreground/80">{city.tagline}</p>
+                    <h3 className="mt-1 font-display text-xl font-semibold">{city.name}</h3>
+                    <p className="mt-0.5 text-xs text-editorial-foreground/80 line-clamp-1">{city.tagline}</p>
                   </div>
                 </div>
               </Link>
@@ -171,20 +170,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* PROMESSE */}
-      <section className="border-t border-border bg-background py-16 sm:py-20">
+      {/* PROMESSE — compact */}
+      <section className="border-t border-border bg-background py-10 sm:py-14">
         <div className="akw-container max-w-3xl text-center">
-          <Sparkles className="mx-auto h-6 w-6 text-accent" />
-          <h2 className="mt-4 font-display text-3xl font-semibold text-balance sm:text-4xl">
+          <Sparkles className="mx-auto h-5 w-5 text-accent" />
+          <h2 className="mt-3 font-display text-2xl font-semibold text-balance sm:text-3xl">
             Découvrir la Côte d'Ivoire facilement, élégamment et en toute confiance.
           </h2>
-          <p className="mt-4 text-muted-foreground text-pretty">
-            Pas un annuaire. Une équipe sur le terrain, des fiches courtes et utiles, des contacts
-            directs, une cartographie qui ne vous trahit pas.
-          </p>
           <Link
             to="/explorer"
-            className="mt-8 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+            className="mt-5 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
           >
             Commencer à explorer
             <ArrowRight className="h-4 w-4" />
