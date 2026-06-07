@@ -17,12 +17,7 @@ import { useFavorites } from "@/modules/favorites/application/useFavorites";
 import { LeadRequestForm } from "@/modules/leads/ui/LeadRequestForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CalendarCheck } from "lucide-react";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 export default function PlaceDetailPage() {
@@ -144,54 +139,50 @@ export default function PlaceDetailPage() {
               </ul>
             </section>
 
-            {/* DESCRIPTION — clamp + show more via accordion below */}
-            <section>
-              <p className="akw-eyebrow mb-3">L'adresse</p>
-              <p className="akw-prose text-pretty line-clamp-3">{place.description}</p>
-            </section>
-
-            {/* DETAILS ACCORDION */}
-            <Accordion type="multiple" defaultValue={["story"]} className="w-full">
+            {/* DETAILS — Tabs compacts (densité ↑, scroll ↓) */}
+            <Tabs defaultValue="about" className="w-full">
+              <TabsList className="h-9 w-full justify-start gap-1 overflow-x-auto bg-muted/60 p-1">
+                <TabsTrigger value="about" className="h-7 px-3 text-xs">L'adresse</TabsTrigger>
+                {place.story && <TabsTrigger value="story" className="h-7 px-3 text-xs">Histoire</TabsTrigger>}
+                <TabsTrigger value="services" className="h-7 px-3 text-xs">Services</TabsTrigger>
+                <TabsTrigger value="reco" className="h-7 px-3 text-xs">Pour qui & quand</TabsTrigger>
+                {place.practicalTips && place.practicalTips.length > 0 && (
+                  <TabsTrigger value="tips" className="h-7 px-3 text-xs">À savoir</TabsTrigger>
+                )}
+              </TabsList>
+              <TabsContent value="about" className="mt-3">
+                <p className="akw-prose text-pretty">{place.description}</p>
+              </TabsContent>
               {place.story && (
-                <AccordionItem value="story">
-                  <AccordionTrigger className="font-display text-lg">Histoire & contexte</AccordionTrigger>
-                  <AccordionContent className="akw-prose text-pretty">{place.story}</AccordionContent>
-                </AccordionItem>
+                <TabsContent value="story" className="mt-3">
+                  <p className="akw-prose text-pretty">{place.story}</p>
+                </TabsContent>
               )}
-              <AccordionItem value="services">
-                <AccordionTrigger className="font-display text-lg">Services & équipements</AccordionTrigger>
-                <AccordionContent>
-                  <div className="flex flex-wrap gap-2">
-                    {place.services.map((s) => (
-                      <span key={s} className="akw-chip">{s}</span>
-                    ))}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="recommendations">
-                <AccordionTrigger className="font-display text-lg">Pour qui & quand</AccordionTrigger>
-                <AccordionContent className="space-y-3 text-sm">
-                  <p><strong className="text-foreground">Recommandé pour : </strong>{place.bestFor.join(" · ")}</p>
-                  {place.bestTime && <p><strong className="text-foreground">Meilleur moment : </strong>{place.bestTime}</p>}
-                  {place.averageDuration && <p><strong className="text-foreground">Durée moyenne : </strong>{place.averageDuration}</p>}
-                </AccordionContent>
-              </AccordionItem>
+              <TabsContent value="services" className="mt-3">
+                <div className="flex flex-wrap gap-2">
+                  {place.services.map((s) => (
+                    <span key={s} className="akw-chip">{s}</span>
+                  ))}
+                </div>
+              </TabsContent>
+              <TabsContent value="reco" className="mt-3 space-y-2 text-sm">
+                <p><strong className="text-foreground">Recommandé pour : </strong>{place.bestFor.join(" · ")}</p>
+                {place.bestTime && <p><strong className="text-foreground">Meilleur moment : </strong>{place.bestTime}</p>}
+                {place.averageDuration && <p><strong className="text-foreground">Durée moyenne : </strong>{place.averageDuration}</p>}
+              </TabsContent>
               {place.practicalTips && place.practicalTips.length > 0 && (
-                <AccordionItem value="tips">
-                  <AccordionTrigger className="font-display text-lg">À savoir</AccordionTrigger>
-                  <AccordionContent>
-                    <ul className="space-y-2 text-sm">
-                      {place.practicalTips.map((t, i) => (
-                        <li key={i} className="flex gap-2">
-                          <span className="text-accent">·</span>
-                          {t}
-                        </li>
-                      ))}
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
+                <TabsContent value="tips" className="mt-3">
+                  <ul className="space-y-2 text-sm">
+                    {place.practicalTips.map((t, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="text-accent">·</span>
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
+                </TabsContent>
               )}
-            </Accordion>
+            </Tabs>
 
             {/* À PROXIMITÉ */}
             {nearby.length > 0 && (
