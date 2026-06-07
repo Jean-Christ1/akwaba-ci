@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
 export default function ProfilePage() {
@@ -98,112 +99,129 @@ export default function ProfilePage() {
         </div>
       </section>
 
-      <section className="akw-container py-10 grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="space-y-6">
-          {(isPartner || isModerator) && (
-            <Link to="/admin" className="akw-card-hover flex items-center gap-4 px-5 py-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-soft text-accent-foreground">
-                <ShieldCheck className="h-4 w-4" />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium">Espace partenaire / back-office</p>
-                <p className="text-xs text-muted-foreground">Gérer mes fiches, demandes et messages</p>
-              </div>
-              <span className="text-primary text-sm">→</span>
-            </Link>
-          )}
-
-          {!isPartner && (
-            <Link to="/partner/signup" className="akw-card-hover flex items-center gap-4 px-5 py-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-soft text-primary">
-                <Store className="h-4 w-4" />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium">Devenir partenaire</p>
-                <p className="text-xs text-muted-foreground">Inscrire mon établissement sur Akwaba</p>
-              </div>
-              <span className="text-primary text-sm">→</span>
-            </Link>
-          )}
-
-          <Card className="p-5 space-y-4">
-            <div className="flex items-center gap-2"><UserIcon className="h-4 w-4 text-primary" /><h2 className="font-medium">Mon compte</h2></div>
-            <div className="space-y-1.5"><Label>Nom d'affichage</Label><Input value={profile.display_name ?? ""} onChange={(e) => setProfile({ ...profile, display_name: e.target.value })} /></div>
-            <div className="space-y-1.5"><Label>Email</Label><Input value={user.email ?? ""} disabled /></div>
-            <div className="space-y-1.5"><Label>Téléphone</Label><Input value={profile.phone ?? ""} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} /></div>
-            <Button onClick={saveProfile} disabled={saving}><Save className="h-4 w-4" /> {saving ? "…" : "Enregistrer"}</Button>
-          </Card>
-
-          <Card className="p-5 space-y-4">
-            <div className="flex items-center gap-2"><KeyRound className="h-4 w-4 text-primary" /><h2 className="font-medium">Sécurité</h2></div>
-            <div className="space-y-1.5"><Label>Nouveau mot de passe</Label><Input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} /></div>
-            <Button variant="outline" onClick={updatePassword}>Mettre à jour le mot de passe</Button>
-          </Card>
-
-          <div className="space-y-3">
-            <p className="akw-eyebrow flex items-center gap-2"><Inbox className="h-3.5 w-3.5" /> Mes demandes</p>
-            {leads.length === 0 ? (
-              <p className="text-sm text-muted-foreground akw-card p-5">Aucune demande pour le moment.</p>
-            ) : (
-              <div className="space-y-2">
-                {leads.map((l) => (
-                  <div key={l.id} className="akw-card p-4 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-medium truncate">{l.places?.name ?? "Demande générale"}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(l.created_at).toLocaleDateString("fr-FR")} · {l.kind}</p>
-                    </div>
-                    <span className="text-xs px-2 py-1 rounded-full bg-primary-soft text-primary font-medium">{l.status}</span>
-                  </div>
-                ))}
-              </div>
+      <section className="akw-container py-6 grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="space-y-4">
+          {/* Raccourcis rapides */}
+          <div className="grid gap-2 sm:grid-cols-2">
+            {(isPartner || isModerator) && (
+              <Link to="/admin" className="akw-card-hover flex items-center gap-3 px-4 py-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-soft text-accent-foreground">
+                  <ShieldCheck className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">Back-office</p>
+                  <p className="text-[11px] text-muted-foreground truncate">Fiches, demandes, messages</p>
+                </div>
+                <span className="text-primary text-sm">→</span>
+              </Link>
+            )}
+            {!isPartner && (
+              <Link to="/partner/signup" className="akw-card-hover flex items-center gap-3 px-4 py-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-soft text-primary">
+                  <Store className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">Devenir partenaire</p>
+                  <p className="text-[11px] text-muted-foreground truncate">Inscrire mon établissement</p>
+                </div>
+                <span className="text-primary text-sm">→</span>
+              </Link>
             )}
           </div>
 
-          {(isPartner || isAdmin) && myPlaces.length > 0 && (
-            <div className="space-y-3">
-              <p className="akw-eyebrow flex items-center gap-2"><ShieldCheck className="h-3.5 w-3.5" /> Historique de modération</p>
-              <div className="space-y-2">
-                {myPlaces.map((p) => {
-                  const events = eventsByPlace[p.id] ?? [];
-                  const last = events[0];
-                  const open = openPlaceId === p.id;
-                  return (
-                    <div key={p.id} className="akw-card p-4">
-                      <button
-                        onClick={() => setOpenPlaceId(open ? null : p.id)}
-                        className="w-full flex items-center justify-between gap-3 text-left">
-                        <div className="min-w-0">
-                          <p className="font-medium truncate">{p.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {p.city} · statut : <span className="font-medium">{p.status}</span>
-                            {last && <> · dernier événement : {last.action} ({new Date(last.created_at).toLocaleDateString("fr-FR")})</>}
-                          </p>
-                        </div>
-                        <span className="text-xs text-primary">{open ? "Masquer" : `Voir (${events.length})`}</span>
-                      </button>
-                      {open && (
-                        <div className="mt-3 space-y-2 border-t pt-3">
-                          {events.length === 0 && <p className="text-xs text-muted-foreground">Aucun événement de modération.</p>}
-                          {events.map((e) => (
-                            <div key={e.id} className="rounded-md bg-muted/40 p-2">
-                              <div className="flex items-center justify-between gap-2">
-                                <Badge variant={e.action === "approved" ? "default" : e.action === "rejected" ? "destructive" : "secondary"}>
-                                  {e.action}
-                                </Badge>
-                                <span className="text-[11px] text-muted-foreground">{new Date(e.created_at).toLocaleString("fr-FR")}</span>
-                              </div>
-                              {e.note && <p className="text-xs mt-2 whitespace-pre-wrap">{e.note}</p>}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+          {/* Tabs compacts : densité ↑, scroll ↓ */}
+          <Tabs defaultValue="account" className="w-full">
+            <TabsList className="h-9 w-full justify-start gap-1 overflow-x-auto bg-muted/60 p-1">
+              <TabsTrigger value="account" className="h-7 px-3 text-xs"><UserIcon className="h-3.5 w-3.5 mr-1" /> Compte</TabsTrigger>
+              <TabsTrigger value="security" className="h-7 px-3 text-xs"><KeyRound className="h-3.5 w-3.5 mr-1" /> Sécurité</TabsTrigger>
+              <TabsTrigger value="leads" className="h-7 px-3 text-xs"><Inbox className="h-3.5 w-3.5 mr-1" /> Demandes {leads.length > 0 && <span className="ml-1 text-[10px] text-muted-foreground">({leads.length})</span>}</TabsTrigger>
+              {(isPartner || isAdmin) && myPlaces.length > 0 && (
+                <TabsTrigger value="moderation" className="h-7 px-3 text-xs"><ShieldCheck className="h-3.5 w-3.5 mr-1" /> Modération</TabsTrigger>
+              )}
+            </TabsList>
+
+            <TabsContent value="account" className="mt-3">
+              <Card className="p-5 space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5"><Label>Nom d'affichage</Label><Input value={profile.display_name ?? ""} onChange={(e) => setProfile({ ...profile, display_name: e.target.value })} /></div>
+                  <div className="space-y-1.5"><Label>Email</Label><Input value={user.email ?? ""} disabled /></div>
+                  <div className="space-y-1.5 sm:col-span-2"><Label>Téléphone</Label><Input value={profile.phone ?? ""} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} /></div>
+                </div>
+                <Button onClick={saveProfile} disabled={saving} className="w-fit"><Save className="h-4 w-4" /> {saving ? "…" : "Enregistrer"}</Button>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="security" className="mt-3">
+              <Card className="p-5 space-y-3">
+                <div className="space-y-1.5"><Label>Nouveau mot de passe</Label><Input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} /></div>
+                <Button variant="outline" onClick={updatePassword} className="w-fit">Mettre à jour le mot de passe</Button>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="leads" className="mt-3">
+              {leads.length === 0 ? (
+                <p className="text-sm text-muted-foreground akw-card p-5">Aucune demande pour le moment.</p>
+              ) : (
+                <div className="space-y-2">
+                  {leads.map((l) => (
+                    <div key={l.id} className="akw-card p-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{l.places?.name ?? "Demande générale"}</p>
+                        <p className="text-[11px] text-muted-foreground">{new Date(l.created_at).toLocaleDateString("fr-FR")} · {l.kind}</p>
+                      </div>
+                      <span className="text-[11px] px-2 py-1 rounded-full bg-primary-soft text-primary font-medium">{l.status}</span>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {(isPartner || isAdmin) && myPlaces.length > 0 && (
+              <TabsContent value="moderation" className="mt-3">
+                <div className="space-y-2">
+                  {myPlaces.map((p) => {
+                    const events = eventsByPlace[p.id] ?? [];
+                    const last = events[0];
+                    const open = openPlaceId === p.id;
+                    return (
+                      <div key={p.id} className="akw-card p-3">
+                        <button
+                          onClick={() => setOpenPlaceId(open ? null : p.id)}
+                          className="w-full flex items-center justify-between gap-3 text-left">
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm truncate">{p.name}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {p.city} · {p.status}
+                              {last && <> · {last.action} ({new Date(last.created_at).toLocaleDateString("fr-FR")})</>}
+                            </p>
+                          </div>
+                          <span className="text-[11px] text-primary">{open ? "Masquer" : `Voir (${events.length})`}</span>
+                        </button>
+                        {open && (
+                          <div className="mt-3 space-y-2 border-t pt-3">
+                            {events.length === 0 && <p className="text-xs text-muted-foreground">Aucun événement de modération.</p>}
+                            {events.map((e) => (
+                              <div key={e.id} className="rounded-md bg-muted/40 p-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <Badge variant={e.action === "approved" ? "default" : e.action === "rejected" ? "destructive" : "secondary"}>
+                                    {e.action}
+                                  </Badge>
+                                  <span className="text-[11px] text-muted-foreground">{new Date(e.created_at).toLocaleString("fr-FR")}</span>
+                                </div>
+                                {e.note && <p className="text-xs mt-2 whitespace-pre-wrap">{e.note}</p>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </TabsContent>
+            )}
+          </Tabs>
         </div>
+
 
         <aside className="akw-card p-6 h-fit">
           <Logo />
