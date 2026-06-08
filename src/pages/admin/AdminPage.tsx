@@ -45,6 +45,7 @@ export default function AdminPage() {
   const [modBusy, setModBusy] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
   const [historyPlace, setHistoryPlace] = useState<any>(null);
+  const [modPreviewId, setModPreviewId] = useState<string | null>(null);
   // Moderation queue filters
   const [modSearch, setModSearch] = useState("");
   const [modCity, setModCity] = useState("all");
@@ -545,29 +546,79 @@ export default function AdminPage() {
                   </Card>
                 </Collapsible>
 
-                {paged.map((p) => (
-                  <Card key={p.id} className="p-4 flex items-center justify-between gap-3 flex-wrap">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium truncate">{p.name}</p>
-                        <StatusBadge status={p.status} />
-                      </div>
-                      <p className="text-xs text-muted-foreground">{p.city} · {p.type} · {p.address}</p>
-                      <p className="text-xs mt-1 line-clamp-2">{p.description}</p>
-                    </div>
-                    <div className="flex gap-2 shrink-0 flex-wrap">
-                      <Link to={`/admin/places/${p.id}`}><Button size="sm" variant="ghost"><Pencil className="h-4 w-4" /></Button></Link>
-                      <Button size="sm" variant="ghost" onClick={() => openHistory(p)}>Historique</Button>
-                      <Button size="sm" variant="outline" onClick={() => { setModTarget({ place: p, action: "rejected" }); setModNote(""); }}>
-                        <X className="h-4 w-4" /> Refuser
-                      </Button>
-                      <Button size="sm" onClick={() => { setModTarget({ place: p, action: "approved" }); setModNote(""); }}>
-                        <Check className="h-4 w-4" /> Valider
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
-                {sorted.length === 0 && <p className="text-center text-muted-foreground py-8">Aucune fiche ne correspond.</p>}
+                {/* Master-detail desktop : liste à gauche, preview à droite (no extra scroll) */}
+                <div className="grid gap-3 lg:grid-cols-[1fr_360px]">
+                  <div className="space-y-2 min-w-0">
+                    {paged.map((p) => {
+                      const active = modPreviewId === p.id;
+                      return (
+                        <Card
+                          key={p.id}
+                          onClick={() => setModPreviewId(p.id)}
+                          className={`p-3 flex items-center justify-between gap-3 flex-wrap cursor-pointer transition-colors ${
+                            active ? "border-primary ring-1 ring-primary/30 bg-primary-soft/40" : "hover:border-primary/30"
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium truncate text-sm">{p.name}</p>
+                              <StatusBadge status={p.status} />
+                            </div>
+                            <p className="text-[11px] text-muted-foreground truncate">{p.city} · {p.type} · {p.address}</p>
+                          </div>
+                          <div className="flex gap-1.5 shrink-0 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                            <Link to={`/admin/places/${p.id}`}><Button size="sm" variant="ghost" className="h-8 w-8 p-0"><Pencil className="h-4 w-4" /></Button></Link>
+                            <Button size="sm" variant="outline" className="h-8" onClick={() => { setModTarget({ place: p, action: "rejected" }); setModNote(""); }}>
+                              <X className="h-4 w-4" />
+                            </Button>
+                            <Button size="sm" className="h-8" onClick={() => { setModTarget({ place: p, action: "approved" }); setModNote(""); }}>
+                              <Check className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                    {sorted.length === 0 && <p className="text-center text-muted-foreground py-8">Aucune fiche ne correspond.</p>}
+                  </div>
+
+                  {/* Panneau preview sticky desktop */}
+                  <aside className="hidden lg:block">
+                    {(() => {
+                      const sel = paged.find((p) => p.id === modPreviewId) ?? sorted.find((p) => p.id === modPreviewId);
+                      if (!sel) {
+                        return (
+                          <Card className="p-6 text-center text-xs text-muted-foreground sticky top-20">
+                            Sélectionnez une fiche pour prévisualiser ses détails ici.
+                          </Card>
+                        );
+                      }
+                      return (
+                        <Card className="p-4 sticky top-20 space-y-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-display text-lg leading-tight truncate">{sel.name}</p>
+                              <p className="text-[11px] text-muted-foreground">{sel.city} · {sel.type}</p>
+                            </div>
+                            <StatusBadge status={sel.status} />
+                          </div>
+                          {sel.image_url && (
+                            <img src={sel.image_url} alt={sel.name} className="aspect-video w-full rounded-md object-cover" loading="lazy" />
+                          )}
+                          <p className="text-xs text-muted-foreground line-clamp-6">{sel.description}</p>
+                          <div className="flex gap-2 pt-1">
+                            <Button size="sm" variant="outline" className="flex-1" onClick={() => openHistory(sel)}>Historique</Button>
+                            <Button size="sm" variant="outline" className="flex-1" onClick={() => { setModTarget({ place: sel, action: "rejected" }); setModNote(""); }}>
+                              <X className="h-4 w-4" /> Refuser
+                            </Button>
+                            <Button size="sm" className="flex-1" onClick={() => { setModTarget({ place: sel, action: "approved" }); setModNote(""); }}>
+                              <Check className="h-4 w-4" /> Valider
+                            </Button>
+                          </div>
+                        </Card>
+                      );
+                    })()}
+                  </aside>
+                </div>
                 {totalPages > 1 && (
                   <div className="flex items-center justify-center gap-2 pt-2">
                     <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setModPage(page - 1)}>← Précédent</Button>
