@@ -5,6 +5,7 @@ import { CITIES, ITINERARIES, PLACES } from "@/modules/places/infrastructure/dat
 import { PlaceCard } from "@/modules/places/ui/PlaceCard";
 import { ItineraryCard } from "@/modules/places/ui/ItineraryCard";
 import { CategoryChip, SectionHeader } from "@/shared/ui/sections";
+import { HorizontalRail } from "@/shared/ui/HorizontalRail";
 
 const CATEGORIES = [
   { to: "/explorer?type=lodging", label: "Hébergements", emoji: "🏨" },
@@ -91,11 +92,11 @@ export default function HomePage() {
             ctaLabel="Tout voir"
             ctaTo="/explorer"
           />
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <HorizontalRail desktopCols={4}>
             {featured.map((p) => (
               <PlaceCard key={p.id} place={p} />
             ))}
-          </div>
+          </HorizontalRail>
         </div>
       </section>
 
@@ -109,11 +110,11 @@ export default function HomePage() {
             ctaLabel="Voir tous les restos"
             ctaTo="/explorer?type=restaurant"
           />
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <HorizontalRail desktopCols={4}>
             {tonight.map((p) => (
               <PlaceCard key={p.id} place={p} />
             ))}
-          </div>
+          </HorizontalRail>
         </div>
       </section>
 
