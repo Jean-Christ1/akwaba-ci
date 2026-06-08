@@ -19,11 +19,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { CalendarCheck } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { useTabState } from "@/shared/hooks/useTabState";
 
 export default function PlaceDetailPage() {
   const { slug } = useParams();
   const place = slug ? getPlaceBySlug(slug) : undefined;
   const { has, toggle } = useFavorites();
+  const [tab, setTab] = useTabState(`place:${slug ?? "unknown"}`, "about");
 
   if (!place) {
     return (
