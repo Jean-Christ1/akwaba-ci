@@ -12,18 +12,18 @@ export function ItinerariesPage() {
   return (
     <div className="bg-background">
       <section className="border-b border-border/60 bg-card">
-        <div className="akw-container py-8">
-          <p className="akw-eyebrow mb-2">Parcours</p>
-          <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+        <div className="akw-container py-5 sm:py-6">
+          <p className="akw-eyebrow mb-1">Parcours</p>
+          <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
             Des itinéraires prêts à vivre
           </h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Pensés par notre équipe en Côte d'Ivoire, équilibrés en temps, distance et budget.
           </p>
         </div>
       </section>
-      <section className="py-10">
-        <div className="akw-container grid grid-cols-1 gap-6 sm:grid-cols-2">
+      <section className="py-6 sm:py-8">
+        <div className="akw-container grid grid-cols-1 gap-5 sm:grid-cols-2">
           {ITINERARIES.map((it) => (
             <ItineraryCard key={it.id} itinerary={it} />
           ))}

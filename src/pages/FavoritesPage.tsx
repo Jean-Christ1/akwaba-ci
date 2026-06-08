@@ -11,18 +11,18 @@ export default function FavoritesPage() {
   return (
     <div className="bg-background">
       <section className="border-b border-border/60 bg-card">
-        <div className="akw-container py-8">
-          <p className="akw-eyebrow mb-2">Vos favoris</p>
-          <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+        <div className="akw-container py-5 sm:py-6">
+          <p className="akw-eyebrow mb-1">Vos favoris</p>
+          <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
             Votre carnet d'adresses
           </h1>
-          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
             Tous les lieux que vous avez sauvegardés. Construisez votre programme à partir d'ici.
           </p>
         </div>
       </section>
 
-      <section className="py-10">
+      <section className="py-6 sm:py-8">
         <div className="akw-container">
           {places.length === 0 ? (
             <div className="akw-card mx-auto flex max-w-md flex-col items-center gap-3 px-6 py-16 text-center">
