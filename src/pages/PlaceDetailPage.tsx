@@ -19,11 +19,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { CalendarCheck } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { useTabState } from "@/shared/hooks/useTabState";
 
 export default function PlaceDetailPage() {
   const { slug } = useParams();
   const place = slug ? getPlaceBySlug(slug) : undefined;
   const { has, toggle } = useFavorites();
+  const [tab, setTab] = useTabState(`place:${slug ?? "unknown"}`, "about");
 
   if (!place) {
     return (
@@ -140,8 +142,9 @@ export default function PlaceDetailPage() {
             </section>
 
             {/* DETAILS — Tabs compacts (densité ↑, scroll ↓) */}
-            <Tabs defaultValue="about" className="w-full">
-              <TabsList className="h-9 w-full justify-start gap-1 overflow-x-auto bg-muted/60 p-1">
+            <Tabs value={tab} onValueChange={setTab} className="w-full">
+              <TabsList aria-label="Sections de la fiche" className="h-9 w-full justify-start gap-1 overflow-x-auto bg-muted/60 p-1 transition-colors">
+
                 <TabsTrigger value="about" className="h-7 px-3 text-xs">L'adresse</TabsTrigger>
                 {place.story && <TabsTrigger value="story" className="h-7 px-3 text-xs">Histoire</TabsTrigger>}
                 <TabsTrigger value="services" className="h-7 px-3 text-xs">Services</TabsTrigger>

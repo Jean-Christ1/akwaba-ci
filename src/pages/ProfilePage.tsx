@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useTabState } from "@/shared/hooks/useTabState";
 import { toast } from "sonner";
 
 export default function ProfilePage() {
@@ -20,6 +21,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [myPlaces, setMyPlaces] = useState<any[]>([]);
   const [eventsByPlace, setEventsByPlace] = useState<Record<string, any[]>>({});
+  const [tab, setTab] = useTabState("profile", "account");
   const [openPlaceId, setOpenPlaceId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -130,8 +132,9 @@ export default function ProfilePage() {
           </div>
 
           {/* Tabs compacts : densité ↑, scroll ↓ */}
-          <Tabs defaultValue="account" className="w-full">
-            <TabsList className="h-9 w-full justify-start gap-1 overflow-x-auto bg-muted/60 p-1">
+          <Tabs value={tab} onValueChange={setTab} className="w-full">
+            <TabsList aria-label="Sections du profil" className="h-9 w-full justify-start gap-1 overflow-x-auto bg-muted/60 p-1 transition-colors">
+
               <TabsTrigger value="account" className="h-7 px-3 text-xs"><UserIcon className="h-3.5 w-3.5 mr-1" /> Compte</TabsTrigger>
               <TabsTrigger value="security" className="h-7 px-3 text-xs"><KeyRound className="h-3.5 w-3.5 mr-1" /> Sécurité</TabsTrigger>
               <TabsTrigger value="leads" className="h-7 px-3 text-xs"><Inbox className="h-3.5 w-3.5 mr-1" /> Demandes {leads.length > 0 && <span className="ml-1 text-[10px] text-muted-foreground">({leads.length})</span>}</TabsTrigger>
