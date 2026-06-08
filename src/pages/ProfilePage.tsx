@@ -21,7 +21,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [myPlaces, setMyPlaces] = useState<any[]>([]);
   const [eventsByPlace, setEventsByPlace] = useState<Record<string, any[]>>({});
-  const [openPlaceId, setOpenPlaceId] = useState<string | null>(null);
+  const [tab, setTab] = useTabState("profile", "account");
 
   useEffect(() => {
     if (!user) return;
