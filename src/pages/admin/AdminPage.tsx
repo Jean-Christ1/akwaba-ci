@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { RowSkeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -358,6 +359,9 @@ export default function AdminPage() {
                   <TableHead>Statut</TableHead><TableHead></TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
+                  {loadBusy && places.length === 0 && (
+                    <TableRow><TableCell colSpan={5}><RowSkeleton lines={3} /></TableCell></TableRow>
+                  )}
                   {places.map((p) => (
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">{p.name}</TableCell>
@@ -369,7 +373,7 @@ export default function AdminPage() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {places.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Aucune fiche.</TableCell></TableRow>}
+                  {!loadBusy && places.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Aucune fiche.</TableCell></TableRow>}
                 </TableBody>
               </Table>
             </Card>
