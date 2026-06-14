@@ -163,11 +163,11 @@ export default function HomePage() {
                     <p className="akw-eyebrow text-editorial-foreground/70">{city.region}</p>
                     <h3 className="mt-1 font-display text-xl font-semibold">{city.name}</h3>
                     <p className="mt-0.5 text-xs text-editorial-foreground/80 line-clamp-1">{city.tagline}</p>
-          </HorizontalRail>
+                  </div>
                 </div>
               </Link>
             ))}
-          </div>
+          </HorizontalRail>
         </div>
       </section>
 
