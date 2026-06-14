@@ -107,3 +107,5 @@ function PlaceCardBase({ place, variant = "default", className }: PlaceCardProps
     </Link>
   );
 }
+
+export const PlaceCard = memo(PlaceCardBase);
