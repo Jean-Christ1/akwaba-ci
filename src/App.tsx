@@ -22,7 +22,10 @@ import BootstrapAdminPage from "./pages/admin/BootstrapAdminPage";
 import PartnerSignupPage from "./pages/PartnerSignupPage";
 import NotFound from "./pages/NotFound";
 
+import { initTabAnalytics } from "@/shared/analytics/tabAnalytics";
+
 const queryClient = new QueryClient();
+initTabAnalytics();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

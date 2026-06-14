@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "react-router-dom";
 import { Heart, MapPin, Star } from "lucide-react";
 import type { Place } from "@/modules/places/domain/types";
@@ -21,7 +22,7 @@ interface PlaceCardProps {
   className?: string;
 }
 
-export function PlaceCard({ place, variant = "default", className }: PlaceCardProps) {
+function PlaceCardBase({ place, variant = "default", className }: PlaceCardProps) {
   const { has, toggle } = useFavorites();
   const fav = has(place.id);
 
@@ -106,3 +107,5 @@ export function PlaceCard({ place, variant = "default", className }: PlaceCardPr
     </Link>
   );
 }
+
+export const PlaceCard = memo(PlaceCardBase);

@@ -128,11 +128,11 @@ export default function HomePage() {
             ctaLabel="Tous les parcours"
             ctaTo="/parcours"
           />
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <HorizontalRail desktopCols={2}>
             {ITINERARIES.slice(0, 2).map((it) => (
               <ItineraryCard key={it.id} itinerary={it} />
             ))}
-          </div>
+          </HorizontalRail>
         </div>
       </section>
 
@@ -144,7 +144,7 @@ export default function HomePage() {
             title="Où voulez-vous aller ?"
             description="Phase 1 : nous couvrons quatre villes en profondeur. D'autres suivront."
           />
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <HorizontalRail desktopCols={4}>
             {CITIES.map((city) => (
               <Link
                 key={city.slug}
@@ -167,7 +167,7 @@ export default function HomePage() {
                 </div>
               </Link>
             ))}
-          </div>
+          </HorizontalRail>
         </div>
       </section>
 
