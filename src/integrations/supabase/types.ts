@@ -14,6 +14,213 @@ export type Database = {
   }
   public: {
     Tables: {
+      errand_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          errand_id: string
+          id: string
+          note: string | null
+          status: Database["public"]["Enums"]["errand_status"]
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          errand_id: string
+          id?: string
+          note?: string | null
+          status: Database["public"]["Enums"]["errand_status"]
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          errand_id?: string
+          id?: string
+          note?: string | null
+          status?: Database["public"]["Enums"]["errand_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "errand_events_errand_id_fkey"
+            columns: ["errand_id"]
+            isOneToOne: false
+            referencedRelation: "errands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      errand_messages: {
+        Row: {
+          attachment_url: string | null
+          body: string
+          created_at: string
+          errand_id: string
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          attachment_url?: string | null
+          body: string
+          created_at?: string
+          errand_id: string
+          id?: string
+          sender_id: string
+        }
+        Update: {
+          attachment_url?: string | null
+          body?: string
+          created_at?: string
+          errand_id?: string
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "errand_messages_errand_id_fkey"
+            columns: ["errand_id"]
+            isOneToOne: false
+            referencedRelation: "errands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      errand_offers: {
+        Row: {
+          created_at: string
+          errand_id: string
+          eta_minutes: number
+          id: string
+          message: string | null
+          price: number
+          runner_id: string
+          status: Database["public"]["Enums"]["offer_status"]
+        }
+        Insert: {
+          created_at?: string
+          errand_id: string
+          eta_minutes?: number
+          id?: string
+          message?: string | null
+          price?: number
+          runner_id: string
+          status?: Database["public"]["Enums"]["offer_status"]
+        }
+        Update: {
+          created_at?: string
+          errand_id?: string
+          eta_minutes?: number
+          id?: string
+          message?: string | null
+          price?: number
+          runner_id?: string
+          status?: Database["public"]["Enums"]["offer_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "errand_offers_errand_id_fkey"
+            columns: ["errand_id"]
+            isOneToOne: false
+            referencedRelation: "errands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      errands: {
+        Row: {
+          budget_estimate: number
+          category: Database["public"]["Enums"]["errand_category"]
+          city: string
+          commission_amount: number
+          commission_rate: number
+          created_at: string
+          customer_id: string
+          delivery_address: string
+          delivery_fee: number
+          id: string
+          items: Json
+          items_total: number
+          lat: number | null
+          lng: number | null
+          notes: string | null
+          payment_method: Database["public"]["Enums"]["pay_method"]
+          payment_status: Database["public"]["Enums"]["pay_status"]
+          preferred_contact: string
+          rating: number | null
+          receipt_url: string | null
+          review: string | null
+          runner_id: string | null
+          scheduled_for: string | null
+          service_fee: number
+          status: Database["public"]["Enums"]["errand_status"]
+          title: string
+          total_amount: number
+          updated_at: string
+          zone: string | null
+        }
+        Insert: {
+          budget_estimate?: number
+          category?: Database["public"]["Enums"]["errand_category"]
+          city: string
+          commission_amount?: number
+          commission_rate?: number
+          created_at?: string
+          customer_id: string
+          delivery_address: string
+          delivery_fee?: number
+          id?: string
+          items?: Json
+          items_total?: number
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          payment_method?: Database["public"]["Enums"]["pay_method"]
+          payment_status?: Database["public"]["Enums"]["pay_status"]
+          preferred_contact?: string
+          rating?: number | null
+          receipt_url?: string | null
+          review?: string | null
+          runner_id?: string | null
+          scheduled_for?: string | null
+          service_fee?: number
+          status?: Database["public"]["Enums"]["errand_status"]
+          title: string
+          total_amount?: number
+          updated_at?: string
+          zone?: string | null
+        }
+        Update: {
+          budget_estimate?: number
+          category?: Database["public"]["Enums"]["errand_category"]
+          city?: string
+          commission_amount?: number
+          commission_rate?: number
+          created_at?: string
+          customer_id?: string
+          delivery_address?: string
+          delivery_fee?: number
+          id?: string
+          items?: Json
+          items_total?: number
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          payment_method?: Database["public"]["Enums"]["pay_method"]
+          payment_status?: Database["public"]["Enums"]["pay_status"]
+          preferred_contact?: string
+          rating?: number | null
+          receipt_url?: string | null
+          review?: string | null
+          runner_id?: string | null
+          scheduled_for?: string | null
+          service_fee?: number
+          status?: Database["public"]["Enums"]["errand_status"]
+          title?: string
+          total_amount?: number
+          updated_at?: string
+          zone?: string | null
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           budget: string | null
@@ -247,6 +454,66 @@ export type Database = {
         }
         Relationships: []
       }
+      runner_profiles: {
+        Row: {
+          bio: string | null
+          city: string
+          created_at: string
+          full_name: string
+          id: string
+          id_doc_url: string | null
+          is_online: boolean
+          jobs_completed: number
+          phone: string
+          photo_url: string | null
+          rating: number
+          status: Database["public"]["Enums"]["runner_status"]
+          updated_at: string
+          user_id: string
+          vehicle: string
+          whatsapp: string | null
+          zones: Json
+        }
+        Insert: {
+          bio?: string | null
+          city: string
+          created_at?: string
+          full_name: string
+          id?: string
+          id_doc_url?: string | null
+          is_online?: boolean
+          jobs_completed?: number
+          phone: string
+          photo_url?: string | null
+          rating?: number
+          status?: Database["public"]["Enums"]["runner_status"]
+          updated_at?: string
+          user_id: string
+          vehicle?: string
+          whatsapp?: string | null
+          zones?: Json
+        }
+        Update: {
+          bio?: string | null
+          city?: string
+          created_at?: string
+          full_name?: string
+          id?: string
+          id_doc_url?: string | null
+          is_online?: boolean
+          jobs_completed?: number
+          phone?: string
+          photo_url?: string | null
+          rating?: number
+          status?: Database["public"]["Enums"]["runner_status"]
+          updated_at?: string
+          user_id?: string
+          vehicle?: string
+          whatsapp?: string | null
+          zones?: Json
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -280,12 +547,46 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_approved_runner: { Args: { _uid: string }; Returns: boolean }
+      is_errand_participant: {
+        Args: { _errand: string; _uid: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "partner" | "user"
+      errand_category:
+        | "grocery"
+        | "market"
+        | "pharmacy"
+        | "restaurant"
+        | "artisan"
+        | "admin_paperwork"
+        | "gas"
+        | "electronics"
+        | "other"
+      errand_status:
+        | "draft"
+        | "open"
+        | "assigned"
+        | "shopping"
+        | "delivering"
+        | "delivered"
+        | "completed"
+        | "cancelled"
+        | "disputed"
       lead_kind: "lodging" | "restaurant" | "generic"
       lead_status: "new" | "in_review" | "contacted" | "closed"
       moderation_action: "approved" | "rejected" | "pending" | "note"
+      offer_status: "pending" | "accepted" | "rejected" | "withdrawn"
+      pay_method:
+        | "cash"
+        | "wave"
+        | "orange_money"
+        | "mtn_momo"
+        | "moov_money"
+        | "card"
+      pay_status: "pending" | "held" | "paid" | "refunded" | "failed"
       place_status: "draft" | "pending" | "published" | "rejected"
       place_type:
         | "lodging"
@@ -296,6 +597,7 @@ export type Database = {
         | "nightlife"
         | "culture"
         | "shopping"
+      runner_status: "pending" | "approved" | "suspended" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -424,9 +726,41 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "partner", "user"],
+      errand_category: [
+        "grocery",
+        "market",
+        "pharmacy",
+        "restaurant",
+        "artisan",
+        "admin_paperwork",
+        "gas",
+        "electronics",
+        "other",
+      ],
+      errand_status: [
+        "draft",
+        "open",
+        "assigned",
+        "shopping",
+        "delivering",
+        "delivered",
+        "completed",
+        "cancelled",
+        "disputed",
+      ],
       lead_kind: ["lodging", "restaurant", "generic"],
       lead_status: ["new", "in_review", "contacted", "closed"],
       moderation_action: ["approved", "rejected", "pending", "note"],
+      offer_status: ["pending", "accepted", "rejected", "withdrawn"],
+      pay_method: [
+        "cash",
+        "wave",
+        "orange_money",
+        "mtn_momo",
+        "moov_money",
+        "card",
+      ],
+      pay_status: ["pending", "held", "paid", "refunded", "failed"],
       place_status: ["draft", "pending", "published", "rejected"],
       place_type: [
         "lodging",
@@ -438,6 +772,7 @@ export const Constants = {
         "culture",
         "shopping",
       ],
+      runner_status: ["pending", "approved", "suspended", "rejected"],
     },
   },
 } as const
