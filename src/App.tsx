@@ -20,6 +20,13 @@ import AdminPage from "./pages/admin/AdminPage";
 import PlaceEditorPage from "./pages/admin/PlaceEditorPage";
 import BootstrapAdminPage from "./pages/admin/BootstrapAdminPage";
 import PartnerSignupPage from "./pages/PartnerSignupPage";
+import ServicesHubPage from "./pages/services/ServicesHubPage";
+import MyErrandsPage from "./pages/courses/MyErrandsPage";
+import NewErrandPage from "./pages/courses/NewErrandPage";
+import ErrandDetailPage from "./pages/courses/ErrandDetailPage";
+import RunnerSignupPage from "./pages/courses/RunnerSignupPage";
+import RunnerDashboardPage from "./pages/courses/RunnerDashboardPage";
+import ShoppersPage from "./pages/admin/ShoppersPage";
 import NotFound from "./pages/NotFound";
 
 import { initTabAnalytics } from "@/shared/analytics/tabAnalytics";
@@ -47,8 +54,15 @@ const App = () => (
               <Route path="/parcours/:slug" element={<ItineraryDetailPage />} />
               <Route path="/favoris" element={<FavoritesPage />} />
               <Route path="/profil" element={<ProfilePage />} />
+              <Route path="/services" element={<ServicesHubPage />} />
+              <Route path="/courses" element={<MyErrandsPage />} />
+              <Route path="/courses/nouvelle" element={<NewErrandPage />} />
+              <Route path="/courses/devenir-shopper" element={<RunnerSignupPage />} />
+              <Route path="/courses/shopper" element={<RunnerDashboardPage />} />
+              <Route path="/courses/:id" element={<ErrandDetailPage />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/admin/bootstrap" element={<BootstrapAdminPage />} />
+              <Route path="/admin/shoppers" element={<ShoppersPage />} />
               <Route path="/admin/places/:id" element={<PlaceEditorPage />} />
               <Route path="/partner/signup" element={<PartnerSignupPage />} />
             </Route>
