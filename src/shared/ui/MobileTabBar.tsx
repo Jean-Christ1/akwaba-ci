@@ -1,13 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
-import { Compass, Heart, Home, Map, Route, User } from "lucide-react";
+import { Compass, Home, Map, ShoppingBasket, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
   { to: "/", label: "Accueil", icon: Home },
   { to: "/explorer", label: "Explorer", icon: Compass },
   { to: "/carte", label: "Carte", icon: Map },
-  { to: "/parcours", label: "Parcours", icon: Route },
-  { to: "/favoris", label: "Favoris", icon: Heart },
+  { to: "/services", label: "Services", icon: ShoppingBasket },
   { to: "/profil", label: "Profil", icon: User },
 ] as const;
 

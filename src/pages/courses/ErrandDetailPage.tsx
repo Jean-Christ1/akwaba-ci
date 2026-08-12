@@ -1,0 +1,486 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import { Phone, Video, MessageCircle, Send, Loader2, CheckCircle2, Receipt } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  computeInvoice,
+  formatFcfa,
+  PAY_METHODS,
+  STATUS_LABEL,
+  STATUS_STEPS,
+  statusTone,
+  waLink,
+  type ErrandItem,
+  type ErrandStatus,
+} from "@/modules/errands/domain";
+
+interface Errand {
+  id: string;
+  customer_id: string;
+  runner_id: string | null;
+  title: string;
+  category: string;
+  city: string;
+  zone: string | null;
+  delivery_address: string;
+  items: unknown;
+  notes: string | null;
+  budget_estimate: number;
+  preferred_contact: string;
+  scheduled_for: string | null;
+  status: ErrandStatus;
+  items_total: number;
+  service_fee: number;
+  delivery_fee: number;
+  commission_rate: number;
+  commission_amount: number;
+  total_amount: number;
+  payment_method: string;
+  payment_status: string;
+  created_at: string;
+}
+
+interface Offer {
+  id: string;
+  runner_id: string;
+  price: number;
+  eta_minutes: number;
+  message: string | null;
+  status: string;
+}
+
+interface Msg {
+  id: string;
+  sender_id: string;
+  body: string;
+  created_at: string;
+}
+
+interface RunnerCard {
+  user_id: string;
+  full_name: string;
+  phone: string;
+  whatsapp: string | null;
+  city: string;
+  vehicle: string;
+  rating: number;
+  jobs_completed: number;
+}
+
+const NEXT_STATUS: Partial<Record<ErrandStatus, { next: ErrandStatus; label: string }>> = {
+  assigned: { next: "shopping", label: "Je commence les courses" },
+  shopping: { next: "delivering", label: "Je pars en livraison" },
+  delivering: { next: "delivered", label: "Marquer comme livrée" },
+};
+
+export default function ErrandDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const [errand, setErrand] = useState<Errand | null>(null);
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [runners, setRunners] = useState<Record<string, RunnerCard>>({});
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [draft, setDraft] = useState("");
+  const [loading, setLoading] = useState(true);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const [itemsTotal, setItemsTotal] = useState("");
+  const [serviceFee, setServiceFee] = useState("");
+  const [deliveryFee, setDeliveryFee] = useState("");
+
+  const isCustomer = !!user && errand?.customer_id === user.id;
+  const isRunner = !!user && errand?.runner_id === user.id;
+
+  const load = useCallback(async () => {
+    if (!id) return;
+    const { data: e } = await supabase.from("errands").select("*").eq("id", id).maybeSingle();
+    if (!e) {
+      setLoading(false);
+      return;
+    }
+    setErrand(e as Errand);
+    setItemsTotal(String(e.items_total || ""));
+    setServiceFee(String(e.service_fee || ""));
+    setDeliveryFee(String(e.delivery_fee || ""));
+
+    const [{ data: o }, { data: m }] = await Promise.all([
+      supabase.from("errand_offers").select("*").eq("errand_id", id).order("created_at"),
+      supabase.from("errand_messages").select("id,sender_id,body,created_at").eq("errand_id", id).order("created_at"),
+    ]);
+    setOffers((o ?? []) as Offer[]);
+    setMessages((m ?? []) as Msg[]);
+
+    const ids = Array.from(
+      new Set([...(o ?? []).map((x) => x.runner_id), e.runner_id].filter(Boolean) as string[])
+    );
+    if (ids.length) {
+      const { data: rp } = await supabase
+        .from("runner_profiles")
+        .select("user_id,full_name,phone,whatsapp,city,vehicle,rating,jobs_completed")
+        .in("user_id", ids);
+      setRunners(Object.fromEntries((rp ?? []).map((r) => [r.user_id, r as RunnerCard])));
+    }
+    setLoading(false);
+  }, [id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase
+      .channel(`errand-${id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "errand_messages", filter: `errand_id=eq.${id}` },
+        (payload) => setMessages((p) => [...p, payload.new as Msg])
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "errands", filter: `id=eq.${id}` },
+        () => load()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "errand_offers", filter: `errand_id=eq.${id}` },
+        () => load()
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, load]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ block: "nearest" });
+  }, [messages.length]);
+
+  const invoice = useMemo(
+    () =>
+      computeInvoice({
+        itemsTotal: Number(itemsTotal) || 0,
+        serviceFee: Number(serviceFee) || 0,
+        deliveryFee: Number(deliveryFee) || 0,
+        commissionRate: errand?.commission_rate ?? 0.1,
+      }),
+    [itemsTotal, serviceFee, deliveryFee, errand?.commission_rate]
+  );
+
+  const list: ErrandItem[] = Array.isArray(errand?.items) ? (errand!.items as ErrandItem[]) : [];
+  const assignedRunner = errand?.runner_id ? runners[errand.runner_id] : undefined;
+  const videoUrl = `https://meet.jit.si/akwaba-course-${id}`;
+
+  const send = async () => {
+    if (!draft.trim() || !user || !id) return;
+    const body = draft.trim();
+    setDraft("");
+    const { error } = await supabase.from("errand_messages").insert({ errand_id: id, sender_id: user.id, body });
+    if (error) toast.error(error.message);
+  };
+
+  const acceptOffer = async (offer: Offer) => {
+    if (!errand) return;
+    const { error } = await supabase
+      .from("errands")
+      .update({ runner_id: offer.runner_id, status: "assigned", service_fee: offer.price })
+      .eq("id", errand.id);
+    if (error) return toast.error(error.message);
+    await supabase.from("errand_offers").update({ status: "accepted" }).eq("id", offer.id);
+    await supabase
+      .from("errand_offers")
+      .update({ status: "rejected" })
+      .eq("errand_id", errand.id)
+      .neq("id", offer.id);
+    await supabase.from("errand_events").insert({
+      errand_id: errand.id,
+      actor_id: user!.id,
+      status: "assigned",
+      note: "Offre acceptée",
+    });
+    toast.success("Shopper assigné !");
+    load();
+  };
+
+  const advance = async (next: ErrandStatus) => {
+    if (!errand || !user) return;
+    const { error } = await supabase.from("errands").update({ status: next }).eq("id", errand.id);
+    if (error) return toast.error(error.message);
+    await supabase.from("errand_events").insert({ errand_id: errand.id, actor_id: user.id, status: next });
+    load();
+  };
+
+  const saveInvoice = async () => {
+    if (!errand) return;
+    const { error } = await supabase
+      .from("errands")
+      .update({
+        items_total: invoice.items,
+        service_fee: invoice.service,
+        delivery_fee: invoice.delivery,
+        commission_amount: invoice.commission,
+        total_amount: invoice.total,
+      })
+      .eq("id", errand.id);
+    if (error) return toast.error(error.message);
+    toast.success("Facture mise à jour");
+    load();
+  };
+
+  const confirmPayment = async () => {
+    if (!errand || !user) return;
+    const { error } = await supabase
+      .from("errands")
+      .update({ payment_status: "paid", status: "completed" })
+      .eq("id", errand.id);
+    if (error) return toast.error(error.message);
+    await supabase.from("errand_events").insert({
+      errand_id: errand.id,
+      actor_id: user.id,
+      status: "completed",
+      note: "Paiement confirmé",
+    });
+    toast.success("Course terminée. Merci !");
+    load();
+  };
+
+  if (loading) return <div className="akw-container py-10 text-sm text-muted-foreground">Chargement…</div>;
+  if (!errand)
+    return (
+      <div className="akw-container py-10 text-center text-sm text-muted-foreground">
+        Course introuvable. <Link className="text-primary" to="/courses">Mes courses</Link>
+      </div>
+    );
+
+  const stepIndex = STATUS_STEPS.indexOf(errand.status);
+
+  return (
+    <div className="akw-container max-w-5xl py-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="akw-eyebrow">Course #{errand.id.slice(0, 8)}</p>
+          <h1 className="font-display text-2xl font-semibold">{errand.title}</h1>
+          <p className="text-sm text-muted-foreground">
+            {errand.zone ? `${errand.zone}, ` : ""}{errand.city} · {errand.delivery_address}
+          </p>
+        </div>
+        <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusTone(errand.status)}`}>
+          {STATUS_LABEL[errand.status]}
+        </span>
+      </div>
+
+      {stepIndex >= 0 && (
+        <ol className="mt-4 flex flex-wrap gap-1.5">
+          {STATUS_STEPS.map((s, i) => (
+            <li
+              key={s}
+              className={`rounded-full px-2.5 py-1 text-[11px] ${
+                i <= stepIndex ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {STATUS_LABEL[s]}
+            </li>
+          ))}
+        </ol>
+      )}
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_360px]">
+        <div className="space-y-4">
+          <section className="rounded-2xl border border-border bg-card p-4">
+            <h2 className="font-display text-base font-semibold">Liste demandée</h2>
+            <ul className="mt-2 space-y-1 text-sm">
+              {list.map((it, i) => (
+                <li key={i} className="flex justify-between border-b border-border/60 py-1 last:border-0">
+                  <span>{it.label}</span>
+                  <span className="text-muted-foreground">×{it.qty}</span>
+                </li>
+              ))}
+            </ul>
+            {errand.notes && (
+              <p className="mt-3 rounded-xl bg-muted/50 p-3 text-sm text-muted-foreground">{errand.notes}</p>
+            )}
+            <p className="mt-3 text-sm">
+              Budget estimé : <strong>{formatFcfa(errand.budget_estimate)}</strong>
+            </p>
+          </section>
+
+          {isCustomer && errand.status === "open" && (
+            <section className="rounded-2xl border border-border bg-card p-4">
+              <h2 className="font-display text-base font-semibold">
+                Offres reçues ({offers.filter((o) => o.status === "pending").length})
+              </h2>
+              {offers.length === 0 && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  En attente des shoppers. Vous serez notifié en direct.
+                </p>
+              )}
+              <ul className="mt-2 space-y-2">
+                {offers.filter((o) => o.status !== "rejected").map((o) => {
+                  const r = runners[o.runner_id];
+                  return (
+                    <li key={o.id} className="rounded-xl border border-border p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-medium">{r?.full_name ?? "Shopper Akwaba"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {r ? `${r.vehicle} · ${r.jobs_completed} missions · ★ ${r.rating}` : ""}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold">{formatFcfa(o.price)}</p>
+                          <p className="text-xs text-muted-foreground">~{o.eta_minutes} min</p>
+                        </div>
+                      </div>
+                      {o.message && <p className="mt-2 text-sm text-muted-foreground">{o.message}</p>}
+                      <Button size="sm" className="mt-2" onClick={() => acceptOffer(o)}>
+                        Accepter cette offre
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
+
+          <section className="flex h-[420px] flex-col rounded-2xl border border-border bg-card">
+            <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+              <MessageCircle className="h-4 w-4 text-primary" />
+              <h2 className="font-display text-base font-semibold">Discussion</h2>
+            </div>
+            <div className="flex-1 space-y-2 overflow-y-auto p-4">
+              {messages.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Aucun message. Coordonnez-vous ici en temps réel.
+                </p>
+              )}
+              {messages.map((m) => (
+                <div
+                  key={m.id}
+                  className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
+                    m.sender_id === user?.id
+                      ? "ml-auto bg-primary text-primary-foreground"
+                      : "bg-muted text-foreground"
+                  }`}
+                >
+                  {m.body}
+                  <span className="mt-0.5 block text-[10px] opacity-70">
+                    {new Date(m.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+              ))}
+              <div ref={bottomRef} />
+            </div>
+            {(isCustomer || isRunner) && (
+              <div className="flex gap-2 border-t border-border p-3">
+                <Input
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && send()}
+                  placeholder="Écrire un message…"
+                />
+                <Button size="icon" onClick={send} aria-label="Envoyer">
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </section>
+        </div>
+
+        <aside className="space-y-4">
+          {assignedRunner && (
+            <section className="rounded-2xl border border-border bg-card p-4">
+              <h2 className="font-display text-base font-semibold">Votre shopper</h2>
+              <p className="mt-1 text-sm">{assignedRunner.full_name}</p>
+              <p className="text-xs text-muted-foreground">
+                {assignedRunner.vehicle} · ★ {assignedRunner.rating} · {assignedRunner.jobs_completed} missions
+              </p>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <Button asChild variant="outline" size="sm">
+                  <a href={`tel:${assignedRunner.phone}`}><Phone className="h-4 w-4" /></a>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <a
+                    href={waLink(assignedRunner.whatsapp ?? assignedRunner.phone, `Bonjour, à propos de la course "${errand.title}"`) ?? "#"}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                  </a>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <a href={videoUrl} target="_blank" rel="noreferrer"><Video className="h-4 w-4" /></a>
+                </Button>
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">Appel · WhatsApp · Visio</p>
+            </section>
+          )}
+
+          {isRunner && NEXT_STATUS[errand.status] && (
+            <Button className="w-full" onClick={() => advance(NEXT_STATUS[errand.status]!.next)}>
+              {NEXT_STATUS[errand.status]!.label}
+            </Button>
+          )}
+
+          <section className="rounded-2xl border border-border bg-card p-4">
+            <div className="flex items-center gap-2">
+              <Receipt className="h-4 w-4 text-primary" />
+              <h2 className="font-display text-base font-semibold">Facturation</h2>
+            </div>
+            {isRunner && errand.status !== "completed" ? (
+              <div className="mt-3 space-y-2">
+                <div>
+                  <Label className="text-xs">Total des achats</Label>
+                  <Input value={itemsTotal} inputMode="numeric"
+                    onChange={(e) => setItemsTotal(e.target.value.replace(/[^0-9]/g, ""))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Frais de service</Label>
+                  <Input value={serviceFee} inputMode="numeric"
+                    onChange={(e) => setServiceFee(e.target.value.replace(/[^0-9]/g, ""))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Frais de livraison</Label>
+                  <Input value={deliveryFee} inputMode="numeric"
+                    onChange={(e) => setDeliveryFee(e.target.value.replace(/[^0-9]/g, ""))} />
+                </div>
+                <Button variant="outline" size="sm" className="w-full" onClick={saveInvoice}>
+                  Enregistrer la facture
+                </Button>
+              </div>
+            ) : null}
+
+            <dl className="mt-3 space-y-1 text-sm">
+              <div className="flex justify-between"><dt className="text-muted-foreground">Achats</dt><dd>{formatFcfa(invoice.items)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted-foreground">Service</dt><dd>{formatFcfa(invoice.service)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted-foreground">Livraison</dt><dd>{formatFcfa(invoice.delivery)}</dd></div>
+              <div className="flex justify-between border-t border-border pt-1 font-semibold">
+                <dt>Total à payer</dt><dd>{formatFcfa(invoice.total)}</dd>
+              </div>
+              {isRunner && (
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <dt>Votre gain (après {Math.round(invoice.commissionRate * 100)}% Akwaba)</dt>
+                  <dd>{formatFcfa(invoice.runnerPayout)}</dd>
+                </div>
+              )}
+            </dl>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Paiement : {PAY_METHODS.find((p) => p.value === errand.payment_method)?.label} ·{" "}
+              {errand.payment_status === "paid" ? "Réglé" : "En attente"}
+            </p>
+            {isCustomer && errand.payment_status !== "paid" && errand.status === "delivered" && (
+              <Button className="mt-3 w-full" onClick={confirmPayment}>
+                <CheckCircle2 className="mr-2 h-4 w-4" /> Confirmer le paiement
+              </Button>
+            )}
+          </section>
+        </aside>
+      </div>
+    </div>
+  );
+}
