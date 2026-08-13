@@ -1,0 +1,32 @@
+# En-têtes servis par Cloudflare Pages.
+#
+# vercel.json ne s'applique qu'à Vercel : sans ce fichier, la publication
+# Cloudflare perdait les protections qui y sont déclarées, et le site se
+# laissait encapsuler dans une iframe.
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), payment=(), interest-cohort=()
+  # La géolocalisation est légitime : elle sert au suivi de mission du shopper.
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+# Les fichiers d'actifs portent une empreinte dans leur nom : leur contenu ne
+# change jamais sous une même adresse, ils peuvent donc être gardés longtemps.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/icons/*
+  Cache-Control: public, max-age=604800
+
+/places/*
+  Cache-Control: public, max-age=604800
+
+# Le service worker doit être revérifié à chaque chargement, sinon une version
+# périmée continue de servir l'ancienne application indéfiniment.
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/manifest.webmanifest
+  Cache-Control: public, max-age=3600
