@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,27 @@ import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 
 const TYPES = ["lodging","restaurant","maquis","attraction","beach","nightlife","culture","shopping"];
-const STATUSES = ["draft","pending","published"];
+
+interface PlaceForm {
+  slug: string;
+  name: string;
+  type: Database["public"]["Enums"]["place_type"];
+  city: string;
+  zone: string;
+  address: string;
+  tagline: string;
+  description: string;
+  lat: number;
+  lng: number;
+  standing: number;
+  price_band: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  website: string;
+  image: string;
+  status: Database["public"]["Enums"]["place_status"];
+}
 
 export default function PlaceEditorPage() {
   const { id } = useParams();
@@ -19,7 +40,7 @@ export default function PlaceEditorPage() {
   const navigate = useNavigate();
   const { user, isModerator } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState<any>({
+  const [form, setForm] = useState<PlaceForm>({
     slug: "", name: "", type: "lodging", city: "Abidjan", zone: "", address: "",
     tagline: "", description: "", lat: 5.32, lng: -4.03, standing: 3, price_band: "€€",
     phone: "", whatsapp: "", email: "", website: "", image: "", status: "draft",
@@ -29,11 +50,12 @@ export default function PlaceEditorPage() {
     if (!user) return;
     if (isNew) return;
     supabase.from("places").select("*").eq("id", id).single().then(({ data }) => {
-      if (data) setForm(data);
+      if (data) setForm((f) => ({ ...f, ...(data as Partial<PlaceForm>) }));
     });
   }, [id, isNew, user]);
 
-  const update = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
+  const update = <K extends keyof PlaceForm>(k: K, v: PlaceForm[K]) =>
+    setForm((f) => ({ ...f, [k]: v }));
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,8 +76,8 @@ export default function PlaceEditorPage() {
         if (error) throw error;
         toast.success("Fiche enregistrée");
       }
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erreur inattendue");
     } finally {
       setLoading(false);
     }
@@ -73,16 +95,16 @@ export default function PlaceEditorPage() {
             <Field label="Nom"><Input value={form.name} onChange={(e) => update("name", e.target.value)} required maxLength={120} /></Field>
             <Field label="Slug (URL)"><Input value={form.slug} onChange={(e) => update("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,"-"))} required /></Field>
             <Field label="Type">
-              <select className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={form.type} onChange={(e) => update("type", e.target.value)}>
+              <select className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={form.type} onChange={(e) => update("type", e.target.value as PlaceForm["type"])}>
                 {TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </Field>
             <Field label="Ville"><Input value={form.city} onChange={(e) => update("city", e.target.value)} required /></Field>
             <Field label="Zone"><Input value={form.zone ?? ""} onChange={(e) => update("zone", e.target.value)} /></Field>
-            <Field label="Standing (1-5)"><Input type="number" min={1} max={5} value={form.standing} onChange={(e) => update("standing", e.target.value)} /></Field>
+            <Field label="Standing (1-5)"><Input type="number" min={1} max={5} value={form.standing} onChange={(e) => update("standing", Number(e.target.value))} /></Field>
             <Field label="Adresse" full><Input value={form.address} onChange={(e) => update("address", e.target.value)} required /></Field>
-            <Field label="Latitude"><Input type="number" step="0.000001" value={form.lat} onChange={(e) => update("lat", e.target.value)} required /></Field>
-            <Field label="Longitude"><Input type="number" step="0.000001" value={form.lng} onChange={(e) => update("lng", e.target.value)} required /></Field>
+            <Field label="Latitude"><Input type="number" step="0.000001" value={form.lat} onChange={(e) => update("lat", Number(e.target.value))} required /></Field>
+            <Field label="Longitude"><Input type="number" step="0.000001" value={form.lng} onChange={(e) => update("lng", Number(e.target.value))} required /></Field>
             <Field label="Tagline" full><Input value={form.tagline ?? ""} onChange={(e) => update("tagline", e.target.value)} /></Field>
           </div>
           <Field label="Description"><Textarea rows={5} value={form.description} onChange={(e) => update("description", e.target.value)} required /></Field>
@@ -94,7 +116,7 @@ export default function PlaceEditorPage() {
             <Field label="Image (URL)" full><Input value={form.image ?? ""} onChange={(e) => update("image", e.target.value)} /></Field>
           </div>
           <Field label="Statut">
-            <select className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={form.status} onChange={(e) => update("status", e.target.value)}>
+            <select className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={form.status} onChange={(e) => update("status", e.target.value as PlaceForm["status"])}>
               <option value="draft">Brouillon</option>
               <option value="pending">Soumettre à modération</option>
               {isModerator && <option value="published">Publié</option>}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,9 +20,24 @@ import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { buildModerationCsv, buildCsvFilename, type ModerationEvent } from "./moderation-utils";
 
+import type { Database } from "@/integrations/supabase/types";
+import type { LucideIcon } from "lucide-react";
+
+type PlaceRow = Database["public"]["Tables"]["places"]["Row"];
+type LeadRow = Database["public"]["Tables"]["leads"]["Row"] & {
+  /** Jointure select("*, places(name)"). */
+  places?: { name: string } | null;
+};
+type ModerationEventRow = Database["public"]["Tables"]["place_moderation_events"]["Row"];
+type UserRoleRow = Database["public"]["Tables"]["user_roles"]["Row"] & {
+  /** Jointure select("*, profiles(display_name)"). */
+  profiles?: { display_name: string | null } | null;
+};
+type LeadStatus = Database["public"]["Enums"]["lead_status"];
+
 type View = "dashboard" | "places" | "leads" | "messages" | "moderation" | "users";
 
-const NAV: { key: View; label: string; icon: any; role?: "any" | "moderator" | "admin" }[] = [
+const NAV: { key: View; label: string; icon: LucideIcon; role?: "any" | "moderator" | "admin" }[] = [
   { key: "dashboard", label: "Tableau de bord", icon: LayoutDashboard, role: "any" },
   { key: "places", label: "Mes fiches", icon: Store, role: "any" },
   { key: "leads", label: "Demandes", icon: Inbox, role: "any" },
@@ -34,18 +49,18 @@ const NAV: { key: View; label: string; icon: any; role?: "any" | "moderator" | "
 export default function AdminPage() {
   const { user, loading, isPartner, isAdmin, isModerator } = useAuth();
   const [view, setView] = useState<View>("dashboard");
-  const [places, setPlaces] = useState<any[]>([]);
-  const [leads, setLeads] = useState<any[]>([]);
-  const [pending, setPending] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
-  const [selectedLead, setSelectedLead] = useState<any>(null);
+  const [places, setPlaces] = useState<PlaceRow[]>([]);
+  const [leads, setLeads] = useState<LeadRow[]>([]);
+  const [pending, setPending] = useState<PlaceRow[]>([]);
+  const [users, setUsers] = useState<UserRoleRow[]>([]);
+  const [selectedLead, setSelectedLead] = useState<LeadRow | null>(null);
   const [partnerNote, setPartnerNote] = useState("");
   const [searchUid, setSearchUid] = useState("");
-  const [modTarget, setModTarget] = useState<{ place: any; action: "approved" | "rejected" } | null>(null);
+  const [modTarget, setModTarget] = useState<{ place: PlaceRow; action: "approved" | "rejected" } | null>(null);
   const [modNote, setModNote] = useState("");
   const [modBusy, setModBusy] = useState(false);
-  const [history, setHistory] = useState<any[]>([]);
-  const [historyPlace, setHistoryPlace] = useState<any>(null);
+  const [history, setHistory] = useState<ModerationEventRow[]>([]);
+  const [historyPlace, setHistoryPlace] = useState<PlaceRow | null>(null);
   const [modPreviewId, setModPreviewId] = useState<string | null>(null);
   // Moderation queue filters
   const [modSearch, setModSearch] = useState("");
@@ -59,7 +74,12 @@ export default function AdminPage() {
   // Email verification
   const [testEmail, setTestEmail] = useState("");
   const [testBusy, setTestBusy] = useState(false);
-  const [testResult, setTestResult] = useState<any>(null);
+  const [testResult, setTestResult] = useState<{
+    status?: string;
+    recipient?: string;
+    detail?: string;
+    provider_id?: string;
+  } | null>(null);
   // Realtime status
   const [rtStatus, setRtStatus] = useState<"idle" | "connecting" | "connected" | "error">("idle");
   const [rtAttempt, setRtAttempt] = useState(0);
@@ -72,7 +92,7 @@ export default function AdminPage() {
   const [csvBusy, setCsvBusy] = useState(false);
   const [csvProgress, setCsvProgress] = useState<{ step: string; pct: number } | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoadBusy(true);
     try {
       const { data: p } = await supabase.from("places").select("*").order("created_at", { ascending: false });
@@ -87,14 +107,37 @@ export default function AdminPage() {
         setPending(pend ?? []);
       }
       if (isAdmin) {
-        const { data: ur } = await supabase.from("user_roles").select("*, profiles(display_name)").order("created_at", { ascending: false });
-        setUsers(ur ?? []);
+        // user_roles et profiles pointent tous deux vers auth.users mais n'ont
+        // aucune relation directe : PostgREST ne sait pas les joindre. On charge
+        // donc les deux et on rapproche les noms côté client.
+        const { data: ur } = await supabase
+          .from("user_roles")
+          .select("*")
+          .order("created_at", { ascending: false });
+        const roleRows = (ur ?? []) as UserRoleRow[];
+        const uids = Array.from(new Set(roleRows.map((u) => u.user_id)));
+        const nameByUser = new Map<string, string | null>();
+        if (uids.length) {
+          const { data: profs } = await supabase
+            .from("profiles")
+            .select("id,display_name")
+            .in("id", uids);
+          (profs ?? []).forEach((pr) => nameByUser.set(pr.id, pr.display_name));
+        }
+        setUsers(
+          roleRows.map((u) => ({
+            ...u,
+            profiles: { display_name: nameByUser.get(u.user_id) ?? null },
+          }))
+        );
       }
       setLastLoadedAt(new Date());
     } finally { setLoadBusy(false); }
-  };
+  }, [isAdmin, isModerator]);
 
-  useEffect(() => { if (user) load(); /* eslint-disable-next-line */ }, [user, isAdmin, isModerator]);
+  useEffect(() => {
+    if (user) load();
+  }, [user, load]);
 
   // Realtime: refresh queue when places change. Includes retry/backoff + status surface.
   useEffect(() => {
@@ -115,7 +158,7 @@ export default function AdminPage() {
           "postgres_changes",
           { event: "*", schema: "public", table: "places" },
           (payload) => {
-            console.info("[realtime places]", payload.eventType, (payload.new as any)?.id ?? (payload.old as any)?.id);
+            console.info("[realtime places]", payload.eventType);
             load();
           },
         )
@@ -163,7 +206,7 @@ export default function AdminPage() {
   const fmtTime = (d: Date | null) => d ? d.toLocaleTimeString("fr-FR") : "—";
   const fmtDelay = (ms: number | null) => ms == null ? "—" : ms >= 1000 ? `${Math.round(ms / 1000)}s` : `${ms}ms`;
 
-  const exportModerationCsv = async (rows: any[]) => {
+  const exportModerationCsv = async (rows: PlaceRow[]) => {
     setCsvBusy(true);
     setCsvProgress({ step: "Préparation…", pct: 5 });
     const filtersLabel = [
@@ -198,8 +241,8 @@ export default function AdminPage() {
       URL.revokeObjectURL(url);
       setCsvProgress({ step: "Terminé", pct: 100 });
       toast.success(`Export CSV — ${rows.length} ligne(s) (${filtersLabel})`);
-    } catch (e: any) {
-      toast.error(`Export CSV échoué (${filtersLabel}) : ${e.message ?? e}`);
+    } catch (e) {
+      toast.error(`Export CSV échoué (${filtersLabel}) : ${e instanceof Error ? e.message : "Erreur inattendue"}`);
     } finally {
       setCsvBusy(false);
       setTimeout(() => setCsvProgress(null), 800);
@@ -225,11 +268,6 @@ export default function AdminPage() {
     );
   }
 
-  const updatePlaceStatus = async (id: string, status: string) => {
-    const { error } = await supabase.from("places").update({ status: status as any }).eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Statut mis à jour"); load();
-  };
   const submitModeration = async () => {
     if (!modTarget) return;
     setModBusy(true);
@@ -238,7 +276,10 @@ export default function AdminPage() {
         body: { place_id: modTarget.place.id, action: modTarget.action, note: modNote.trim() || null },
       });
       if (error) throw error;
-      const res = data as any;
+      const res = data as {
+        error?: string;
+        email?: { status?: string; recipient?: string; detail?: string };
+      } | null;
       if (res?.error) throw new Error(res.error);
       const baseMsg = modTarget.action === "approved" ? "Fiche publiée" : "Fiche refusée";
       const em = res?.email;
@@ -255,11 +296,11 @@ export default function AdminPage() {
       }
       console.info("[moderate-place] result", res);
       setModTarget(null); setModNote(""); load();
-    } catch (e: any) {
-      toast.error(e.message ?? "Erreur");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erreur inattendue");
     } finally { setModBusy(false); }
   };
-  const openHistory = async (place: any) => {
+  const openHistory = async (place: PlaceRow) => {
     setHistoryPlace(place);
     const { data } = await supabase
       .from("place_moderation_events")
@@ -269,7 +310,7 @@ export default function AdminPage() {
     setHistory(data ?? []);
   };
   const updateLeadStatus = async (id: string, status: string) => {
-    const { error } = await supabase.from("leads").update({ status: status as any }).eq("id", id);
+    const { error } = await supabase.from("leads").update({ status: status as LeadStatus }).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Lead mis à jour"); load();
   };
@@ -300,15 +341,16 @@ export default function AdminPage() {
       });
       if (error) throw error;
       setTestResult(data);
-      const s = (data as any)?.status;
-      if (s === "sent") toast.success(`Email envoyé à ${(data as any).recipient}`);
+      const emailResult = data as { status?: string; recipient?: string } | null;
+      const s = emailResult?.status;
+      if (s === "sent") toast.success(`Email envoyé à ${emailResult?.recipient ?? "destinataire"}`);
       else if (s === "failed") toast.error("Envoi échoué — voir les détails");
       else if (s === "no_recipient") toast.warning("Adresse invalide");
       else if (s === "not_configured") toast.warning("Connecteur Resend non configuré");
       else toast.info(`Statut : ${s ?? "?"}`);
-    } catch (e: any) {
-      setTestResult({ status: "failed", detail: e.message });
-      toast.error(e.message ?? "Erreur");
+    } catch (e) {
+      setTestResult({ status: "failed", detail: e instanceof Error ? e.message : "Erreur inattendue" });
+      toast.error(e instanceof Error ? e.message : "Erreur inattendue");
     } finally { setTestBusy(false); }
   };
 
@@ -488,12 +530,12 @@ export default function AdminPage() {
                     <option value="all">Tous types</option>
                     {types.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
-                  <select className="h-10 rounded-md border border-input bg-background px-2 text-sm" value={modStatus} onChange={(e) => { setModStatus(e.target.value as any); setModPage(1); }}>
+                  <select className="h-10 rounded-md border border-input bg-background px-2 text-sm" value={modStatus} onChange={(e) => { setModStatus(e.target.value as "pending" | "rejected" | "all"); setModPage(1); }}>
                     <option value="pending">En attente</option>
                     <option value="rejected">Refusées</option>
                     <option value="all">Toutes</option>
                   </select>
-                  <select className="h-10 rounded-md border border-input bg-background px-2 text-sm" value={modSort} onChange={(e) => setModSort(e.target.value as any)}>
+                  <select className="h-10 rounded-md border border-input bg-background px-2 text-sm" value={modSort} onChange={(e) => setModSort(e.target.value as "date_desc" | "date_asc" | "status" | "city")}>
                     <option value="date_desc">Tri : Date ↓</option>
                     <option value="date_asc">Tri : Date ↑</option>
                     <option value="status">Tri : Statut</option>
@@ -605,8 +647,8 @@ export default function AdminPage() {
                             </div>
                             <StatusBadge status={sel.status} />
                           </div>
-                          {sel.image_url && (
-                            <img src={sel.image_url} alt={sel.name} className="aspect-video w-full rounded-md object-cover" loading="lazy" />
+                          {sel.image && (
+                            <img src={sel.image} alt={sel.name} className="aspect-video w-full rounded-md object-cover" loading="lazy" />
                           )}
                           <p className="text-xs text-muted-foreground line-clamp-6">{sel.description}</p>
                           <div className="flex gap-2 pt-1">
@@ -749,7 +791,7 @@ export default function AdminPage() {
   );
 }
 
-function Kpi({ icon: Icon, label, value, hint }: { icon: any; label: string; value: number; hint: string }) {
+function Kpi({ icon: Icon, label, value, hint }: { icon: LucideIcon; label: string; value: number; hint: string }) {
   return (
     <Card className="p-4">
       <div className="flex items-center gap-2 text-muted-foreground text-xs"><Icon className="h-3.5 w-3.5" /> {label}</div>
@@ -759,7 +801,7 @@ function Kpi({ icon: Icon, label, value, hint }: { icon: any; label: string; val
   );
 }
 
-function Row({ k, v }: { k: string; v: any }) {
+function Row({ k, v }: { k: string; v: React.ReactNode }) {
   return <div className="flex justify-between gap-3"><span className="text-muted-foreground">{k}</span><span className="font-medium text-right">{v}</span></div>;
 }
 

@@ -174,7 +174,8 @@ describe("moderation queue: realtime status + retry", () => {
     const delay = (a: number) => Math.min(30_000, 1000 * 2 ** Math.min(a - 1, 5));
     expect(delay(1)).toBe(1000);
     expect(delay(2)).toBe(2000);
-    expect(delay(6)).toBe(32_000 > 30_000 ? 30_000 : 32_000);
+    // Le sixieme essai depasserait 32 s : le plafond de 30 s s applique.
+    expect(delay(6)).toBe(30_000);
     expect(delay(20)).toBe(30_000);
   });
 });

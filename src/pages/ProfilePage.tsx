@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { LogIn, LogOut, ShieldCheck, Inbox, Store, User as UserIcon, KeyRound, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Logo } from "@/shared/ui/Logo";
+import type { Database } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -13,14 +14,25 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useTabState } from "@/shared/hooks/useTabState";
 import { toast } from "sonner";
 
+type LeadRow = Database["public"]["Tables"]["leads"]["Row"] & {
+  /** Jointure select("*, places(name, slug)"). */
+  places?: { name: string; slug: string } | null;
+};
+/** Sous-ensemble réellement sélectionné pour la liste des fiches du partenaire. */
+type PlaceRow = Pick<
+  Database["public"]["Tables"]["places"]["Row"],
+  "id" | "name" | "status" | "city"
+>;
+type ModerationEventRow = Database["public"]["Tables"]["place_moderation_events"]["Row"];
+
 export default function ProfilePage() {
   const { user, roles, signOut, isPartner, isModerator, isAdmin } = useAuth();
-  const [leads, setLeads] = useState<any[]>([]);
-  const [profile, setProfile] = useState<any>({ display_name: "", phone: "", locale: "fr" });
+  const [leads, setLeads] = useState<LeadRow[]>([]);
+  const [profile, setProfile] = useState<{ display_name: string; phone: string; locale: string }>({ display_name: "", phone: "", locale: "fr" });
   const [pwd, setPwd] = useState("");
   const [saving, setSaving] = useState(false);
-  const [myPlaces, setMyPlaces] = useState<any[]>([]);
-  const [eventsByPlace, setEventsByPlace] = useState<Record<string, any[]>>({});
+  const [myPlaces, setMyPlaces] = useState<PlaceRow[]>([]);
+  const [eventsByPlace, setEventsByPlace] = useState<Record<string, ModerationEventRow[]>>({});
   const [tab, setTab] = useTabState("profile", "account");
   const [openPlaceId, setOpenPlaceId] = useState<string | null>(null);
 
@@ -41,7 +53,7 @@ export default function ProfilePage() {
             const { data: ev } = await supabase.from("place_moderation_events")
               .select("*").in("place_id", list.map((p) => p.id))
               .order("created_at", { ascending: false });
-            const grouped: Record<string, any[]> = {};
+            const grouped: Record<string, ModerationEventRow[]> = {};
             (ev ?? []).forEach((e) => {
               (grouped[e.place_id] ??= []).push(e);
             });

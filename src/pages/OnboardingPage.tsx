@@ -38,7 +38,12 @@ export default function OnboardingPage() {
   }, [navigate]);
 
   const finish = () => {
-    try { localStorage.setItem(STORAGE_KEY, "1"); } catch {}
+    try {
+      localStorage.setItem(STORAGE_KEY, "1");
+    } catch {
+      // Navigation privee ou stockage sature : l'onboarding se reaffichera,
+      // ce qui est preferable a un ecran bloque.
+    }
     navigate("/", { replace: true });
   };
 

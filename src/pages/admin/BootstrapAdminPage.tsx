@@ -30,12 +30,13 @@ export default function BootstrapAdminPage() {
         body: { user_id: userId.trim(), token: token.trim() },
       });
       if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
+      const payload = data as { error?: string } | null;
+      if (payload?.error) throw new Error(payload.error);
       await refreshRoles();
       toast.success("Admin créé. Vos accès sont actifs immédiatement.");
       setTimeout(() => navigate("/admin"), 600);
-    } catch (e: any) {
-      toast.error(e.message ?? "Erreur");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erreur inattendue");
     } finally {
       setLoading(false);
     }

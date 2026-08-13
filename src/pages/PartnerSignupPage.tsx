@@ -60,7 +60,8 @@ export default function PartnerSignupPage() {
   const [form, setForm] = useState<FormState>({ ...initial, email: user?.email ?? "" });
   const [loading, setLoading] = useState(false);
 
-  const set = (k: keyof FormState, v: any) => setForm((f) => ({ ...f, [k]: v }));
+  const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
+    setForm((f) => ({ ...f, [k]: v }));
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const prev = () => setStep((s) => Math.max(s - 1, 0));
 
@@ -116,12 +117,13 @@ export default function PartnerSignupPage() {
         },
       });
       if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
+      const payload = data as { error?: string } | null;
+      if (payload?.error) throw new Error(payload.error);
       await refreshRoles();
       toast.success("Inscription envoyée ! Votre fiche est en modération.");
       navigate("/profil");
-    } catch (e: any) {
-      toast.error(e.message ?? "Erreur");
+    } catch (e) {
+      toast.error((e instanceof Error ? e.message : null) ?? "Erreur");
     } finally {
       setLoading(false);
     }

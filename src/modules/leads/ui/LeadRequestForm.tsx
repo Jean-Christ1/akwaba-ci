@@ -61,7 +61,7 @@ export function LeadRequestForm({ placeId, placeName, kind, onClose }: Props) {
       if (error) throw error;
       toast.success("Demande envoyée ! Nous revenons vers vous rapidement.");
       onClose?.();
-    } catch (err: any) {
+    } catch (err) {
       const msg = err?.errors?.[0]?.message ?? err?.message ?? "Erreur";
       toast.error(msg);
     } finally {

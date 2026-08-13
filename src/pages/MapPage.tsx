@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { StyleSpecification } from "maplibre-gl";
 import maplibregl, { Map as MLMap, Marker } from "maplibre-gl";
 import { Link } from "react-router-dom";
 import { Locate, X, MapPin } from "lucide-react";
@@ -19,7 +20,7 @@ const FALLBACK_STYLE = {
     },
   },
   layers: [{ id: "osm", type: "raster", source: "osm" }],
-} as any;
+} as unknown as StyleSpecification;
 
 export default function MapPage() {
   const containerRef = useRef<HTMLDivElement | null>(null);

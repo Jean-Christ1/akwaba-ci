@@ -59,8 +59,8 @@ export default function AuthPage() {
         toast.success("Email de réinitialisation envoyé.");
         setMode("signin");
       }
-    } catch (err: any) {
-      toast.error(err.message ?? "Une erreur est survenue");
+    } catch (err) {
+      toast.error((err instanceof Error ? err.message : null) ?? "Une erreur est survenue");
     } finally {
       setLoading(false);
     }

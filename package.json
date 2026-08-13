@@ -1,16 +1,19 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "akwaba-ci",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "dev": "vite",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "verify": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -88,5 +91,6 @@
     "typescript-eslint": "^8.38.0",
     "vite": "^5.4.19",
     "vitest": "^3.2.4"
-  }
+  },
+  "description": "Akwaba CI, decouverte touristique et service Akwaba Shopper en Cote d'Ivoire."
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Phone, Video, MessageCircle, Send, Loader2, CheckCircle2, Receipt } from "lucide-react";
+import { Phone, Video, MessageCircle, Send, CheckCircle2, Receipt } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProofUpload } from "@/modules/errands/ui/ProofUpload";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   computeInvoice,
   formatFcfa,
