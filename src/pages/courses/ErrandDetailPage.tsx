@@ -43,6 +43,11 @@ interface Errand {
   total_amount: number;
   payment_method: string;
   payment_status: string;
+  handover_code: string | null;
+  receipt_url: string | null;
+  rating: number | null;
+  review: string | null;
+  tip_amount: number;
   created_at: string;
 }
 
@@ -95,6 +100,12 @@ export default function ErrandDetailPage() {
   const [itemsTotal, setItemsTotal] = useState("");
   const [serviceFee, setServiceFee] = useState("");
   const [deliveryFee, setDeliveryFee] = useState("");
+
+  // Code de remise saisi par le shopper au moment de la livraison.
+  const [handoverInput, setHandoverInput] = useState("");
+  // Code de remise du client, chargé à la demande via une fonction serveur.
+  const [handoverCode, setHandoverCode] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const isCustomer = !!user && errand?.customer_id === user.id;
   const isRunner = !!user && errand?.runner_id === user.id;
@@ -217,68 +228,115 @@ export default function ErrandDetailPage() {
     if (error) toast.error(error.message);
   };
 
+  // Toutes les opérations qui touchent à l'argent, au statut ou à l'affectation
+  // passent par le moteur serveur : le client n'écrit jamais ces colonnes.
   const acceptOffer = async (offer: Offer) => {
     if (!errand) return;
-    const { error } = await supabase
-      .from("errands")
-      .update({ runner_id: offer.runner_id, status: "assigned", service_fee: offer.price })
-      .eq("id", errand.id);
+    setBusy(true);
+    const { error } = await supabase.rpc("errand_accept_offer", { p_offer_id: offer.id });
+    setBusy(false);
     if (error) return toast.error(error.message);
-    await supabase.from("errand_offers").update({ status: "accepted" }).eq("id", offer.id);
-    await supabase
-      .from("errand_offers")
-      .update({ status: "rejected" })
-      .eq("errand_id", errand.id)
-      .neq("id", offer.id);
-    await supabase.from("errand_events").insert({
-      errand_id: errand.id,
-      actor_id: user!.id,
-      status: "assigned",
-      note: "Offre acceptée",
-    });
     toast.success("Shopper assigné !");
     load();
   };
 
   const advance = async (next: ErrandStatus) => {
     if (!errand || !user) return;
-    const { error } = await supabase.from("errands").update({ status: next }).eq("id", errand.id);
+    // La remise en main propre exige le code à quatre chiffres détenu par le client.
+    if (next === "delivered") {
+      const code = handoverInput.replace(/\s/g, "");
+      if (code.length < 4) {
+        return toast.error("Demandez au client son code de remise à quatre chiffres.");
+      }
+      setBusy(true);
+      const { error } = await supabase.rpc("errand_advance_status", {
+        p_errand_id: errand.id,
+        p_next: next,
+        p_handover_code: code,
+      });
+      setBusy(false);
+      if (error) return toast.error(error.message);
+      setHandoverInput("");
+      toast.success("Remise confirmée.");
+      return load();
+    }
+
+    setBusy(true);
+    const { error } = await supabase.rpc("errand_advance_status", {
+      p_errand_id: errand.id,
+      p_next: next,
+    });
+    setBusy(false);
     if (error) return toast.error(error.message);
-    await supabase.from("errand_events").insert({ errand_id: errand.id, actor_id: user.id, status: next });
     load();
   };
 
   const saveInvoice = async () => {
     if (!errand) return;
-    const { error } = await supabase
-      .from("errands")
-      .update({
-        items_total: invoice.items,
-        service_fee: invoice.service,
-        delivery_fee: invoice.delivery,
-        commission_amount: invoice.commission,
-        total_amount: invoice.total,
-      })
-      .eq("id", errand.id);
+    setBusy(true);
+    const { error } = await supabase.rpc("errand_save_invoice", {
+      p_errand_id: errand.id,
+      p_items_total: Number(itemsTotal) || 0,
+      p_delivery_fee: Number(deliveryFee) || 0,
+      p_tip_amount: 0,
+    });
+    setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("Facture mise à jour");
+    toast.success("Facture enregistrée");
     load();
   };
 
   const confirmPayment = async () => {
     if (!errand || !user) return;
-    const { error } = await supabase
-      .from("errands")
-      .update({ payment_status: "paid", status: "completed" })
-      .eq("id", errand.id);
+    setBusy(true);
+    const { error } = await supabase.rpc("errand_confirm_payment", { p_errand_id: errand.id });
+    setBusy(false);
     if (error) return toast.error(error.message);
-    await supabase.from("errand_events").insert({
-      errand_id: errand.id,
-      actor_id: user.id,
-      status: "completed",
-      note: "Paiement confirmé",
-    });
     toast.success("Course terminée. Merci !");
+    load();
+  };
+
+  const cancelErrand = async () => {
+    if (!errand) return;
+    const reason = window.prompt("Motif de l'annulation (facultatif)") ?? "";
+    setBusy(true);
+    const { error } = await supabase.rpc("errand_cancel", {
+      p_errand_id: errand.id,
+      p_reason: reason,
+    });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Course annulée.");
+    load();
+  };
+
+  const openDispute = async () => {
+    if (!errand) return;
+    const reason = window.prompt("Décrivez le problème rencontré (10 caractères minimum)") ?? "";
+    if (reason.trim().length < 10) {
+      return toast.error("Merci de décrire le litige en quelques mots.");
+    }
+    setBusy(true);
+    const { error } = await supabase.rpc("errand_open_dispute", {
+      p_errand_id: errand.id,
+      p_reason: reason.trim(),
+    });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Litige ouvert, un modérateur va intervenir.");
+    load();
+  };
+
+  const rateRunner = async (value: number) => {
+    if (!errand) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("errand_rate_runner", {
+      p_errand_id: errand.id,
+      p_rating: value,
+    });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Merci pour votre note.");
     load();
   };
 
@@ -460,10 +518,99 @@ export default function ErrandDetailPage() {
             </section>
           )}
 
+          {/* Le client garde son code sous les yeux pour le dicter au shopper. */}
+          {isCustomer && ["assigned", "shopping", "delivering"].includes(errand.status) && (
+            <section className="rounded-2xl border border-border bg-card p-4">
+              <h2 className="font-display text-base font-semibold">Code de remise</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Communiquez ce code au shopper seulement quand vous avez reçu votre commande.
+                Il en a besoin pour clôturer la mission.
+              </p>
+              {handoverCode ? (
+                <p className="mt-3 text-center font-display text-3xl font-semibold tracking-[0.3em]">
+                  {handoverCode}
+                </p>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 w-full"
+                  disabled={busy}
+                  onClick={async () => {
+                    const { data, error } = await supabase.rpc("errand_handover_code", {
+                      p_errand_id: errand.id,
+                    });
+                    if (error) return toast.error(error.message);
+                    if (!data) return toast.error("Aucun code de remise pour cette course.");
+                    setHandoverCode(data as string);
+                  }}
+                >
+                  Afficher mon code
+                </Button>
+              )}
+            </section>
+          )}
+
           {isRunner && NEXT_STATUS[errand.status] && (
-            <Button className="w-full" onClick={() => advance(NEXT_STATUS[errand.status]!.next)}>
-              {NEXT_STATUS[errand.status]!.label}
-            </Button>
+            <div className="space-y-2">
+              {errand.status === "delivering" && (
+                <div className="rounded-2xl border border-border bg-card p-4">
+                  <Label className="text-xs">Code de remise du client</Label>
+                  <Input
+                    value={handoverInput}
+                    inputMode="numeric"
+                    maxLength={8}
+                    placeholder="1234"
+                    className="mt-1 text-center text-lg tracking-[0.3em]"
+                    onChange={(e) => setHandoverInput(e.target.value)}
+                  />
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    Demandez ce code au client au moment de lui remettre sa commande.
+                  </p>
+                </div>
+              )}
+              <Button
+                className="w-full"
+                disabled={busy}
+                onClick={() => advance(NEXT_STATUS[errand.status]!.next)}
+              >
+                {NEXT_STATUS[errand.status]!.label}
+              </Button>
+            </div>
+          )}
+
+          {/* Annulation et litige : les états cancelled et disputed sont désormais atteignables. */}
+          {(isCustomer || isRunner) &&
+            !["completed", "cancelled", "disputed"].includes(errand.status) && (
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" size="sm" disabled={busy} onClick={cancelErrand}>
+                  Annuler
+                </Button>
+                <Button variant="outline" size="sm" disabled={busy} onClick={openDispute}>
+                  Signaler un litige
+                </Button>
+              </div>
+            )}
+
+          {/* Notation du shopper une fois la mission réglée. */}
+          {isCustomer && errand.status === "completed" && errand.rating == null && (
+            <section className="rounded-2xl border border-border bg-card p-4">
+              <h2 className="font-display text-base font-semibold">Noter votre shopper</h2>
+              <div className="mt-3 flex justify-between gap-2">
+                {[1, 2, 3, 4, 5].map((v) => (
+                  <Button
+                    key={v}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    disabled={busy}
+                    onClick={() => rateRunner(v)}
+                  >
+                    {v}
+                  </Button>
+                ))}
+              </div>
+            </section>
           )}
 
           <section className="rounded-2xl border border-border bg-card p-4">

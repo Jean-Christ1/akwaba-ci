@@ -1,4 +1,5 @@
 import type { Database } from "@/integrations/supabase/types";
+import { COMMISSION_RATE } from "./pricing";
 
 export type ErrandStatus = Database["public"]["Enums"]["errand_status"];
 export type ErrandCategory = Database["public"]["Enums"]["errand_category"];
@@ -87,7 +88,12 @@ export const STATUS_STEPS: ErrandStatus[] = [
   "completed",
 ];
 
-export const COMMISSION_RATE = 0.1;
+/**
+ * Source de vérité unique du taux de commission, définie dans le moteur
+ * tarifaire. Le barème fait autorité côté serveur (table commission_rules) :
+ * cette constante ne sert qu'à afficher une estimation cohérente.
+ */
+export { COMMISSION_RATE };
 
 export function formatFcfa(value: number | null | undefined) {
   const n = Number(value ?? 0);
@@ -101,6 +107,14 @@ export interface InvoiceInput {
   commissionRate?: number;
 }
 
+/**
+ * Facture affichée au client et au shopper.
+ *
+ * La base commissionnable est le frais de service seul : l'argent des achats
+ * appartient au marchand et les frais de livraison reviennent intégralement à
+ * celui qui livre. Ce calcul reproduit exactement `errand_save_invoice` côté
+ * serveur, qui reste seul juge des montants réellement enregistrés.
+ */
 export function computeInvoice({
   itemsTotal,
   serviceFee,
@@ -110,9 +124,9 @@ export function computeInvoice({
   const items = Math.max(0, Number(itemsTotal) || 0);
   const service = Math.max(0, Number(serviceFee) || 0);
   const delivery = Math.max(0, Number(deliveryFee) || 0);
-  const commission = Math.round((service + delivery) * commissionRate);
+  const commission = Math.round(service * commissionRate);
   const total = items + service + delivery;
-  const runnerPayout = service + delivery - commission;
+  const runnerPayout = service - commission;
   return { items, service, delivery, commission, total, runnerPayout, commissionRate };
 }
 

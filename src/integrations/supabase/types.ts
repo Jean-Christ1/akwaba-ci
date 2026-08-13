@@ -839,6 +839,60 @@ export type Database = {
         Args: { _errand: string; _uid: string }
         Returns: boolean
       }
+      errand_accept_offer: {
+        Args: { p_offer_id: string }
+        Returns: Database["public"]["Tables"]["errands"]["Row"]
+      }
+      errand_advance_status: {
+        Args: {
+          p_errand_id: string
+          p_next: Database["public"]["Enums"]["errand_status"]
+          p_handover_code?: string | null
+        }
+        Returns: Database["public"]["Tables"]["errands"]["Row"]
+      }
+      errand_save_invoice: {
+        Args: {
+          p_errand_id: string
+          p_items_total: number
+          p_delivery_fee?: number
+          p_tip_amount?: number
+          p_receipt_url?: string | null
+        }
+        Returns: Database["public"]["Tables"]["errands"]["Row"]
+      }
+      errand_confirm_payment: {
+        Args: { p_errand_id: string }
+        Returns: Database["public"]["Tables"]["errands"]["Row"]
+      }
+      errand_cancel: {
+        Args: { p_errand_id: string; p_reason?: string | null }
+        Returns: Database["public"]["Tables"]["errands"]["Row"]
+      }
+      errand_open_dispute: {
+        Args: { p_errand_id: string; p_reason: string }
+        Returns: Database["public"]["Tables"]["errands"]["Row"]
+      }
+      errand_rate_runner: {
+        Args: {
+          p_errand_id: string
+          p_rating: number
+          p_review?: string | null
+        }
+        Returns: Database["public"]["Tables"]["errands"]["Row"]
+      }
+      errand_handover_code: {
+        Args: { p_errand_id: string }
+        Returns: string | null
+      }
+      payout_request_create: {
+        Args: { p_amount: number; p_account_id?: string | null }
+        Returns: Database["public"]["Tables"]["payout_requests"]["Row"]
+      }
+      wallet_release_matured_earnings: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "partner" | "user"
