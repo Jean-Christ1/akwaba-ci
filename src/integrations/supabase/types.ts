@@ -125,8 +125,63 @@ export type Database = {
           },
         ]
       }
+      errand_payments: {
+        Row: {
+          amount: number
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          errand_id: string
+          id: string
+          kind: Database["public"]["Enums"]["errand_payment_kind"]
+          method: Database["public"]["Enums"]["pay_method"]
+          payer_id: string
+          proof_url: string | null
+          reference: string | null
+        }
+        Insert: {
+          amount: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          errand_id: string
+          id?: string
+          kind: Database["public"]["Enums"]["errand_payment_kind"]
+          method?: Database["public"]["Enums"]["pay_method"]
+          payer_id: string
+          proof_url?: string | null
+          reference?: string | null
+        }
+        Update: {
+          amount?: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          errand_id?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["errand_payment_kind"]
+          method?: Database["public"]["Enums"]["pay_method"]
+          payer_id?: string
+          proof_url?: string | null
+          reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "errand_payments_errand_id_fkey"
+            columns: ["errand_id"]
+            isOneToOne: false
+            referencedRelation: "errands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       errands: {
         Row: {
+          actual_minutes: number | null
+          advance_amount: number
+          advance_confirmed_at: string | null
+          advance_proof_url: string | null
+          balance_due: number
           budget_estimate: number
           category: Database["public"]["Enums"]["errand_category"]
           city: string
@@ -136,6 +191,11 @@ export type Database = {
           customer_id: string
           delivery_address: string
           delivery_fee: number
+          distance_km: number
+          dropoff_mode: Database["public"]["Enums"]["dropoff_mode"]
+          estimated_minutes: number
+          fund_mode: Database["public"]["Enums"]["fund_mode"]
+          handover_code: string | null
           id: string
           items: Json
           items_total: number
@@ -149,15 +209,27 @@ export type Database = {
           receipt_url: string | null
           review: string | null
           runner_id: string | null
+          runner_payout: number
           scheduled_for: string | null
           service_fee: number
+          started_at: string | null
           status: Database["public"]["Enums"]["errand_status"]
+          third_party_contact: string | null
+          tip_amount: number
           title: string
           total_amount: number
           updated_at: string
+          urgency: string
+          vehicle_required: string
+          volume_size: string
           zone: string | null
         }
         Insert: {
+          actual_minutes?: number | null
+          advance_amount?: number
+          advance_confirmed_at?: string | null
+          advance_proof_url?: string | null
+          balance_due?: number
           budget_estimate?: number
           category?: Database["public"]["Enums"]["errand_category"]
           city: string
@@ -167,6 +239,11 @@ export type Database = {
           customer_id: string
           delivery_address: string
           delivery_fee?: number
+          distance_km?: number
+          dropoff_mode?: Database["public"]["Enums"]["dropoff_mode"]
+          estimated_minutes?: number
+          fund_mode?: Database["public"]["Enums"]["fund_mode"]
+          handover_code?: string | null
           id?: string
           items?: Json
           items_total?: number
@@ -180,15 +257,27 @@ export type Database = {
           receipt_url?: string | null
           review?: string | null
           runner_id?: string | null
+          runner_payout?: number
           scheduled_for?: string | null
           service_fee?: number
+          started_at?: string | null
           status?: Database["public"]["Enums"]["errand_status"]
+          third_party_contact?: string | null
+          tip_amount?: number
           title: string
           total_amount?: number
           updated_at?: string
+          urgency?: string
+          vehicle_required?: string
+          volume_size?: string
           zone?: string | null
         }
         Update: {
+          actual_minutes?: number | null
+          advance_amount?: number
+          advance_confirmed_at?: string | null
+          advance_proof_url?: string | null
+          balance_due?: number
           budget_estimate?: number
           category?: Database["public"]["Enums"]["errand_category"]
           city?: string
@@ -198,6 +287,11 @@ export type Database = {
           customer_id?: string
           delivery_address?: string
           delivery_fee?: number
+          distance_km?: number
+          dropoff_mode?: Database["public"]["Enums"]["dropoff_mode"]
+          estimated_minutes?: number
+          fund_mode?: Database["public"]["Enums"]["fund_mode"]
+          handover_code?: string | null
           id?: string
           items?: Json
           items_total?: number
@@ -211,12 +305,19 @@ export type Database = {
           receipt_url?: string | null
           review?: string | null
           runner_id?: string | null
+          runner_payout?: number
           scheduled_for?: string | null
           service_fee?: number
+          started_at?: string | null
           status?: Database["public"]["Enums"]["errand_status"]
+          third_party_contact?: string | null
+          tip_amount?: number
           title?: string
           total_amount?: number
           updated_at?: string
+          urgency?: string
+          vehicle_required?: string
+          volume_size?: string
           zone?: string | null
         }
         Relationships: []
@@ -282,6 +383,50 @@ export type Database = {
             columns: ["place_id"]
             isOneToOne: false
             referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payout_requests: {
+        Row: {
+          account_id: string | null
+          admin_note: string | null
+          amount: number
+          created_at: string
+          id: string
+          status: Database["public"]["Enums"]["payout_status"]
+          transfer_reference: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          admin_note?: string | null
+          amount: number
+          created_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["payout_status"]
+          transfer_reference?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          admin_note?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["payout_status"]
+          transfer_reference?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_requests_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "runner_payout_accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -454,6 +599,66 @@ export type Database = {
         }
         Relationships: []
       }
+      referrals: {
+        Row: {
+          code: string
+          created_at: string
+          credits: number
+          id: string
+          invited_count: number
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          credits?: number
+          id?: string
+          invited_count?: number
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          credits?: number
+          id?: string
+          invited_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      runner_payout_accounts: {
+        Row: {
+          account_name: string
+          account_number: string
+          created_at: string
+          id: string
+          is_default: boolean
+          provider: Database["public"]["Enums"]["momo_provider"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          provider?: Database["public"]["Enums"]["momo_provider"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          provider?: Database["public"]["Enums"]["momo_provider"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       runner_profiles: {
         Row: {
           bio: string | null
@@ -514,6 +719,36 @@ export type Database = {
         }
         Relationships: []
       }
+      runner_wallets: {
+        Row: {
+          available_balance: number
+          created_at: string
+          id: string
+          lifetime_earnings: number
+          pending_balance: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available_balance?: number
+          created_at?: string
+          id?: string
+          lifetime_earnings?: number
+          pending_balance?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available_balance?: number
+          created_at?: string
+          id?: string
+          lifetime_earnings?: number
+          pending_balance?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -535,6 +770,44 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_entries: {
+        Row: {
+          amount: number
+          created_at: string
+          errand_id: string | null
+          id: string
+          kind: Database["public"]["Enums"]["wallet_entry_kind"]
+          label: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          errand_id?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["wallet_entry_kind"]
+          label: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          errand_id?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["wallet_entry_kind"]
+          label?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_entries_errand_id_fkey"
+            columns: ["errand_id"]
+            isOneToOne: false
+            referencedRelation: "errands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -555,6 +828,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "partner" | "user"
+      dropoff_mode: "runner_delivers" | "third_party" | "customer_pickup"
       errand_category:
         | "grocery"
         | "market"
@@ -565,6 +839,12 @@ export type Database = {
         | "gas"
         | "electronics"
         | "other"
+      errand_payment_kind:
+        | "shopping_advance"
+        | "service_fee"
+        | "top_up"
+        | "refund"
+        | "tip"
       errand_status:
         | "draft"
         | "open"
@@ -575,9 +855,16 @@ export type Database = {
         | "completed"
         | "cancelled"
         | "disputed"
+      fund_mode: "customer_advance" | "runner_advance" | "on_delivery"
       lead_kind: "lodging" | "restaurant" | "generic"
       lead_status: "new" | "in_review" | "contacted" | "closed"
       moderation_action: "approved" | "rejected" | "pending" | "note"
+      momo_provider:
+        | "wave"
+        | "orange_money"
+        | "mtn_momo"
+        | "moov_money"
+        | "bank"
       offer_status: "pending" | "accepted" | "rejected" | "withdrawn"
       pay_method:
         | "cash"
@@ -587,6 +874,7 @@ export type Database = {
         | "moov_money"
         | "card"
       pay_status: "pending" | "held" | "paid" | "refunded" | "failed"
+      payout_status: "requested" | "processing" | "paid" | "rejected"
       place_status: "draft" | "pending" | "published" | "rejected"
       place_type:
         | "lodging"
@@ -598,6 +886,13 @@ export type Database = {
         | "culture"
         | "shopping"
       runner_status: "pending" | "approved" | "suspended" | "rejected"
+      wallet_entry_kind:
+        | "earning"
+        | "commission"
+        | "advance_refund"
+        | "payout"
+        | "adjustment"
+        | "bonus"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -726,6 +1021,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "partner", "user"],
+      dropoff_mode: ["runner_delivers", "third_party", "customer_pickup"],
       errand_category: [
         "grocery",
         "market",
@@ -736,6 +1032,13 @@ export const Constants = {
         "gas",
         "electronics",
         "other",
+      ],
+      errand_payment_kind: [
+        "shopping_advance",
+        "service_fee",
+        "top_up",
+        "refund",
+        "tip",
       ],
       errand_status: [
         "draft",
@@ -748,9 +1051,11 @@ export const Constants = {
         "cancelled",
         "disputed",
       ],
+      fund_mode: ["customer_advance", "runner_advance", "on_delivery"],
       lead_kind: ["lodging", "restaurant", "generic"],
       lead_status: ["new", "in_review", "contacted", "closed"],
       moderation_action: ["approved", "rejected", "pending", "note"],
+      momo_provider: ["wave", "orange_money", "mtn_momo", "moov_money", "bank"],
       offer_status: ["pending", "accepted", "rejected", "withdrawn"],
       pay_method: [
         "cash",
@@ -761,6 +1066,7 @@ export const Constants = {
         "card",
       ],
       pay_status: ["pending", "held", "paid", "refunded", "failed"],
+      payout_status: ["requested", "processing", "paid", "rejected"],
       place_status: ["draft", "pending", "published", "rejected"],
       place_type: [
         "lodging",
@@ -773,6 +1079,14 @@ export const Constants = {
         "shopping",
       ],
       runner_status: ["pending", "approved", "suspended", "rejected"],
+      wallet_entry_kind: [
+        "earning",
+        "commission",
+        "advance_refund",
+        "payout",
+        "adjustment",
+        "bonus",
+      ],
     },
   },
 } as const
