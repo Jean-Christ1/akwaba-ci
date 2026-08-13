@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { LogIn, LogOut, ShieldCheck, Inbox, Store, User as UserIcon, KeyRound, Save } from "lucide-react";
+import { LogIn, LogOut, ShieldCheck, Inbox, Store, User as UserIcon, KeyRound, Save, ShoppingBasket, Wallet, Bike } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Logo } from "@/shared/ui/Logo";
 import type { Database } from "@/integrations/supabase/types";
@@ -117,8 +117,41 @@ export default function ProfilePage() {
 
       <section className="akw-container py-6 grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-4">
-          {/* Raccourcis rapides */}
+          {/* Raccourcis rapides.
+              Sur téléphone, le profil est le seul onglet qui mène ailleurs :
+              le portefeuille et l'espace shopper n'avaient sinon aucun point
+              d'entrée dans toute l'application. */}
           <div className="grid gap-2 sm:grid-cols-2">
+            <Link to="/courses" className="akw-card-hover flex items-center gap-3 px-4 py-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-soft text-primary">
+                <ShoppingBasket className="h-4 w-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">Mes courses</p>
+                <p className="text-[11px] text-muted-foreground truncate">Suivi et historique</p>
+              </div>
+              <span className="text-primary text-sm">→</span>
+            </Link>
+            <Link to="/courses/portefeuille" className="akw-card-hover flex items-center gap-3 px-4 py-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-soft text-accent-foreground">
+                <Wallet className="h-4 w-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">Mon portefeuille</p>
+                <p className="text-[11px] text-muted-foreground truncate">Gains et retraits</p>
+              </div>
+              <span className="text-primary text-sm">→</span>
+            </Link>
+            <Link to="/courses/shopper" className="akw-card-hover flex items-center gap-3 px-4 py-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-soft text-primary">
+                <Bike className="h-4 w-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">Espace shopper</p>
+                <p className="text-[11px] text-muted-foreground truncate">Marché et missions</p>
+              </div>
+              <span className="text-primary text-sm">→</span>
+            </Link>
             {(isPartner || isModerator) && (
               <Link to="/admin" className="akw-card-hover flex items-center gap-3 px-4 py-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-soft text-accent-foreground">

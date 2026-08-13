@@ -127,7 +127,11 @@ export function quoteErrand(input: QuoteInput): Quote {
 
   const raw = base + distanceFee + timeFee + volumeFee + urgencyFee + itemsFee + dropoffAdjustment;
   const serviceFee = Math.max(MIN_SERVICE_FEE, round50(raw));
-  const commission = round50(serviceFee * COMMISSION_RATE);
+  // La commission doit être arrondie exactement comme le serveur l'arrondit,
+  // sinon le client lit un montant et la base en enregistre un autre. Le
+  // serveur fait round(service * taux, 2) : on reproduit cela au centime, et
+  // surtout pas l'arrondi à cinquante francs utilisé pour les frais eux-mêmes.
+  const commission = Math.round(serviceFee * COMMISSION_RATE * 100) / 100;
   const runnerPayout = serviceFee - commission;
 
   return {

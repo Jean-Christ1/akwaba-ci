@@ -170,10 +170,14 @@ export default function OperationsPage() {
 
           <h2 className="mt-6 font-display text-lg font-semibold">Argent</h2>
           <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Aucun agrégateur de paiement n'est branché : le client règle le
+                shopper directement. Cette somme est donc due à la plateforme,
+                elle n'a pas été reçue. L'appeler « encaissée » ferait lire un
+                revenu là où il n'y a qu'une créance. */}
             <Carte
-              libelle="Commission encaissée"
+              libelle="Commission due"
               valeur={formatFcfa(kpi.commission_encaissee)}
-              aide="Sur les courses terminées"
+              aide="Sur les courses terminées, non encaissée : aucun paiement ne transite par la plateforme"
             />
             <Carte libelle="Frais de service" valeur={formatFcfa(kpi.volume_service)} />
             <Carte

@@ -38,8 +38,26 @@ describe("quoteErrand", () => {
 
   it("commissionne le frais de service et jamais les achats", () => {
     const quote = quoteErrand(baseQuote);
-    expect(quote.commission).toBe(Math.round((quote.serviceFee * COMMISSION_RATE) / 50) * 50);
     expect(quote.serviceFee).toBe(quote.commission + quote.runnerPayout);
+  });
+
+  // Le serveur calcule la commission par round(service * taux, 2). Si l'écran
+  // arrondit autrement, le client lit un montant et la base en enregistre un
+  // autre : l'écart est silencieux et se découvre sur la facture. Cet arrondi
+  // doit donc rester identique des deux côtés, à la valeur près.
+  it("arrondit la commission exactement comme le serveur, au centime", () => {
+    for (const distanceKm of [0, 1.4, 3.7, 8.2, 15, 27.5]) {
+      const quote = quoteErrand({ ...baseQuote, distanceKm });
+      const commeLeServeur = Math.round(quote.serviceFee * COMMISSION_RATE * 100) / 100;
+      expect(quote.commission).toBe(commeLeServeur);
+    }
+  });
+
+  it("ne commissionne jamais le budget d'achat", () => {
+    const petit = quoteErrand({ ...baseQuote });
+    const gros = quoteErrand({ ...baseQuote });
+    // Le budget d'achat n'entre pas dans le devis : il revient au marchand.
+    expect(petit.commission).toBe(gros.commission);
   });
 
   it("facture l'urgence et le volume en supplément", () => {

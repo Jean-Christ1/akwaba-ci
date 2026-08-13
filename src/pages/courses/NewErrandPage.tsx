@@ -24,9 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  ABIDJAN_ZONES,
   CATEGORIES,
-  CITIES,
   PAY_METHODS,
   formatFcfa,
   type ErrandCategory,
@@ -201,7 +199,7 @@ export default function NewErrandPage() {
       toast.error(error.message);
       return;
     }
-    toast.success("Demande publiée — les shoppers vont vous répondre.");
+    toast.success("Demande publiée - les shoppers vont vous répondre.");
     navigate(`/courses/${data.id}`);
   };
 
@@ -331,7 +329,7 @@ export default function NewErrandPage() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {VOLUME_OPTIONS.map((v) => (
-                      <SelectItem key={v.value} value={v.value}>{v.label} — {v.hint}</SelectItem>
+                      <SelectItem key={v.value} value={v.value}>{v.label} - {v.hint}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -342,7 +340,7 @@ export default function NewErrandPage() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {URGENCY_OPTIONS.map((v) => (
-                      <SelectItem key={v.value} value={v.value}>{v.label} — {v.hint}</SelectItem>
+                      <SelectItem key={v.value} value={v.value}>{v.label} - {v.hint}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -488,7 +486,7 @@ export default function NewErrandPage() {
           <div className="rounded-2xl border border-border bg-card p-4">
             <p className="akw-eyebrow text-muted-foreground">Votre devis</p>
             <p className="mt-1 font-display text-3xl font-semibold">{formatFcfa(quote.serviceFee)}</p>
-            <p className="text-xs text-muted-foreground">Frais de service Akwaba — connus d'avance</p>
+            <p className="text-xs text-muted-foreground">Frais de service Akwaba - connus d'avance</p>
 
             <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
               <li className="flex justify-between"><span>Base véhicule</span><span>{formatFcfa(quote.base)}</span></li>

@@ -52,7 +52,16 @@ export default function RunnerDashboardPage() {
     // L'adresse complète n'apparaît qu'une fois la course assignée.
     const [{ data: o }, { data: m }] = await Promise.all([
       supabase.from("open_errands_feed").select("*").order("created_at", { ascending: false }),
-      supabase.from("errands").select("*").eq("runner_id", user.id).order("created_at", { ascending: false }),
+      // Colonnes explicites : la lecture d'errands est accordée colonne par
+      // colonne pour protéger le code de remise, et une étoile demanderait
+      // aussi cette colonne, donc échouerait pour tout le monde.
+      supabase
+        .from("errands")
+        .select(
+          "id,title,category,city,zone,delivery_address,budget_estimate,status,created_at,runner_id"
+        )
+        .eq("runner_id", user.id)
+        .order("created_at", { ascending: false }),
     ]);
     // Le flux ouvert ne porte ni statut ni affectation : par construction, ces
     // courses sont ouvertes et sans shopper.

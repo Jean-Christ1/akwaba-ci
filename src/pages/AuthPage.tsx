@@ -33,7 +33,7 @@ export default function AuthPage() {
 
   useEffect(() => {
     if (user) navigate(destination, { replace: true });
-  }, [user, navigate]);
+  }, [user, navigate, destination]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

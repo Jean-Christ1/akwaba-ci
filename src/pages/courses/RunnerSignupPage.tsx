@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { ABIDJAN_ZONES, CITIES, VEHICLES, type RunnerStatus } from "@/modules/errands/domain";
+import { VEHICLES, type RunnerStatus } from "@/modules/errands/domain";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 import { useServiceAreas, zonesOfCity } from "@/modules/places/application/useServiceAreas";
 

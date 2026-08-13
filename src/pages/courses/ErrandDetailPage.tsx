@@ -110,6 +110,8 @@ export default function ErrandDetailPage() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
+  // Distinguer « la course n'existe pas » de « le serveur a refusé la lecture ».
+  const [messageErreur, setMessageErreur] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const [itemsTotal, setItemsTotal] = useState("");
@@ -146,13 +148,23 @@ export default function ErrandDetailPage() {
     // vers le navigateur du shopper, sans quoi il pourrait valider lui-même la
     // remise sans avoir rencontré le client. Le client l'obtient par la
     // fonction dédiée, qui vérifie son identité.
-    const { data: e } = await supabase
+    const { data: e, error: erreurCourse } = await supabase
       .from("errands")
       .select(
         "id,customer_id,runner_id,title,category,city,zone,delivery_address,items,notes,budget_estimate,preferred_contact,scheduled_for,status,items_total,service_fee,delivery_fee,commission_rate,commission_amount,total_amount,payment_method,payment_status,receipt_url,rating,review,created_at,fund_mode,advance_amount,advance_proof_url,balance_due,tip_amount,distance_km,estimated_minutes,actual_distance_km,overtime_minutes,extra_distance_km,overrun_fee,started_at"
       )
       .eq("id", id)
       .maybeSingle();
+
+    // Une erreur de lecture n'est pas une course absente. Les confondre affiche
+    // « Course introuvable » alors que le serveur a refusé l'accès, ce qui
+    // envoie chercher un problème là où il n'est pas.
+    if (erreurCourse) {
+      setMessageErreur(erreurCourse.message);
+      setLoading(false);
+      return;
+    }
+    setMessageErreur(null);
     if (!e) {
       setLoading(false);
       return;
@@ -383,8 +395,18 @@ export default function ErrandDetailPage() {
   if (loading) return <div className="akw-container py-10 text-sm text-muted-foreground">Chargement…</div>;
   if (!errand)
     return (
-      <div className="akw-container py-10 text-center text-sm text-muted-foreground">
-        Course introuvable. <Link className="text-primary" to="/courses">Mes courses</Link>
+      <div className="akw-container py-10 text-center text-sm">
+        {messageErreur ? (
+          <>
+            <p className="font-medium text-destructive">Cette course n'a pas pu être chargée.</p>
+            <p className="mt-1 text-muted-foreground">{messageErreur}</p>
+          </>
+        ) : (
+          <p className="text-muted-foreground">Course introuvable.</p>
+        )}
+        <Link className="mt-3 inline-block text-primary" to="/courses">
+          Revenir à mes courses
+        </Link>
       </div>
     );
 
