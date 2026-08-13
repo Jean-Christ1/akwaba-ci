@@ -27,6 +27,8 @@ export default function RunnerSignupPage() {
   const [zones, setZones] = useState<string[]>([]);
   const [vehicle, setVehicle] = useState("moto");
   const [bio, setBio] = useState("");
+  const [idDocPath, setIdDocPath] = useState<string | null>(null);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -47,6 +49,29 @@ export default function RunnerSignupPage() {
   const toggleZone = (z: string) =>
     setZones((p) => (p.includes(z) ? p.filter((x) => x !== z) : [...p, z]));
 
+  // La pièce d'identité part dans un bucket privé : elle n'est lisible que par
+  // son propriétaire et par les modérateurs qui instruisent la candidature.
+  const uploadIdDoc = async (file: File) => {
+    if (!user) return;
+    if (file.size > 8 * 1024 * 1024) {
+      return toast.error("Fichier trop lourd, 8 Mo maximum.");
+    }
+    const accepted = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+    if (!accepted.includes(file.type)) {
+      return toast.error("Formats acceptés : JPEG, PNG, WebP ou PDF.");
+    }
+    setUploadingDoc(true);
+    const extension = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+    const path = `${user.id}/piece-identite-${Date.now()}.${extension}`;
+    const { error } = await supabase.storage
+      .from("identity-docs")
+      .upload(path, file, { upsert: true, contentType: file.type });
+    setUploadingDoc(false);
+    if (error) return toast.error(error.message);
+    setIdDocPath(path);
+    toast.success("Pièce d'identité enregistrée.");
+  };
+
   const submit = async () => {
     if (!user) return navigate("/auth?redirect=/courses/devenir-shopper");
     if (fullName.trim().length < 2 || phone.trim().length < 6) {
@@ -62,10 +87,11 @@ export default function RunnerSignupPage() {
       zones: zones as unknown as never,
       vehicle,
       bio: bio.trim() || null,
+      id_doc_url: idDocPath,
     });
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success("Candidature envoyée — validation sous 24 h.");
+    toast.success("Candidature envoyée - validation sous 24 h.");
     setExisting({ status: "pending" });
   };
 
@@ -171,6 +197,31 @@ export default function RunnerSignupPage() {
             rows={3}
             placeholder="Votre expérience, vos disponibilités, vos points forts…"
           />
+        </section>
+
+        <section className="rounded-2xl border border-border bg-card p-4">
+          <Label>Pièce d'identité</Label>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Carte nationale, passeport ou permis. Le document reste confidentiel : seuls les
+            modérateurs qui instruisent votre candidature peuvent le consulter.
+          </p>
+          <Input
+            type="file"
+            className="mt-2"
+            accept="image/jpeg,image/png,image/webp,application/pdf"
+            disabled={uploadingDoc}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) uploadIdDoc(file);
+              e.target.value = "";
+            }}
+          />
+          {uploadingDoc && (
+            <p className="mt-2 text-xs text-muted-foreground">Envoi du document en cours...</p>
+          )}
+          {idDocPath && !uploadingDoc && (
+            <p className="mt-2 text-xs text-primary">Document reçu.</p>
+          )}
         </section>
 
         <Button className="w-full" size="lg" disabled={saving} onClick={submit}>

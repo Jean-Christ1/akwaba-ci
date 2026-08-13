@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Phone, Video, MessageCircle, Send, Loader2, CheckCircle2, Receipt } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ProofUpload } from "@/modules/errands/ui/ProofUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,9 @@ interface Errand {
   total_amount: number;
   payment_method: string;
   payment_status: string;
+  fund_mode: string;
+  advance_proof_url: string | null;
+  advance_amount: number;
   handover_code: string | null;
   receipt_url: string | null;
   rating: number | null;
@@ -635,11 +639,49 @@ export default function ErrandDetailPage() {
                   <Input value={deliveryFee} inputMode="numeric"
                     onChange={(e) => setDeliveryFee(e.target.value.replace(/[^0-9]/g, ""))} />
                 </div>
-                <Button variant="outline" size="sm" className="w-full" onClick={saveInvoice}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  disabled={busy}
+                  onClick={saveInvoice}
+                >
                   Enregistrer la facture
                 </Button>
+                <ProofUpload
+                  errandId={errand.id}
+                  kind="receipt"
+                  existingPath={errand.receipt_url}
+                  amount={Number(itemsTotal) || 0}
+                  onUploaded={load}
+                />
               </div>
             ) : null}
+
+            {/* Le client dépose la preuve du transfert de son budget d'achat. */}
+            {isCustomer && errand.fund_mode === "customer_advance" && errand.payment_status !== "paid" && (
+              <div className="mt-3">
+                <ProofUpload
+                  errandId={errand.id}
+                  kind="advance"
+                  existingPath={errand.advance_proof_url}
+                  amount={Number(errand.budget_estimate) || 0}
+                  onUploaded={load}
+                />
+              </div>
+            )}
+
+            {/* Le reçu déposé par le shopper reste consultable par le client. */}
+            {isCustomer && errand.receipt_url && (
+              <div className="mt-3">
+                <ProofUpload
+                  errandId={errand.id}
+                  kind="receipt"
+                  existingPath={errand.receipt_url}
+                  onUploaded={load}
+                />
+              </div>
+            )}
 
             <dl className="mt-3 space-y-1 text-sm">
               <div className="flex justify-between"><dt className="text-muted-foreground">Achats</dt><dd>{formatFcfa(invoice.items)}</dd></div>

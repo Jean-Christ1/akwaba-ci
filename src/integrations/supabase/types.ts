@@ -885,6 +885,15 @@ export type Database = {
         Args: { p_errand_id: string }
         Returns: string | null
       }
+      errand_attach_proof: {
+        Args: {
+          p_errand_id: string
+          p_kind: string
+          p_path: string
+          p_amount?: number | null
+        }
+        Returns: Database["public"]["Tables"]["errands"]["Row"]
+      }
       payout_request_create: {
         Args: { p_amount: number; p_account_id?: string | null }
         Returns: Database["public"]["Tables"]["payout_requests"]["Row"]
