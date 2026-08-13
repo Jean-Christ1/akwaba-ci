@@ -889,6 +889,15 @@ export type Database = {
         Args: { p_amount: number; p_account_id?: string | null }
         Returns: Database["public"]["Tables"]["payout_requests"]["Row"]
       }
+      payout_request_settle: {
+        Args: {
+          p_request_id: string
+          p_status: Database["public"]["Enums"]["payout_status"]
+          p_reference?: string | null
+          p_note?: string | null
+        }
+        Returns: Database["public"]["Tables"]["payout_requests"]["Row"]
+      }
       wallet_release_matured_earnings: {
         Args: Record<PropertyKey, never>
         Returns: number

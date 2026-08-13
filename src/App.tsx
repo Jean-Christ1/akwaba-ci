@@ -30,7 +30,9 @@ import HowItWorksPage from "./pages/courses/HowItWorksPage";
 import WalletPage from "./pages/courses/WalletPage";
 import RoutePage from "./pages/RoutePage";
 import ShoppersPage from "./pages/admin/ShoppersPage";
+import PayoutsPage from "./pages/admin/PayoutsPage";
 import NotFound from "./pages/NotFound";
+import { RequireRole } from "@/shared/ui/RequireRole";
 
 import { initTabAnalytics } from "@/shared/analytics/tabAnalytics";
 
@@ -66,11 +68,24 @@ const App = () => (
               <Route path="/courses/devenir-shopper" element={<RunnerSignupPage />} />
               <Route path="/courses/shopper" element={<RunnerDashboardPage />} />
               <Route path="/courses/:id" element={<ErrandDetailPage />} />
-              <Route path="/admin" element={<AdminPage />} />
+              {/* L'amorçage du premier administrateur doit rester atteignable
+                  avant qu'un rôle n'existe : il est protégé par son propre
+                  secret côté fonction edge. */}
               <Route path="/admin/bootstrap" element={<BootstrapAdminPage />} />
-              <Route path="/admin/shoppers" element={<ShoppersPage />} />
-              <Route path="/admin/places/:id" element={<PlaceEditorPage />} />
               <Route path="/partner/signup" element={<PartnerSignupPage />} />
+
+              <Route element={<RequireRole role="partner" />}>
+                <Route path="/admin" element={<AdminPage />} />
+                <Route path="/admin/places/:id" element={<PlaceEditorPage />} />
+              </Route>
+
+              <Route element={<RequireRole role="moderator" />}>
+                <Route path="/admin/shoppers" element={<ShoppersPage />} />
+              </Route>
+
+              <Route element={<RequireRole role="admin" />}>
+                <Route path="/admin/payouts" element={<PayoutsPage />} />
+              </Route>
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

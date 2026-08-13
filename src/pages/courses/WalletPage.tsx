@@ -70,6 +70,10 @@ export default function WalletPage() {
       setLoading(false);
       return;
     }
+    // Les gains arrivés au bout du délai anti-litige basculent en solde
+    // disponible. L'opération est idempotente et pilotée par le serveur.
+    await supabase.rpc("wallet_release_matured_earnings");
+
     const [w, a, e, p] = await Promise.all([
       supabase.from("runner_wallets").select("available_balance,pending_balance,lifetime_earnings").eq("user_id", user.id).maybeSingle(),
       supabase.from("runner_payout_accounts").select("id,provider,account_number,account_name,is_default").eq("user_id", user.id).order("created_at"),
@@ -124,15 +128,17 @@ export default function WalletPage() {
     const def = accounts.find((a) => a.is_default) ?? accounts[0];
     if (!def) return toast.error("Ajoutez d'abord un compte de retrait.");
     setBusy(true);
-    const { error } = await supabase.from("payout_requests").insert({
-      user_id: user.id,
-      account_id: def.id,
-      amount: value,
+    // Gardes d'interface ci-dessus pour un retour immédiat. Le serveur
+    // revérifie le plancher, le solde et la propriété du compte, puis débite
+    // le portefeuille de façon atomique : c'est lui qui fait autorité.
+    const { error } = await supabase.rpc("payout_request_create", {
+      p_amount: value,
+      p_account_id: def.id,
     });
     setBusy(false);
     if (error) return toast.error(error.message);
     setAmount("");
-    toast.success("Demande de retrait envoyée — traitée sous 1 jour ouvré.");
+    toast.success("Demande de retrait envoyée, traitée sous 1 jour ouvré.");
     load();
   };
 
@@ -210,7 +216,7 @@ export default function WalletPage() {
                 <span>
                   {MOMO_PROVIDERS.find((p) => p.value === a.provider)?.emoji}{" "}
                   <strong>{MOMO_PROVIDERS.find((p) => p.value === a.provider)?.label}</strong> ·{" "}
-                  {a.account_number} — {a.account_name}
+                  {a.account_number} - {a.account_name}
                 </span>
                 <Button variant="ghost" size="icon" onClick={() => removeAccount(a.id)} aria-label="Supprimer">
                   <Trash2 className="h-4 w-4" />
