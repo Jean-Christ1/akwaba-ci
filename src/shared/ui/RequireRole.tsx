@@ -35,7 +35,9 @@ export function RequireRole({ role = "user" }: RequireRoleProps) {
 
   const granted =
     role === "user" ||
-    (role === "partner" && isPartner) ||
+    // Le back-office accueille aussi la modération : un modérateur y entre sans
+    // être partenaire, sans quoi tout son parcours serait injoignable.
+    (role === "partner" && (isPartner || isModerator)) ||
     (role === "moderator" && isModerator) ||
     (role === "admin" && isAdmin);
 
