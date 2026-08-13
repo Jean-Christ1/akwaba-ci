@@ -17,7 +17,7 @@ import { PlaceCard } from "@/modules/places/ui/PlaceCard";
 import { useFavorites } from "@/modules/favorites/application/useFavorites";
 import { LeadRequestForm } from "@/modules/leads/ui/LeadRequestForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { CalendarCheck } from "lucide-react";
+import { CalendarCheck, ShoppingBasket } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useTabState } from "@/shared/hooks/useTabState";
@@ -251,6 +251,25 @@ export default function PlaceDetailPage() {
           {/* COLONNE CONTACT (desktop) */}
           <aside className="hidden lg:block">
             <div className="sticky top-24 space-y-3">
+              {/* Un voyageur logé ici doit pouvoir faire faire ses courses
+                  sans quitter l'application : c'est le lien entre les deux
+                  métiers de la plateforme. */}
+              {place.type === "lodging" && (
+                <div className="akw-card p-6">
+                  <p className="akw-eyebrow mb-2">Besoin de quelque chose ?</p>
+                  <p className="text-sm text-muted-foreground">
+                    Un shopper vérifié peut faire vos courses et vous les apporter ici.
+                  </p>
+                  <Link
+                    to={`/courses/nouvelle?depuis=${encodeURIComponent(place.name)}&ville=${encodeURIComponent(place.city)}&adresse=${encodeURIComponent(place.address)}`}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
+                  >
+                    <ShoppingBasket className="h-4 w-4" aria-hidden="true" />
+                    Demander une course
+                  </Link>
+                </div>
+              )}
+
               <div className="akw-card p-6">
                 <p className="akw-eyebrow mb-4">Contacter directement</p>
                 <div className="space-y-2.5">

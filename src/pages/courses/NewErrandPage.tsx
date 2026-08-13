@@ -55,13 +55,18 @@ export default function NewErrandPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
+
+  // Une course peut être demandée depuis la fiche d'un hôtel : on reprend
+  // l'adresse de l'établissement comme point de remise, ce qui évite au
+  // voyageur de la ressaisir alors qu'il y est déjà.
+  const depuisLieu = params.get("depuis");
   const initialCategory = (params.get("category") as ErrandCategory) ?? "grocery";
 
   const [category, setCategory] = useState<ErrandCategory>(initialCategory);
   const [title, setTitle] = useState("");
-  const [city, setCity] = useState("Abidjan");
+  const [city, setCity] = useState(params.get("ville") ?? "Abidjan");
   const [zone, setZone] = useState("");
-  const [address, setAddress] = useState("");
+  const [address, setAddress] = useState(params.get("adresse") ?? "");
   const [items, setItems] = useState<ErrandItem[]>([{ label: "", qty: "1" }]);
   const [budget, setBudget] = useState("");
   const [notes, setNotes] = useState("");
@@ -205,7 +210,12 @@ export default function NewErrandPage() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="akw-eyebrow text-muted-foreground">Akwaba Courses</p>
-          <h1 className="font-display text-2xl font-semibold">Nouvelle course</h1>
+          {depuisLieu && (
+          <p className="mb-2 rounded-xl border border-primary/30 bg-primary-soft px-3 py-2 text-xs text-primary">
+            Course demandée depuis {depuisLieu}. L'adresse de remise est déjà renseignée.
+          </p>
+        )}
+        <h1 className="font-display text-2xl font-semibold">Nouvelle course</h1>
         </div>
         <Link
           to="/courses/comment-ca-marche"

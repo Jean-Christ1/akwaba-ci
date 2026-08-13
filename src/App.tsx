@@ -48,6 +48,8 @@ const BootstrapAdminPage = lazy(() => import("./pages/admin/BootstrapAdminPage")
 const ShoppersPage = lazy(() => import("./pages/admin/ShoppersPage"));
 const PayoutsPage = lazy(() => import("./pages/admin/PayoutsPage"));
 const DisputesPage = lazy(() => import("./pages/admin/DisputesPage"));
+const SettingsPage = lazy(() => import("./pages/admin/SettingsPage"));
+const OperationsPage = lazy(() => import("./pages/admin/OperationsPage"));
 const TermsPage = lazy(() =>
   import("./pages/legal/LegalPages").then((m) => ({ default: m.TermsPage }))
 );
@@ -116,10 +118,12 @@ const App = () => (
                 <Route element={<RequireRole role="moderator" />}>
                   <Route path="/admin/shoppers" element={<ShoppersPage />} />
                   <Route path="/admin/litiges" element={<DisputesPage />} />
+                  <Route path="/admin/pilotage" element={<OperationsPage />} />
                 </Route>
 
                 <Route element={<RequireRole role="admin" />}>
                   <Route path="/admin/payouts" element={<PayoutsPage />} />
+                  <Route path="/admin/parametres" element={<SettingsPage />} />
                 </Route>
               </Route>
               <Route path="*" element={<NotFound />} />

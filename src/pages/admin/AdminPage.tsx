@@ -385,6 +385,12 @@ export default function AdminPage() {
                       <Users className="h-4 w-4" /> Shoppers
                     </Link>
                     <Link
+                      to="/admin/pilotage"
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground transition hover:bg-muted/50"
+                    >
+                      <LayoutDashboard className="h-4 w-4" /> Pilotage
+                    </Link>
+                    <Link
                       to="/admin/litiges"
                       className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground transition hover:bg-muted/50"
                     >
@@ -393,12 +399,20 @@ export default function AdminPage() {
                   </>
                 )}
                 {isAdmin && (
-                  <Link
-                    to="/admin/payouts"
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground transition hover:bg-muted/50"
-                  >
-                    <Inbox className="h-4 w-4" /> Retraits
-                  </Link>
+                  <>
+                    <Link
+                      to="/admin/payouts"
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground transition hover:bg-muted/50"
+                    >
+                      <Inbox className="h-4 w-4" /> Retraits
+                    </Link>
+                    <Link
+                      to="/admin/parametres"
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground transition hover:bg-muted/50"
+                    >
+                      <Store className="h-4 w-4" /> Paramètres
+                    </Link>
+                  </>
                 )}
               </div>
             )}

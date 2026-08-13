@@ -19,8 +19,15 @@ export type Database = {
           base: string
           created_at: string
           effective_from: string
+          budget_tolerance_min: number
+          budget_tolerance_pct: number
+          distance_grace_km: number
+          distance_per_km: number
           hold_hours: number
           id: string
+          overrun_cap_ratio: number
+          overtime_grace_minutes: number
+          overtime_per_minute: number
           is_active: boolean
           min_payout: number
           min_service_fee: number
@@ -31,8 +38,15 @@ export type Database = {
           base?: string
           created_at?: string
           effective_from?: string
+          budget_tolerance_min?: number
+          budget_tolerance_pct?: number
+          distance_grace_km?: number
+          distance_per_km?: number
           hold_hours?: number
           id?: string
+          overrun_cap_ratio?: number
+          overtime_grace_minutes?: number
+          overtime_per_minute?: number
           is_active?: boolean
           min_payout?: number
           min_service_fee?: number
@@ -43,8 +57,15 @@ export type Database = {
           base?: string
           created_at?: string
           effective_from?: string
+          budget_tolerance_min?: number
+          budget_tolerance_pct?: number
+          distance_grace_km?: number
+          distance_per_km?: number
           hold_hours?: number
           id?: string
+          overrun_cap_ratio?: number
+          overtime_grace_minutes?: number
+          overtime_per_minute?: number
           is_active?: boolean
           min_payout?: number
           min_service_fee?: number
@@ -216,8 +237,14 @@ export type Database = {
       }
       errands: {
         Row: {
+          accepted_at: string | null
           actual_distance_km: number | null
           actual_minutes: number | null
+          budget_approved_at: string | null
+          budget_overrun_pending: boolean
+          delivered_at: string | null
+          delivering_at: string | null
+          shopping_at: string | null
           advance_amount: number
           extra_distance_km: number
           overrun_approved_at: string | null
@@ -269,8 +296,14 @@ export type Database = {
           zone: string | null
         }
         Insert: {
+          accepted_at?: string | null
           actual_distance_km?: number | null
           actual_minutes?: number | null
+          budget_approved_at?: string | null
+          budget_overrun_pending?: boolean
+          delivered_at?: string | null
+          delivering_at?: string | null
+          shopping_at?: string | null
           advance_amount?: number
           extra_distance_km?: number
           overrun_approved_at?: string | null
@@ -322,8 +355,14 @@ export type Database = {
           zone?: string | null
         }
         Update: {
+          accepted_at?: string | null
           actual_distance_km?: number | null
           actual_minutes?: number | null
+          budget_approved_at?: string | null
+          budget_overrun_pending?: boolean
+          delivered_at?: string | null
+          delivering_at?: string | null
+          shopping_at?: string | null
           advance_amount?: number
           extra_distance_km?: number
           overrun_approved_at?: string | null
@@ -611,6 +650,114 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payment_providers: {
+        Row: {
+          code: string
+          configured_at: string | null
+          fee_fixed: number
+          fee_percent: number
+          instructions: string | null
+          is_enabled: boolean
+          kind: Database["public"]["Enums"]["momo_provider"] | null
+          label: string
+          merchant_name: string | null
+          merchant_number: string | null
+          position: number
+          secret_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          configured_at?: string | null
+          fee_fixed?: number
+          fee_percent?: number
+          instructions?: string | null
+          is_enabled?: boolean
+          kind?: Database["public"]["Enums"]["momo_provider"] | null
+          label: string
+          merchant_name?: string | null
+          merchant_number?: string | null
+          position?: number
+          secret_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          configured_at?: string | null
+          fee_fixed?: number
+          fee_percent?: number
+          instructions?: string | null
+          is_enabled?: boolean
+          kind?: Database["public"]["Enums"]["momo_provider"] | null
+          label?: string
+          merchant_name?: string | null
+          merchant_number?: string | null
+          position?: number
+          secret_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          details: Json
+          entity: string
+          entity_id: string | null
+          id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          entity: string
+          entity_id?: string | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          entity?: string
+          entity_id?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      errand_tracking: {
+        Row: {
+          accuracy_m: number | null
+          errand_id: string
+          id: string
+          lat: number
+          lng: number
+          recorded_at: string
+          runner_id: string
+        }
+        Insert: {
+          accuracy_m?: number | null
+          errand_id: string
+          id?: string
+          lat: number
+          lng: number
+          recorded_at?: string
+          runner_id: string
+        }
+        Update: {
+          accuracy_m?: number | null
+          errand_id?: string
+          id?: string
+          lat?: number
+          lng?: number
+          recorded_at?: string
+          runner_id?: string
+        }
+        Relationships: []
       }
       places: {
         Row: {
@@ -967,6 +1114,39 @@ export type Database = {
       }
     }
     Views: {
+      errand_performance: {
+        Row: {
+          accepted_at: string | null
+          actual_distance_km: number | null
+          actual_minutes: number | null
+          budget_approved_at: string | null
+          budget_overrun_pending: boolean
+          delivered_at: string | null
+          delivering_at: string | null
+          shopping_at: string | null
+          city: string | null
+          commission_amount: number | null
+          created_at: string | null
+          customer_id: string | null
+          distance_variance_pct: number | null
+          estimated_distance_km: number | null
+          estimated_minutes: number | null
+          extra_distance_km: number | null
+          id: string | null
+          overrun_fee: number | null
+          overtime_minutes: number | null
+          runner_id: string | null
+          runner_payout: number | null
+          service_fee: number | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["errand_status"] | null
+          time_variance_pct: number | null
+          title: string | null
+          total_amount: number | null
+          zone: string | null
+        }
+        Relationships: []
+      }
       errand_market_detail: {
         Row: {
           budget_estimate: number | null
@@ -1082,6 +1262,56 @@ export type Database = {
       errand_declare_advance: {
         Args: { p_errand_id: string; p_amount: number }
         Returns: Database["public"]["Tables"]["errands"]["Row"]
+      }
+      admin_dashboard: {
+        Args: { p_days?: number }
+        Returns: {
+          courses_total: number
+          courses_completed: number
+          courses_cancelled: number
+          courses_disputed: number
+          courses_open: number
+          volume_achats: number
+          volume_service: number
+          commission_encaissee: number
+          supplements: number
+          duree_moyenne_min: number | null
+          ecart_temps_moyen: number | null
+          ecart_distance_moyen: number | null
+          shoppers_actifs: number
+          shoppers_en_attente: number
+          retraits_en_attente: number
+          montant_a_verser: number
+        }[]
+      }
+      commission_rule_publish: {
+        Args: {
+          p_rate: number
+          p_min_service_fee: number
+          p_min_payout: number
+          p_hold_hours: number
+          p_overtime_grace: number
+          p_overtime_per_min: number
+          p_distance_grace_km: number
+          p_distance_per_km: number
+          p_overrun_cap_ratio: number
+          p_budget_tol_pct: number
+          p_budget_tol_min: number
+        }
+        Returns: Database["public"]["Tables"]["commission_rules"]["Row"]
+      }
+      errand_approve_budget_overrun: {
+        Args: { p_errand_id: string }
+        Returns: Database["public"]["Tables"]["errands"]["Row"]
+      }
+      log_audit: {
+        Args: {
+          p_action: string
+          p_entity: string
+          p_entity_id?: string | null
+          p_details?: Json
+        }
+        Returns: undefined
       }
       errand_track_position: {
         Args: {
