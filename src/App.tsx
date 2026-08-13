@@ -60,6 +60,9 @@ const App = () => (
               <Route path="/services" element={<ServicesHubPage />} />
               <Route path="/courses" element={<MyErrandsPage />} />
               <Route path="/courses/nouvelle" element={<NewErrandPage />} />
+              <Route path="/courses/comment-ca-marche" element={<HowItWorksPage />} />
+              <Route path="/courses/portefeuille" element={<WalletPage />} />
+              <Route path="/itineraire" element={<RoutePage />} />
               <Route path="/courses/devenir-shopper" element={<RunnerSignupPage />} />
               <Route path="/courses/shopper" element={<RunnerDashboardPage />} />
               <Route path="/courses/:id" element={<ErrandDetailPage />} />
