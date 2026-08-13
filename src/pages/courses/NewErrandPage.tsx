@@ -40,7 +40,6 @@ import {
   URGENCY_OPTIONS,
   VEHICLE_OPTIONS,
   VOLUME_OPTIONS,
-  generateHandoverCode,
   quoteErrand,
   type DropoffMode,
   type FundMode,

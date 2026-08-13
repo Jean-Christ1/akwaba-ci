@@ -37,6 +37,13 @@ export function ItineraryDetailPage() {
   const { slug } = useParams();
   const it = slug ? getItineraryBySlug(slug) : undefined;
 
+  // Les étapes du parcours résolvent des fiches réelles : un parcours doit
+  // refléter le catalogue publié, non une copie figée dans le code.
+  // Le hook est appelé avant tout retour conditionnel, comme l'exige React.
+  const { data: places, loading: chargementLieux } = usePlacesByIds(
+    it?.steps.map((s) => s.placeId) ?? []
+  );
+
   if (!it) {
     return (
       <div className="akw-container py-24 text-center">
@@ -47,12 +54,6 @@ export function ItineraryDetailPage() {
       </div>
     );
   }
-
-  // Les étapes du parcours résolvent des fiches réelles : un parcours doit
-  // refléter le catalogue publié, non une copie figée dans le code.
-  const { data: places, loading: chargementLieux } = usePlacesByIds(
-    it.steps.map((s) => s.placeId)
-  );
 
   return (
     <div className="bg-background pb-16">
