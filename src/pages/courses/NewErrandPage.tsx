@@ -1,7 +1,15 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Plus, Trash2, Loader2, Info, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { AddressPicker } from "@/modules/errands/ui/AddressPicker";
+import {
+  calculerTrajet,
+  centreVille,
+  estimerDureeMission,
+  profilPourVehicule,
+  type Adresse,
+} from "@/modules/errands/infrastructure/geocoding";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -70,7 +78,47 @@ export default function NewErrandPage() {
   const [thirdParty, setThirdParty] = useState("");
   const [fundMode, setFundMode] = useState<FundMode>("customer_advance");
 
+  // Coordonnées de l'adresse de remise, quand elle a pu être localisée.
+  // Elles ancrent la distance, donc le prix, sur un trajet réel.
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [calculTrajet, setCalculTrajet] = useState(false);
+
   const cleanItems = useMemo(() => items.filter((i) => i.label.trim().length > 0), [items]);
+
+  /**
+   * Une adresse vient d'être localisée : on dérive la distance et la durée du
+   * trajet réel plutôt que de laisser une valeur saisie à la main servir
+   * d'assiette au prix. Si le service de routage ne répond pas, la saisie
+   * manuelle est conservée telle quelle.
+   */
+  const onAdresseLocalisee = useCallback(
+    async (adresse: Adresse | null) => {
+      if (!adresse) {
+        setCoords(null);
+        return;
+      }
+
+      setCoords({ lat: adresse.lat, lng: adresse.lng });
+      setCalculTrajet(true);
+
+      const trajet = await calculerTrajet(
+        centreVille(city),
+        { lat: adresse.lat, lng: adresse.lng },
+        profilPourVehicule(vehicle)
+      );
+
+      setCalculTrajet(false);
+      if (!trajet) return;
+
+      setDistance(String(trajet.distanceKm));
+      setMinutes(
+        String(
+          estimerDureeMission(trajet, cleanItems.length, dropoff === "runner_delivers")
+        )
+      );
+    },
+    [city, vehicle, cleanItems.length, dropoff]
+  );
   const valid = title.trim().length >= 3 && address.trim().length >= 3 && cleanItems.length > 0;
 
   const quote = useMemo(
@@ -111,6 +159,8 @@ export default function NewErrandPage() {
         city,
         zone: zone || null,
         delivery_address: address.trim(),
+        lat: coords?.lat ?? null,
+        lng: coords?.lng ?? null,
         items: cleanItems as unknown as never,
         notes: notes || null,
         budget_estimate: budgetNum,
@@ -290,6 +340,13 @@ export default function NewErrandPage() {
                 <Input id="mins" inputMode="numeric" value={minutes} onChange={(e) => setMinutes(e.target.value)} />
               </div>
             </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              {calculTrajet
+                ? "Calcul du trajet en cours..."
+                : coords
+                  ? "Distance et durée calculées depuis l'adresse localisée. Vous pouvez les ajuster."
+                  : "Choisissez une adresse dans les suggestions pour calculer la distance réelle."}
+            </p>
           </section>
 
           {/* 4. Remise */}
@@ -337,7 +394,13 @@ export default function NewErrandPage() {
               </div>
               <div className="sm:col-span-2">
                 <Label htmlFor="addr">Adresse de remise</Label>
-                <Input id="addr" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Rue, immeuble, repère" />
+                <AddressPicker
+                  id="addr"
+                  value={address}
+                  onChange={setAddress}
+                  onLocated={onAdresseLocalisee}
+                  placeholder="Rue, immeuble, repère"
+                />
               </div>
               <div className="sm:col-span-2">
                 <Label htmlFor="sched">Date / heure souhaitée (facultatif)</Label>
