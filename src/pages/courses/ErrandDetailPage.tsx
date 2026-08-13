@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Phone, Video, MessageCircle, Send, CheckCircle2, Receipt } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { AdvancePanel } from "@/modules/errands/ui/AdvancePanel";
 import { ProofUpload } from "@/modules/errands/ui/ProofUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -657,14 +658,22 @@ export default function ErrandDetailPage() {
               </div>
             ) : null}
 
-            {/* Le client dépose la preuve du transfert de son budget d'achat. */}
+            {/* Le client voit sur quel compte envoyer le budget, déclare le
+                montant transféré, puis dépose sa preuve. */}
             {isCustomer && errand.fund_mode === "customer_advance" && errand.payment_status !== "paid" && (
-              <div className="mt-3">
+              <div className="mt-3 space-y-3">
+                <AdvancePanel
+                  errandId={errand.id}
+                  budgetEstimate={Number(errand.budget_estimate) || 0}
+                  advanceAmount={Number(errand.advance_amount) || 0}
+                  advanceConfirmed={Boolean(errand.advance_proof_url) || Number(errand.advance_amount) > 0}
+                  onDeclared={load}
+                />
                 <ProofUpload
                   errandId={errand.id}
                   kind="advance"
                   existingPath={errand.advance_proof_url}
-                  amount={Number(errand.budget_estimate) || 0}
+                  amount={Number(errand.advance_amount) || Number(errand.budget_estimate) || 0}
                   onUploaded={load}
                 />
               </div>
@@ -689,6 +698,20 @@ export default function ErrandDetailPage() {
               <div className="flex justify-between border-t border-border pt-1 font-semibold">
                 <dt>Total à payer</dt><dd>{formatFcfa(invoice.total)}</dd>
               </div>
+              {/* Une avance déjà envoyée doit se déduire à l'écran : sans cela,
+                  le client ne sait pas ce qu'il lui reste réellement à régler. */}
+              {Number(errand.advance_amount) > 0 && (
+                <>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <dt>Avance déjà envoyée</dt>
+                    <dd>- {formatFcfa(errand.advance_amount)}</dd>
+                  </div>
+                  <div className="flex justify-between font-semibold text-primary">
+                    <dt>Reste à régler</dt>
+                    <dd>{formatFcfa(Math.max(invoice.total - Number(errand.advance_amount), 0))}</dd>
+                  </div>
+                </>
+              )}
               {isRunner && (
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <dt>Votre gain (après {Math.round(invoice.commissionRate * 100)}% Akwaba)</dt>

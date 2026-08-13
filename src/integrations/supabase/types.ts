@@ -943,6 +943,18 @@ export type Database = {
         }
         Returns: Database["public"]["Tables"]["errands"]["Row"]
       }
+      errand_runner_payout_account: {
+        Args: { p_errand_id: string }
+        Returns: {
+          provider: Database["public"]["Enums"]["momo_provider"]
+          account_number: string
+          account_name: string
+        }[]
+      }
+      errand_declare_advance: {
+        Args: { p_errand_id: string; p_amount: number }
+        Returns: Database["public"]["Tables"]["errands"]["Row"]
+      }
       errand_resolve_dispute: {
         Args: { p_errand_id: string; p_issue: string; p_note?: string | null }
         Returns: Database["public"]["Tables"]["errands"]["Row"]
