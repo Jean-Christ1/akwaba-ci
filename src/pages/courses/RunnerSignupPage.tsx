@@ -139,15 +139,15 @@ export default function RunnerSignupPage() {
         <section className="grid gap-3 rounded-2xl border border-border bg-card p-4 sm:grid-cols-2">
           <div>
             <Label>Nom complet</Label>
-            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Koffi Aya" />
+            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Koffi Aya" autoComplete="name" enterKeyHint="next" />
           </div>
           <div>
             <Label>Téléphone</Label>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+225 07 00 00 00 00" />
+            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+225 07 00 00 00 00" type="tel" inputMode="tel" autoComplete="tel" enterKeyHint="next" />
           </div>
           <div>
             <Label>WhatsApp</Label>
-            <Input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="+225 07 …" />
+            <Input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="+225 07 …" type="tel" inputMode="tel" autoComplete="tel" enterKeyHint="next" />
           </div>
           <div>
             <Label>Moyen de déplacement</Label>

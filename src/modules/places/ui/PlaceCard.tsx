@@ -4,6 +4,7 @@ import { Heart, MapPin, Star } from "lucide-react";
 import type { Place } from "@/modules/places/domain/types";
 import { useFavorites } from "@/modules/favorites/application/useFavorites";
 import { cn } from "@/lib/utils";
+import { PlaceImage } from "@/shared/ui/PlaceImage";
 
 const TYPE_LABEL: Record<Place["type"], string> = {
   lodging: "Hébergement",
@@ -32,10 +33,9 @@ function PlaceCardBase({ place, variant = "default", className }: PlaceCardProps
         to={`/lieu/${place.slug}`}
         className={cn("akw-card-hover group flex gap-3 p-3", className)}
       >
-        <img
+        <PlaceImage
           src={place.image}
           alt={place.name}
-          loading="lazy"
           className="h-20 w-20 flex-shrink-0 rounded-lg object-cover"
         />
         <div className="min-w-0 flex-1">
@@ -57,10 +57,9 @@ function PlaceCardBase({ place, variant = "default", className }: PlaceCardProps
   return (
     <Link to={`/lieu/${place.slug}`} className={cn("akw-card-hover group block", className)}>
       <div className="relative aspect-[4/3] overflow-hidden">
-        <img
+        <PlaceImage
           src={place.image}
           alt={place.name}
-          loading="lazy"
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />
         <div className="absolute inset-x-0 top-0 flex items-start justify-between p-3">

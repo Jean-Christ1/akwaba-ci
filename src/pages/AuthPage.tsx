@@ -86,17 +86,17 @@ export default function AuthPage() {
           {mode === "signup" && (
             <div>
               <Label htmlFor="name">Nom</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={80} />
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={80} autoComplete="name" enterKeyHint="next" />
             </div>
           )}
           <div>
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} enterKeyHint="next" />
           </div>
           {mode !== "reset" && (
             <div>
               <Label htmlFor="password">Mot de passe</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} autoComplete={mode === "signup" ? "new-password" : "current-password"} enterKeyHint="go" />
             </div>
           )}
           <Button type="submit" className="w-full" disabled={loading}>

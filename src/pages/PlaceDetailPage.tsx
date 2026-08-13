@@ -20,6 +20,7 @@ import { CalendarCheck } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useTabState } from "@/shared/hooks/useTabState";
+import { PlaceImage } from "@/shared/ui/PlaceImage";
 
 export default function PlaceDetailPage() {
   const { slug } = useParams();
@@ -59,11 +60,11 @@ export default function PlaceDetailPage() {
       {/* HERO — compact */}
       <header className="relative">
         <div className="relative aspect-[16/9] w-full overflow-hidden sm:aspect-[21/9] lg:aspect-[24/8] lg:max-h-[420px]">
-          <img
+          <PlaceImage
             src={place.image}
             alt={place.name}
             className="h-full w-full object-cover"
-            fetchPriority="high"
+            priority
           />
           <div className="absolute inset-0 bg-gradient-to-t from-editorial/80 via-transparent to-editorial/30" />
 

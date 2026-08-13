@@ -24,7 +24,10 @@ const assetStub = {
       namespace: "asset",
     }));
     build.onLoad({ filter: /.*/, namespace: "asset" }, (args) => ({
-      contents: `export default ${JSON.stringify("/assets/" + path.basename(args.path))}`,
+      // Les images du catalogue sont servies en statique depuis public/places.
+      // Passer par /assets casserait les liens : Vite y ajoute une empreinte au
+      // nom de fichier à chaque build.
+      contents: `export default ${JSON.stringify("/places/" + path.basename(args.path))}`,
       loader: "js",
     }));
     build.onResolve({ filter: /^@\// }, (args) => ({
