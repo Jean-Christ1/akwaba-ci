@@ -169,7 +169,7 @@ export default function RunnerSignupPage() {
             <Select value={city} onValueChange={setCity}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {(villesCourses.length ? villesCourses.map((v) => v.name) : CITIES).map((c) => (
+                {villesCourses.map((v) => v.name).map((c) => (
                   <SelectItem key={c} value={c}>{c}</SelectItem>
                 ))}
               </SelectContent>
@@ -181,7 +181,7 @@ export default function RunnerSignupPage() {
           <section className="rounded-2xl border border-border bg-card p-4">
             <Label>Zones couvertes</Label>
             <div className="mt-2 flex flex-wrap gap-2">
-              {(quartiersDeLaVille.length ? quartiersDeLaVille : ABIDJAN_ZONES).map((z) => (
+              {quartiersDeLaVille.map((z) => (
                 <button
                   key={z}
                   type="button"

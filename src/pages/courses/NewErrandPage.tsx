@@ -385,7 +385,7 @@ export default function NewErrandPage() {
                 <Select value={city} onValueChange={setCity}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {(villesCourses.length ? villesCourses.map((v) => v.name) : CITIES).map((c) => (
+                    {villesCourses.map((v) => v.name).map((c) => (
                       <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}
                   </SelectContent>
@@ -396,7 +396,7 @@ export default function NewErrandPage() {
                 <Select value={zone} onValueChange={setZone}>
                   <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
                   <SelectContent>
-                    {(quartiersDeLaVille.length ? quartiersDeLaVille : ABIDJAN_ZONES).map((z) => (
+                    {quartiersDeLaVille.map((z) => (
                       <SelectItem key={z} value={z}>{z}</SelectItem>
                     ))}
                   </SelectContent>

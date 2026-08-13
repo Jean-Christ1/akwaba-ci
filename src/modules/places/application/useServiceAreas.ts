@@ -15,6 +15,8 @@ export interface ServiceCity {
 export interface ServiceZone {
   citySlug: string;
   name: string;
+  /** Commune de rattachement, pour les villes découpées comme Abidjan. */
+  parentName: string | null;
 }
 
 interface Etat {
@@ -54,7 +56,7 @@ export function useServiceAreas(): Etat {
         .order("position"),
       supabase
         .from("service_zones")
-        .select("city_slug,name")
+        .select("city_slug,name,parent_name")
         .eq("is_active", true)
         .order("position"),
     ])
@@ -75,7 +77,11 @@ export function useServiceAreas(): Etat {
           }))
         );
         setZones(
-          (quartiers.data ?? []).map((z) => ({ citySlug: z.city_slug, name: z.name }))
+          (quartiers.data ?? []).map((z) => ({
+            citySlug: z.city_slug,
+            name: z.name,
+            parentName: z.parent_name ?? null,
+          }))
         );
       })
       .catch(() => {
@@ -97,6 +103,30 @@ export function useServiceAreas(): Etat {
 /** Quartiers d'une ville donnée. */
 export function zonesOfCity(zones: ServiceZone[], citySlug: string): string[] {
   return zones.filter((z) => z.citySlug === citySlug).map((z) => z.name);
+}
+
+/**
+ * Quartiers regroupés par commune.
+ *
+ * À Abidjan, personne ne se situe par la seule commune : on dit « Angré, à
+ * Cocody ». Le regroupement rend la liste utilisable au lieu d'aligner
+ * soixante-dix quartiers à plat.
+ */
+export function zonesByParent(
+  zones: ServiceZone[],
+  citySlug: string
+): { parent: string | null; zones: string[] }[] {
+  const ville = zones.filter((z) => z.citySlug === citySlug);
+  const groupes = new Map<string | null, string[]>();
+
+  for (const z of ville) {
+    const cle = z.parentName ?? null;
+    const liste = groupes.get(cle) ?? [];
+    if (!liste.includes(z.name)) liste.push(z.name);
+    groupes.set(cle, liste);
+  }
+
+  return Array.from(groupes.entries()).map(([parent, noms]) => ({ parent, zones: noms }));
 }
 
 /** Retrouve une ville à partir de son identifiant ou de son nom affiché. */

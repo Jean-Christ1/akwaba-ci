@@ -3,6 +3,11 @@ import { useParams, Link } from "react-router-dom";
 import { Phone, Video, MessageCircle, Send, CheckCircle2, Receipt } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdvancePanel } from "@/modules/errands/ui/AdvancePanel";
+import { MissionProgress } from "@/modules/errands/ui/MissionProgress";
+import {
+  useMissionTracking,
+  useOverrun,
+} from "@/modules/errands/application/useMissionTracking";
 import { ProofUpload } from "@/modules/errands/ui/ProofUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -51,6 +56,13 @@ interface Errand {
   rating: number | null;
   review: string | null;
   tip_amount: number;
+  distance_km: number;
+  estimated_minutes: number;
+  actual_distance_km: number | null;
+  overtime_minutes: number;
+  extra_distance_km: number;
+  overrun_fee: number;
+  started_at: string | null;
   created_at: string;
 }
 
@@ -113,6 +125,21 @@ export default function ErrandDetailPage() {
   const isCustomer = !!user && errand?.customer_id === user.id;
   const isRunner = !!user && errand?.runner_id === user.id;
 
+  // Le suivi ne tourne que pour le shopper, mission en cours. Le temps continue
+  // de courir tant que la course n'est pas terminée, et la distance se cumule.
+  const missionEnCours =
+    !!errand && ["assigned", "shopping", "delivering"].includes(errand.status);
+
+  const suivi = useMissionTracking(
+    { errandId: errand?.id ?? "", actif: isRunner && missionEnCours },
+    errand?.started_at ?? errand?.created_at ?? null
+  );
+
+  const { depassement } = useOverrun(
+    errand?.id ?? "",
+    !!errand && (missionEnCours || errand.status === "delivered")
+  );
+
   const load = useCallback(async () => {
     if (!id) return;
     // Liste de colonnes explicite : le code de remise ne doit jamais partir
@@ -122,7 +149,7 @@ export default function ErrandDetailPage() {
     const { data: e } = await supabase
       .from("errands")
       .select(
-        "id,customer_id,runner_id,title,category,city,zone,delivery_address,items,notes,budget_estimate,preferred_contact,scheduled_for,status,items_total,service_fee,delivery_fee,commission_rate,commission_amount,total_amount,payment_method,payment_status,receipt_url,rating,review,created_at,fund_mode,advance_amount,advance_proof_url,balance_due,tip_amount"
+        "id,customer_id,runner_id,title,category,city,zone,delivery_address,items,notes,budget_estimate,preferred_contact,scheduled_for,status,items_total,service_fee,delivery_fee,commission_rate,commission_amount,total_amount,payment_method,payment_status,receipt_url,rating,review,created_at,fund_mode,advance_amount,advance_proof_url,balance_due,tip_amount,distance_km,estimated_minutes,actual_distance_km,overtime_minutes,extra_distance_km,overrun_fee,started_at"
       )
       .eq("id", id)
       .maybeSingle();
@@ -630,6 +657,31 @@ export default function ErrandDetailPage() {
                 ))}
               </div>
             </section>
+          )}
+
+          {(isCustomer || isRunner) && (missionEnCours || errand.status === "delivered") && (
+            <MissionProgress
+              estimatedMinutes={Number(errand.estimated_minutes) || 0}
+              estimatedDistanceKm={Number(errand.distance_km) || 0}
+              minutesEcoulees={
+                suivi.minutesEcoulees ||
+                Math.max(
+                  0,
+                  Math.floor(
+                    (Date.now() -
+                      new Date(errand.started_at ?? errand.created_at).getTime()) /
+                      60000
+                  )
+                )
+              }
+              distanceParcourue={
+                suivi.distanceParcourue || Number(errand.actual_distance_km) || 0
+              }
+              depassement={depassement}
+              suiviActif={suivi.suiviActif}
+              refusLocalisation={suivi.refus}
+              role={isRunner ? "shopper" : "client"}
+            />
           )}
 
           <section className="rounded-2xl border border-border bg-card p-4">

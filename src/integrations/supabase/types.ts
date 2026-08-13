@@ -216,8 +216,13 @@ export type Database = {
       }
       errands: {
         Row: {
+          actual_distance_km: number | null
           actual_minutes: number | null
           advance_amount: number
+          extra_distance_km: number
+          overrun_approved_at: string | null
+          overrun_fee: number
+          overtime_minutes: number
           advance_confirmed_at: string | null
           advance_proof_url: string | null
           balance_due: number
@@ -264,8 +269,13 @@ export type Database = {
           zone: string | null
         }
         Insert: {
+          actual_distance_km?: number | null
           actual_minutes?: number | null
           advance_amount?: number
+          extra_distance_km?: number
+          overrun_approved_at?: string | null
+          overrun_fee?: number
+          overtime_minutes?: number
           advance_confirmed_at?: string | null
           advance_proof_url?: string | null
           balance_due?: number
@@ -312,8 +322,13 @@ export type Database = {
           zone?: string | null
         }
         Update: {
+          actual_distance_km?: number | null
           actual_minutes?: number | null
           advance_amount?: number
+          extra_distance_km?: number
+          overrun_approved_at?: string | null
+          overrun_fee?: number
+          overtime_minutes?: number
           advance_confirmed_at?: string | null
           advance_proof_url?: string | null
           balance_due?: number
@@ -540,6 +555,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          parent_name: string | null
           position: number
         }
         Insert: {
@@ -548,6 +564,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          parent_name?: string | null
           position?: number
         }
         Update: {
@@ -556,6 +573,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          parent_name?: string | null
           position?: number
         }
         Relationships: [
@@ -1064,6 +1082,24 @@ export type Database = {
       errand_declare_advance: {
         Args: { p_errand_id: string; p_amount: number }
         Returns: Database["public"]["Tables"]["errands"]["Row"]
+      }
+      errand_track_position: {
+        Args: {
+          p_errand_id: string
+          p_lat: number
+          p_lng: number
+          p_accuracy?: number | null
+        }
+        Returns: number
+      }
+      errand_compute_overrun: {
+        Args: { p_errand_id: string }
+        Returns: {
+          overtime_minutes: number
+          extra_distance_km: number
+          overrun_fee: number
+          capped: boolean
+        }[]
       }
       errand_resolve_dispute: {
         Args: { p_errand_id: string; p_issue: string; p_note?: string | null }
