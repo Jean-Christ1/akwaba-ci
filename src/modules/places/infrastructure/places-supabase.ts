@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { avecReprise } from "@/lib/retry";
 import type {
   CitySlug,
   Coordinates,
@@ -87,44 +88,50 @@ const SELECT =
 
 /** Catalogue publié, trié pour mettre en avant les adresses sélectionnées. */
 export async function fetchPublishedPlaces(): Promise<Place[]> {
-  const { data, error } = await supabase
-    .from("places")
-    .select(SELECT)
-    .eq("status", "published")
-    .order("premium", { ascending: false })
-    .order("standing", { ascending: false })
-    .order("name");
+  return avecReprise(async () => {
+    const { data, error } = await supabase
+      .from("places")
+      .select(SELECT)
+      .eq("status", "published")
+      .order("premium", { ascending: false })
+      .order("standing", { ascending: false })
+      .order("name");
 
-  if (error) throw error;
-  return ((data ?? []) as Row[]).map(toPlace);
+    if (error) throw error;
+    return ((data ?? []) as Row[]).map(toPlace);
+  });
 }
 
 /** Fiche unique par identifiant lisible. */
 export async function fetchPlaceBySlug(slug: string): Promise<Place | null> {
-  const { data, error } = await supabase
-    .from("places")
-    .select(SELECT)
-    .eq("status", "published")
-    .eq("slug", slug)
-    .maybeSingle();
+  return avecReprise(async () => {
+    const { data, error } = await supabase
+      .from("places")
+      .select(SELECT)
+      .eq("status", "published")
+      .eq("slug", slug)
+      .maybeSingle();
 
-  if (error) throw error;
-  return data ? toPlace(data as Row) : null;
+    if (error) throw error;
+    return data ? toPlace(data as Row) : null;
+  });
 }
 
 /** Résolution d'une liste d'identifiants, utilisée par les favoris et les parcours. */
 export async function fetchPlacesByIds(ids: string[]): Promise<Place[]> {
   if (ids.length === 0) return [];
 
-  const { data, error } = await supabase
-    .from("places")
-    .select(SELECT)
-    .eq("status", "published")
-    .in("id", ids);
+  return avecReprise(async () => {
+    const { data, error } = await supabase
+      .from("places")
+      .select(SELECT)
+      .eq("status", "published")
+      .in("id", ids);
 
-  if (error) throw error;
+    if (error) throw error;
 
-  const byId = new Map(((data ?? []) as Row[]).map((row) => [String(row.id), toPlace(row)]));
-  // On respecte l'ordre demandé, que ce soit celui d'un parcours ou celui des favoris.
-  return ids.map((id) => byId.get(id)).filter((p): p is Place => Boolean(p));
+    const byId = new Map(((data ?? []) as Row[]).map((row) => [String(row.id), toPlace(row)]));
+    // On respecte l'ordre demandé, que ce soit celui d'un parcours ou celui des favoris.
+    return ids.map((id) => byId.get(id)).filter((p): p is Place => Boolean(p));
+  });
 }
