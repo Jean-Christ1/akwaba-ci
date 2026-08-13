@@ -65,7 +65,9 @@ interface Msg {
 interface RunnerCard {
   user_id: string;
   full_name: string;
-  phone: string;
+  /** Renseigné uniquement pour le shopper assigné à la course. */
+  phone: string | null;
+  /** Renseigné uniquement pour le shopper assigné à la course. */
   whatsapp: string | null;
   city: string;
   vehicle: string;
@@ -120,11 +122,41 @@ export default function ErrandDetailPage() {
       new Set([...(o ?? []).map((x) => x.runner_id), e.runner_id].filter(Boolean) as string[])
     );
     if (ids.length) {
-      const { data: rp } = await supabase
-        .from("runner_profiles")
-        .select("user_id,full_name,phone,whatsapp,city,vehicle,rating,jobs_completed")
+      // Vitrine publique des shoppers : nom, ville, véhicule, réputation.
+      // Ne contient jamais de coordonnées, y compris pour les offres reçues.
+      const { data: pub } = await supabase
+        .from("runner_public_profiles")
+        .select("user_id,full_name,city,vehicle,rating,jobs_completed")
         .in("user_id", ids);
-      setRunners(Object.fromEntries((rp ?? []).map((r) => [r.user_id, r as RunnerCard])));
+
+      const cards: Record<string, RunnerCard> = Object.fromEntries(
+        (pub ?? []).map((r) => [
+          r.user_id as string,
+          {
+            user_id: r.user_id as string,
+            full_name: r.full_name ?? "Shopper",
+            phone: null,
+            whatsapp: null,
+            city: r.city ?? "",
+            vehicle: r.vehicle ?? "",
+            rating: Number(r.rating ?? 0),
+            jobs_completed: Number(r.jobs_completed ?? 0),
+          },
+        ])
+      );
+
+      // Les coordonnées ne sont révélées que pour le shopper effectivement
+      // assigné, afin que l'appel et le WhatsApp fonctionnent pendant la mission.
+      if (e.runner_id) {
+        const { data: assigned } = await supabase
+          .from("runner_profiles")
+          .select("user_id,full_name,phone,whatsapp,city,vehicle,rating,jobs_completed")
+          .eq("user_id", e.runner_id)
+          .maybeSingle();
+        if (assigned) cards[assigned.user_id] = assigned as RunnerCard;
+      }
+
+      setRunners(cards);
     }
     setLoading(false);
   }, [id]);
@@ -401,10 +433,17 @@ export default function ErrandDetailPage() {
                 {assignedRunner.vehicle} · ★ {assignedRunner.rating} · {assignedRunner.jobs_completed} missions
               </p>
               <div className="mt-3 grid grid-cols-3 gap-2">
-                <Button asChild variant="outline" size="sm">
-                  <a href={`tel:${assignedRunner.phone}`}><Phone className="h-4 w-4" /></a>
+                <Button asChild variant="outline" size="sm" disabled={!assignedRunner.phone}>
+                  <a href={assignedRunner.phone ? `tel:${assignedRunner.phone}` : undefined}>
+                    <Phone className="h-4 w-4" />
+                  </a>
                 </Button>
-                <Button asChild variant="outline" size="sm">
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  disabled={!assignedRunner.whatsapp && !assignedRunner.phone}
+                >
                   <a
                     href={waLink(assignedRunner.whatsapp ?? assignedRunner.phone, `Bonjour, à propos de la course "${errand.title}"`) ?? "#"}
                     target="_blank"

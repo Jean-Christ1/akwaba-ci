@@ -810,7 +810,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      runner_public_profiles: {
+        Row: {
+          bio: string | null
+          city: string | null
+          full_name: string | null
+          is_online: boolean | null
+          jobs_completed: number | null
+          photo_url: string | null
+          rating: number | null
+          user_id: string | null
+          vehicle: string | null
+          zones: Json | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
