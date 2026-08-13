@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { safeRedirect } from "@/shared/hooks/safeRedirect";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,6 +18,12 @@ const nameSchema = z.string().trim().min(2, "Nom trop court").max(80);
 export default function AuthPage() {
   usePageTitle("Connexion", "Connectez-vous pour retrouver vos favoris et vos demandes.");
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+
+  // Plusieurs écrans renvoient ici avec la destination souhaitée. Sans la lire,
+  // l'utilisateur se connecte puis atterrit sur son profil, et doit refaire le
+  // chemin jusqu'à ce qu'il voulait faire.
+  const destination = safeRedirect(params.get("redirect"));
   const { user } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
   const [email, setEmail] = useState("");
@@ -25,7 +32,7 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user) navigate("/profil", { replace: true });
+    if (user) navigate(destination, { replace: true });
   }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,7 +47,7 @@ export default function AuthPage() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/profil`,
+            emailRedirectTo: `${window.location.origin}${destination}`,
             data: { display_name: name },
           },
         });
@@ -51,7 +58,7 @@ export default function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Bienvenue !");
-        navigate("/profil");
+        navigate(destination);
       } else {
         emailSchema.parse(email);
         const { error } = await supabase.auth.resetPasswordForEmail(email, {

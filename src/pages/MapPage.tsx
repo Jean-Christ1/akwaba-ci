@@ -106,7 +106,7 @@ export default function MapPage() {
 
       {/* Bottom sheet sélection */}
       {selected && (
-        <div className="absolute inset-x-0 bottom-16 lg:bottom-0 z-20 animate-slide-up px-3 pb-3 lg:px-6 lg:pb-6">
+        <div className="absolute inset-x-0 bottom-[var(--akw-tabbar-h)] lg:bottom-0 z-20 animate-slide-up px-3 pb-3 lg:px-6 lg:pb-6">
           <div className="akw-card relative mx-auto max-w-2xl p-3">
             <button
               onClick={() => setSelected(null)}

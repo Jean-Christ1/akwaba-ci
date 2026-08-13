@@ -24,7 +24,7 @@ export function AppShell() {
           téléphones à encoche. */}
       <main
         id="contenu"
-        className="flex-1 pb-[calc(env(safe-area-inset-bottom)+5rem)] lg:pb-0"
+        className="flex-1 pb-[calc(var(--akw-tabbar-h)+1rem)] lg:pb-0"
       >
         <Outlet />
         <SiteFooter />

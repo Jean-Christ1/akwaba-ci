@@ -12,6 +12,10 @@
 
 @layer base {
   :root {
+    /* Hauteur de la barre d'onglets mobile, zone de sécurité comprise.
+       Recopier cette valeur ailleurs finit toujours par masquer un bouton. */
+    --akw-tabbar-h: calc(4rem + env(safe-area-inset-bottom));
+
     /* Surfaces */
     --background: 36 33% 97%;          /* ivoire minéral */
     --foreground: 220 25% 12%;         /* encre profonde */
