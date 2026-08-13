@@ -47,7 +47,6 @@ interface Errand {
   fund_mode: string;
   advance_proof_url: string | null;
   advance_amount: number;
-  handover_code: string | null;
   receipt_url: string | null;
   rating: number | null;
   review: string | null;
@@ -116,7 +115,17 @@ export default function ErrandDetailPage() {
 
   const load = useCallback(async () => {
     if (!id) return;
-    const { data: e } = await supabase.from("errands").select("*").eq("id", id).maybeSingle();
+    // Liste de colonnes explicite : le code de remise ne doit jamais partir
+    // vers le navigateur du shopper, sans quoi il pourrait valider lui-même la
+    // remise sans avoir rencontré le client. Le client l'obtient par la
+    // fonction dédiée, qui vérifie son identité.
+    const { data: e } = await supabase
+      .from("errands")
+      .select(
+        "id,customer_id,runner_id,title,category,city,zone,delivery_address,items,notes,budget_estimate,preferred_contact,scheduled_for,status,items_total,service_fee,delivery_fee,commission_rate,commission_amount,total_amount,payment_method,payment_status,receipt_url,rating,review,created_at,fund_mode,advance_amount,advance_proof_url,balance_due,tip_amount"
+      )
+      .eq("id", id)
+      .maybeSingle();
     if (!e) {
       setLoading(false);
       return;

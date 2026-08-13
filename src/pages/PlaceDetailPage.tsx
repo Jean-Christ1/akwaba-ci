@@ -339,14 +339,40 @@ export default function PlaceDetailPage() {
               <Phone className="h-4 w-4" /> WhatsApp
             </a>
           )}
-          <a
-            href={mapsUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-semibold text-primary-foreground"
-          >
-            <Navigation className="h-4 w-4" /> Itinéraire
-          </a>
+          {/* La demande de réservation n'existait que sur la colonne de
+              droite, masquée en dessous de 1024 px : sur téléphone, le seul
+              geste de conversion du produit était donc inatteignable. */}
+          {(place.type === "lodging" || place.type === "restaurant") ? (
+            <Dialog>
+              <DialogTrigger asChild>
+                <button className="flex flex-1 items-center justify-center gap-2 rounded-full bg-accent py-3 text-sm font-semibold text-accent-foreground">
+                  <CalendarCheck className="h-4 w-4" aria-hidden="true" />
+                  {place.type === "lodging" ? "Réserver" : "Réserver une table"}
+                </button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>
+                    {place.type === "lodging" ? "Demander une réservation" : "Réserver une table"}
+                  </DialogTitle>
+                </DialogHeader>
+                <LeadRequestForm
+                  placeId={place.id}
+                  placeName={place.name}
+                  kind={place.type === "lodging" ? "lodging" : "restaurant"}
+                />
+              </DialogContent>
+            </Dialog>
+          ) : (
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-semibold text-primary-foreground"
+            >
+              <Navigation className="h-4 w-4" aria-hidden="true" /> Itinéraire
+            </a>
+          )}
         </div>
       </div>
     </article>

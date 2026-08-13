@@ -338,12 +338,14 @@ maybe("le flux ouvert ne divulgue pas l'adresse exacte du client", async () => {
 
     await createErrand(client);
 
-    // La table n'est plus lisible par un shopper non assigné.
-    const { data: parTable } = await shopper.client
+    // Le shopper peut consulter une course ouverte pour se positionner, mais le
+    // code de remise ne doit jamais lui parvenir : c'est la seule preuve que la
+    // remise a réellement eu lieu.
+    const { error: erreurCode } = await shopper.client
       .from("errands")
-      .select("delivery_address")
+      .select("handover_code")
       .eq("status", "open");
-    assertEquals(parTable?.length ?? 0, 0, "la table ne doit rien exposer avant affectation");
+    assert(erreurCode, "le code de remise ne doit pas être lisible par le shopper");
 
     // La vue de marche reste disponible, sans adresse.
     const { data: parVue, error } = await shopper.client
