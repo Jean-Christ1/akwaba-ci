@@ -49,6 +49,7 @@ import {
   type VolumeSize,
 } from "@/modules/errands/pricing";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
+import { useServiceAreas, zonesOfCity } from "@/modules/places/application/useServiceAreas";
 
 export default function NewErrandPage() {
   usePageTitle("Demander une course", "Confiez votre course à un shopper vérifié.");
@@ -84,6 +85,18 @@ export default function NewErrandPage() {
   // Elles ancrent la distance, donc le prix, sur un trajet réel.
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [calculTrajet, setCalculTrajet] = useState(false);
+
+  // Villes réellement ouvertes aux courses : proposer une ville sans réseau de
+  // shoppers reviendrait à promettre un service que personne ne peut assurer.
+  const { cities: villes, zones: quartiers } = useServiceAreas();
+  const villesCourses = useMemo(
+    () => villes.filter((v) => v.errandsEnabled),
+    [villes]
+  );
+  const quartiersDeLaVille = useMemo(() => {
+    const ville = villes.find((v) => v.name === city || v.slug === city);
+    return ville ? zonesOfCity(quartiers, ville.slug) : [];
+  }, [villes, quartiers, city]);
 
   const cleanItems = useMemo(() => items.filter((i) => i.label.trim().length > 0), [items]);
 
@@ -373,7 +386,9 @@ export default function NewErrandPage() {
                 <Select value={city} onValueChange={setCity}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {CITIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    {(villesCourses.length ? villesCourses.map((v) => v.name) : CITIES).map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -382,7 +397,9 @@ export default function NewErrandPage() {
                 <Select value={zone} onValueChange={setZone}>
                   <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
                   <SelectContent>
-                    {ABIDJAN_ZONES.map((z) => <SelectItem key={z} value={z}>{z}</SelectItem>)}
+                    {(quartiersDeLaVille.length ? quartiersDeLaVille : ABIDJAN_ZONES).map((z) => (
+                      <SelectItem key={z} value={z}>{z}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

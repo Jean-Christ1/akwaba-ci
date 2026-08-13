@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { ABIDJAN_ZONES, CITIES, VEHICLES, type RunnerStatus } from "@/modules/errands/domain";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
+import { useServiceAreas, zonesOfCity } from "@/modules/places/application/useServiceAreas";
 
 export default function RunnerSignupPage() {
   usePageTitle("Devenir shopper", "Rejoignez le réseau des shoppers Akwaba.");
@@ -31,6 +32,11 @@ export default function RunnerSignupPage() {
   const [bio, setBio] = useState("");
   const [idDocPath, setIdDocPath] = useState<string | null>(null);
   const [uploadingDoc, setUploadingDoc] = useState(false);
+
+  const { cities: villes, zones: quartiers } = useServiceAreas();
+  const villesCourses = villes.filter((v) => v.errandsEnabled);
+  const villeCourante = villes.find((v) => v.name === city || v.slug === city);
+  const quartiersDeLaVille = villeCourante ? zonesOfCity(quartiers, villeCourante.slug) : [];
 
   useEffect(() => {
     if (!user) {
@@ -163,7 +169,9 @@ export default function RunnerSignupPage() {
             <Select value={city} onValueChange={setCity}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {CITIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                {(villesCourses.length ? villesCourses.map((v) => v.name) : CITIES).map((c) => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -173,7 +181,7 @@ export default function RunnerSignupPage() {
           <section className="rounded-2xl border border-border bg-card p-4">
             <Label>Zones couvertes</Label>
             <div className="mt-2 flex flex-wrap gap-2">
-              {ABIDJAN_ZONES.map((z) => (
+              {(quartiersDeLaVille.length ? quartiersDeLaVille : ABIDJAN_ZONES).map((z) => (
                 <button
                   key={z}
                   type="button"

@@ -458,6 +458,77 @@ export type Database = {
         }
         Relationships: []
       }
+      service_cities: {
+        Row: {
+          created_at: string
+          errands_enabled: boolean
+          is_active: boolean
+          lat: number
+          lng: number
+          name: string
+          position: number
+          region: string | null
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          errands_enabled?: boolean
+          is_active?: boolean
+          lat: number
+          lng: number
+          name: string
+          position?: number
+          region?: string | null
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          errands_enabled?: boolean
+          is_active?: boolean
+          lat?: number
+          lng?: number
+          name?: string
+          position?: number
+          region?: string | null
+          slug?: string
+        }
+        Relationships: []
+      }
+      service_zones: {
+        Row: {
+          city_slug: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          position: number
+        }
+        Insert: {
+          city_slug: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          position?: number
+        }
+        Update: {
+          city_slug?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_zones_city_slug_fkey"
+            columns: ["city_slug"]
+            isOneToOne: false
+            referencedRelation: "service_cities"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       user_favorites: {
         Row: {
           created_at: string
