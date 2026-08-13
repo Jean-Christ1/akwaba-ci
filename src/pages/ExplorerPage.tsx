@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { PLACES, CITIES } from "@/modules/places/infrastructure/data";
+import { CITIES } from "@/modules/places/infrastructure/data";
+import { usePlaces } from "@/modules/places/application/usePlaces";
 import { PlaceCard } from "@/modules/places/ui/PlaceCard";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -31,8 +32,10 @@ export default function ExplorerPage() {
   const [sort, setSort] = useState<Sort>("relevance");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  const { data: places, loading, error, reload } = usePlaces();
+
   const results = useMemo(() => {
-    const filtered = PLACES.filter((p) => {
+    const filtered = places.filter((p) => {
       if (type !== "all" && p.type !== type) return false;
       if (city !== "all" && p.city !== city) return false;
       if (q.trim()) {
@@ -45,7 +48,7 @@ export default function ExplorerPage() {
     if (sort === "name_asc") return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
     if (sort === "standing_desc") return [...filtered].sort((a, b) => b.standing - a.standing);
     return filtered;
-  }, [type, city, q, sort]);
+  }, [places, type, city, q, sort]);
 
   const updateParam = (key: string, value: string) => {
     const next = new URLSearchParams(params);
@@ -234,7 +237,22 @@ export default function ExplorerPage() {
             </select>
           </div>
 
-          {results.length === 0 ? (
+          {loading ? (
+            <div className="akw-card flex flex-col items-center gap-3 px-6 py-16 text-center">
+              <p className="text-sm text-muted-foreground">Chargement des adresses...</p>
+            </div>
+          ) : error ? (
+            <div className="akw-card flex flex-col items-center gap-3 px-6 py-16 text-center">
+              <h3 className="font-display text-xl font-semibold">Chargement impossible</h3>
+              <p className="max-w-md text-sm text-muted-foreground">{error}</p>
+              <button
+                onClick={reload}
+                className="mt-2 rounded-full border border-border px-5 py-2.5 text-sm font-medium"
+              >
+                Réessayer
+              </button>
+            </div>
+          ) : results.length === 0 ? (
             <div className="akw-card flex flex-col items-center gap-3 px-6 py-16 text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
                 <Search className="h-5 w-5 text-muted-foreground" />

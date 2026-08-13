@@ -2,14 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl, { Map as MLMap, Marker } from "maplibre-gl";
 import { Link } from "react-router-dom";
 import { Locate, X, MapPin } from "lucide-react";
-import { PLACES } from "@/modules/places/infrastructure/data";
+import { usePlaces } from "@/modules/places/application/usePlaces";
 import type { Place } from "@/modules/places/domain/types";
 import { PlaceCard } from "@/modules/places/ui/PlaceCard";
 
-// Adapter MapLibre — substituable (Mapbox, Google) sans toucher la page
-const MAP_STYLE =
-  "https://api.maptiler.com/maps/streets-v2/style.json?key=get_your_own_OpIi9ZULNHzrESv6T2vL";
-// Fallback open style si la clé MapTiler n'est pas dispo
+// Adapter MapLibre, substituable (Mapbox, MapTiler, Google) sans toucher la page.
+// Fond de carte ouvert, sans clé : aucune dépendance à un service tiers payant.
 const FALLBACK_STYLE = {
   version: 8,
   sources: {
@@ -28,8 +26,11 @@ export default function MapPage() {
   const mapRef = useRef<MLMap | null>(null);
   const [selected, setSelected] = useState<Place | null>(null);
 
+  const { data: places, loading } = usePlaces();
+
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
+    if (loading) return;
 
     const map = new maplibregl.Map({
       container: containerRef.current,
@@ -42,7 +43,7 @@ export default function MapPage() {
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
-    PLACES.forEach((p) => {
+    places.forEach((p) => {
       const el = document.createElement("button");
       el.className =
         "akw-map-marker flex items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-110";
@@ -61,7 +62,7 @@ export default function MapPage() {
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [places, loading]);
 
   const locate = () => {
     if (!navigator.geolocation || !mapRef.current) return;

@@ -11,7 +11,7 @@ import {
   Mail,
   Globe,
 } from "lucide-react";
-import { getPlaceBySlug, PLACES } from "@/modules/places/infrastructure/data";
+import { usePlace, usePlaces } from "@/modules/places/application/usePlaces";
 import { PlaceCard } from "@/modules/places/ui/PlaceCard";
 import { useFavorites } from "@/modules/favorites/application/useFavorites";
 import { LeadRequestForm } from "@/modules/leads/ui/LeadRequestForm";
@@ -23,9 +23,18 @@ import { useTabState } from "@/shared/hooks/useTabState";
 
 export default function PlaceDetailPage() {
   const { slug } = useParams();
-  const place = slug ? getPlaceBySlug(slug) : undefined;
+  const { data: place, loading } = usePlace(slug);
+  const { data: allPlaces } = usePlaces();
   const { has, toggle } = useFavorites();
   const [tab, setTab] = useTabState(`place:${slug ?? "unknown"}`, "about");
+
+  if (loading) {
+    return (
+      <div className="akw-container py-24 text-center text-sm text-muted-foreground">
+        Chargement de l'adresse...
+      </div>
+    );
+  }
 
   if (!place) {
     return (
@@ -40,7 +49,7 @@ export default function PlaceDetailPage() {
   }
 
   const fav = has(place.id);
-  const nearby = PLACES.filter((p) => p.id !== place.id && p.city === place.city).slice(0, 4);
+  const nearby = allPlaces.filter((p) => p.id !== place.id && p.city === place.city).slice(0, 4);
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${place.coords.lat},${place.coords.lng}`;
   const waUrl = place.whatsapp ? `https://wa.me/${place.whatsapp.replace(/[^0-9]/g, "")}` : null;
   const telUrl = place.phone ? `tel:${place.phone}` : null;

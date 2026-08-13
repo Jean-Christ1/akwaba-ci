@@ -28,6 +28,13 @@ function validate(b: any): { ok: true; data: LeadInput } | { ok: false; error: s
     return { ok: false, error: "Invalid email" };
   if (typeof b.message !== "string" || b.message.trim().length < 5 || b.message.length > 2000)
     return { ok: false, error: "Invalid message" };
+  // La colonne place_id est un uuid a cle etrangere : un identifiant qui n'est
+  // pas un uuid ferait echouer l'insertion cote base (22P02) au lieu de
+  // remonter une erreur de validation lisible.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (b.place_id != null && !UUID_RE.test(String(b.place_id)))
+    return { ok: false, error: "Invalid place reference" };
+
   return {
     ok: true,
     data: {

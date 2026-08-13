@@ -471,6 +471,7 @@ export type Database = {
           description: string
           email: string | null
           gallery: Json
+          hours: Json
           id: string
           image: string | null
           lat: number
@@ -507,6 +508,7 @@ export type Database = {
           description: string
           email?: string | null
           gallery?: Json
+          hours?: Json
           id?: string
           image?: string | null
           lat: number
@@ -543,6 +545,7 @@ export type Database = {
           description?: string
           email?: string | null
           gallery?: Json
+          hours?: Json
           id?: string
           image?: string | null
           lat?: number

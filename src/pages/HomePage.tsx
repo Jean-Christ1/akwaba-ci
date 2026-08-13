@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { Search, Sparkles, ArrowRight } from "lucide-react";
 import heroImg from "@/assets/hero-abidjan.jpg";
-import { CITIES, ITINERARIES, PLACES } from "@/modules/places/infrastructure/data";
+import { CITIES, ITINERARIES } from "@/modules/places/infrastructure/data";
+import { usePlaces } from "@/modules/places/application/usePlaces";
 import { PlaceCard } from "@/modules/places/ui/PlaceCard";
 import { ItineraryCard } from "@/modules/places/ui/ItineraryCard";
 import { CategoryChip, SectionHeader } from "@/shared/ui/sections";
@@ -24,8 +25,11 @@ function getGreeting() {
 }
 
 export default function HomePage() {
-  const featured = PLACES.filter((p) => p.premium).slice(0, 4);
-  const tonight = PLACES.filter((p) => p.type === "restaurant" || p.type === "maquis").slice(0, 4);
+  const { data: places, loading, error, reload } = usePlaces();
+  const featured = places.filter((p) => p.premium).slice(0, 4);
+  const tonight = places
+    .filter((p) => p.type === "restaurant" || p.type === "maquis")
+    .slice(0, 4);
 
   return (
     <div>
@@ -92,11 +96,27 @@ export default function HomePage() {
             ctaLabel="Tout voir"
             ctaTo="/explorer"
           />
-          <HorizontalRail desktopCols={4}>
-            {featured.map((p) => (
-              <PlaceCard key={p.id} place={p} />
-            ))}
-          </HorizontalRail>
+          {error ? (
+            <div className="akw-card px-6 py-10 text-center">
+              <p className="text-sm text-muted-foreground">{error}</p>
+              <button
+                onClick={reload}
+                className="mt-3 rounded-full border border-border px-5 py-2.5 text-sm font-medium"
+              >
+                Réessayer
+              </button>
+            </div>
+          ) : loading ? (
+            <div className="akw-card px-6 py-10 text-center text-sm text-muted-foreground">
+              Chargement de la sélection...
+            </div>
+          ) : (
+            <HorizontalRail desktopCols={4}>
+              {featured.map((p) => (
+                <PlaceCard key={p.id} place={p} />
+              ))}
+            </HorizontalRail>
+          )}
         </div>
       </section>
 

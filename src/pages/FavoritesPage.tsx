@@ -1,12 +1,12 @@
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { useFavorites } from "@/modules/favorites/application/useFavorites";
-import { PLACES } from "@/modules/places/infrastructure/data";
+import { usePlacesByIds } from "@/modules/places/application/usePlaces";
 import { PlaceCard } from "@/modules/places/ui/PlaceCard";
 
 export default function FavoritesPage() {
   const { ids } = useFavorites();
-  const places = PLACES.filter((p) => ids.includes(p.id));
+  const { data: places, loading, error, reload } = usePlacesByIds(ids);
 
   return (
     <div className="bg-background">
@@ -24,7 +24,21 @@ export default function FavoritesPage() {
 
       <section className="py-6 sm:py-8">
         <div className="akw-container">
-          {places.length === 0 ? (
+          {loading ? (
+            <p className="py-16 text-center text-sm text-muted-foreground">
+              Chargement de vos adresses...
+            </p>
+          ) : error ? (
+            <div className="akw-card mx-auto max-w-md px-6 py-12 text-center">
+              <p className="text-sm text-muted-foreground">{error}</p>
+              <button
+                onClick={reload}
+                className="mt-3 rounded-full border border-border px-4 py-2 text-sm font-medium"
+              >
+                Réessayer
+              </button>
+            </div>
+          ) : places.length === 0 ? (
             <div className="akw-card mx-auto flex max-w-md flex-col items-center gap-3 px-6 py-16 text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
                 <Heart className="h-5 w-5 text-muted-foreground" />
