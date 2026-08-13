@@ -26,8 +26,11 @@ export function MobileTabBar() {
             <li key={to} className="flex-1">
               <Link
                 to={to}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-medium transition-colors",
+                  // Hauteur minimale de 44 px : c'est le seuil en deçà duquel
+                  // une cible devient difficile à atteindre au pouce.
+                  "flex min-h-[44px] flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-medium transition-colors",
                   active ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -38,12 +41,13 @@ export function MobileTabBar() {
                       active && "scale-105"
                     )}
                   >
-                    <Icon className="h-5 w-5" strokeWidth={2.2} />
+                    <Icon className="h-5 w-5" strokeWidth={2.2} aria-hidden="true" />
                   </span>
                 ) : (
                   <Icon
                     className={cn("h-5 w-5 transition-transform", active && "scale-110")}
                     strokeWidth={active ? 2.4 : 1.8}
+                    aria-hidden="true"
                   />
                 )}
                 <span className={cn(highlight && "font-semibold text-primary")}>{label}</span>

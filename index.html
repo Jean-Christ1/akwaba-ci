@@ -3,18 +3,59 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#0a3d3a" />
-    <title>Akwaba — Le compagnon de voyage premium en Côte d'Ivoire</title>
-    <meta name="description" content="Hôtels, restaurants, lieux et parcours sélectionnés à Abidjan, Grand-Bassam, Assinie et Yamoussoukro. Découvrez la Côte d'Ivoire facilement, élégamment et en toute confiance." />
+    <meta name="theme-color" content="#195752" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1720" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+
+    <title>Akwaba, le compagnon de voyage premium en Côte d'Ivoire</title>
+    <meta name="description" content="Hôtels, restaurants, lieux et parcours sélectionnés à Abidjan, Grand-Bassam, Assinie et Yamoussoukro. Confiez aussi vos courses à un shopper vérifié." />
     <meta name="author" content="Akwaba" />
     <link rel="canonical" href="https://akwaba.ci/" />
 
-    <meta property="og:title" content="Akwaba — Compagnon de voyage premium en Côte d'Ivoire" />
-    <meta property="og:description" content="La sélection premium d'hôtels, tables, lieux et parcours en Côte d'Ivoire." />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Application installable sur iOS, qui ignore une partie du manifeste. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Akwaba" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- La connexion à Supabase est ouverte au plus tôt : sur un réseau mobile
+         lent, la poignée de main TLS coûte plusieurs centaines de millisecondes. -->
+    <link rel="preconnect" href="https://eqmjwucmessmtsiyhmoh.supabase.co" crossorigin />
+    <link rel="dns-prefetch" href="https://eqmjwucmessmtsiyhmoh.supabase.co" />
+
+    <meta property="og:site_name" content="Akwaba" />
+    <meta property="og:title" content="Akwaba, compagnon de voyage premium en Côte d'Ivoire" />
+    <meta property="og:description" content="La sélection premium d'hôtels, tables, lieux et parcours en Côte d'Ivoire, et le service Akwaba Shopper." />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="fr_FR" />
+    <meta property="og:url" content="https://akwaba.ci/" />
+    <meta property="og:image" content="https://akwaba.ci/icons/icon-512.png" />
+    <meta property="og:image:alt" content="Akwaba" />
 
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Akwaba, compagnon de voyage premium en Côte d'Ivoire" />
+    <meta name="twitter:description" content="Adresses sélectionnées et service de courses en Côte d'Ivoire." />
+    <meta name="twitter:image" content="https://akwaba.ci/icons/icon-512.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Akwaba",
+        "url": "https://akwaba.ci/",
+        "applicationCategory": "TravelApplication",
+        "operatingSystem": "Web",
+        "inLanguage": "fr",
+        "description": "Découverte des meilleures adresses de Côte d'Ivoire et service de courses confiées à des shoppers vérifiés.",
+        "areaServed": { "@type": "Country", "name": "Côte d'Ivoire" },
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "XOF" }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
