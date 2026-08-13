@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { Plus, Trash2, Loader2 } from "lucide-react";
+import { Plus, Trash2, Loader2, Info, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -20,10 +20,26 @@ import {
   CATEGORIES,
   CITIES,
   PAY_METHODS,
+  formatFcfa,
   type ErrandCategory,
   type ErrandItem,
   type PayMethod,
 } from "@/modules/errands/domain";
+import {
+  COMMISSION_RATE,
+  DROPOFF_MODES,
+  FUND_MODES,
+  URGENCY_OPTIONS,
+  VEHICLE_OPTIONS,
+  VOLUME_OPTIONS,
+  generateHandoverCode,
+  quoteErrand,
+  type DropoffMode,
+  type FundMode,
+  type Urgency,
+  type VehicleKind,
+  type VolumeSize,
+} from "@/modules/errands/pricing";
 
 export default function NewErrandPage() {
   const { user } = useAuth();
@@ -44,11 +60,34 @@ export default function NewErrandPage() {
   const [payment, setPayment] = useState<PayMethod>("wave");
   const [saving, setSaving] = useState(false);
 
-  const cleanItems = useMemo(
-    () => items.filter((i) => i.label.trim().length > 0),
-    [items]
-  );
+  // Logistique
+  const [vehicle, setVehicle] = useState<VehicleKind>("any");
+  const [volume, setVolume] = useState<VolumeSize>("small");
+  const [urgency, setUrgency] = useState<Urgency>("standard");
+  const [distance, setDistance] = useState("5");
+  const [minutes, setMinutes] = useState("60");
+  const [dropoff, setDropoff] = useState<DropoffMode>("runner_delivers");
+  const [thirdParty, setThirdParty] = useState("");
+  const [fundMode, setFundMode] = useState<FundMode>("customer_advance");
+
+  const cleanItems = useMemo(() => items.filter((i) => i.label.trim().length > 0), [items]);
   const valid = title.trim().length >= 3 && address.trim().length >= 3 && cleanItems.length > 0;
+
+  const quote = useMemo(
+    () =>
+      quoteErrand({
+        vehicle,
+        volume,
+        urgency,
+        distanceKm: Number(distance) || 0,
+        estimatedMinutes: Number(minutes) || 0,
+        dropoff,
+        itemsCount: cleanItems.length,
+      }),
+    [vehicle, volume, urgency, distance, minutes, dropoff, cleanItems.length]
+  );
+
+  const budgetNum = Number(budget) || 0;
 
   const updateItem = (idx: number, patch: Partial<ErrandItem>) =>
     setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
@@ -74,11 +113,25 @@ export default function NewErrandPage() {
         delivery_address: address.trim(),
         items: cleanItems as unknown as never,
         notes: notes || null,
-        budget_estimate: Number(budget) || 0,
+        budget_estimate: budgetNum,
         preferred_contact: contact,
         scheduled_for: scheduled ? new Date(scheduled).toISOString() : null,
         payment_method: payment,
         status: "open",
+        vehicle_required: vehicle,
+        volume_size: volume,
+        urgency,
+        distance_km: Number(distance) || 0,
+        estimated_minutes: Number(minutes) || 60,
+        dropoff_mode: dropoff,
+        third_party_contact: dropoff === "third_party" ? thirdParty || null : null,
+        fund_mode: fundMode,
+        service_fee: quote.serviceFee,
+        commission_rate: COMMISSION_RATE,
+        commission_amount: quote.commission,
+        runner_payout: quote.runnerPayout,
+        total_amount: budgetNum + quote.serviceFee,
+        handover_code: generateHandoverCode(),
       })
       .select("id")
       .single();
@@ -87,191 +140,311 @@ export default function NewErrandPage() {
       toast.error(error.message);
       return;
     }
-    toast.success("Demande publiée — les shoppers vont répondre.");
+    toast.success("Demande publiée — les shoppers vont vous répondre.");
     navigate(`/courses/${data.id}`);
   };
 
   return (
-    <div className="akw-container max-w-3xl py-6">
-      <p className="akw-eyebrow">Akwaba Courses</p>
-      <h1 className="font-display text-2xl font-semibold">Nouvelle demande</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Décrivez ce dont vous avez besoin. Un shopper vérifié vous répondra avec son prix et son délai.
-      </p>
-
-      {!user && (
-        <div className="mt-4 rounded-xl border border-border bg-muted/40 p-3 text-sm">
-          Vous devez être connecté pour publier.{" "}
-          <Link className="font-medium text-primary" to="/auth?redirect=/courses/nouvelle">
-            Se connecter
-          </Link>
+    <div className="akw-container py-5 lg:py-8">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="akw-eyebrow text-muted-foreground">Akwaba Courses</p>
+          <h1 className="font-display text-2xl font-semibold">Nouvelle course</h1>
         </div>
-      )}
+        <Link
+          to="/courses/comment-ca-marche"
+          className="inline-flex items-center gap-1 text-sm font-medium text-primary"
+        >
+          <Info className="h-4 w-4" /> Comment on paie ? <ChevronRight className="h-4 w-4" />
+        </Link>
+      </header>
 
-      <div className="mt-5 space-y-5">
-        <section className="rounded-2xl border border-border bg-card p-4">
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">Catégorie</Label>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {CATEGORIES.map((c) => (
-              <button
-                key={c.value}
-                type="button"
-                onClick={() => setCategory(c.value)}
-                className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
-                  category === c.value
-                    ? "border-primary bg-primary-soft text-primary"
-                    : "border-border text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {c.emoji} {c.label}
-              </button>
-            ))}
-          </div>
-        </section>
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_340px]">
+        <div className="space-y-4">
+          {/* 1. Type */}
+          <section className="rounded-2xl border border-border bg-card p-4">
+            <h2 className="text-sm font-semibold">1. Quel type de course ?</h2>
+            <div className="scrollbar-none mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {CATEGORIES.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() => setCategory(c.value)}
+                  className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${
+                    category === c.value ? "border-primary bg-primary-soft" : "border-border hover:border-primary/40"
+                  }`}
+                >
+                  <span className="text-lg">{c.emoji}</span>
+                  <p className="text-sm font-medium">{c.label}</p>
+                  <p className="text-[11px] text-muted-foreground line-clamp-1">{c.hint}</p>
+                </button>
+              ))}
+            </div>
+            <div className="mt-3">
+              <Label htmlFor="title">Titre de la course</Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ex : Courses de la semaine au marché d'Adjamé"
+              />
+            </div>
+          </section>
 
-        <section className="grid gap-3 rounded-2xl border border-border bg-card p-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <Label htmlFor="title">Titre de la demande</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex. Courses de la semaine à Cocody"
-            />
-          </div>
-          <div>
-            <Label>Ville</Label>
-            <Select value={city} onValueChange={setCity}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {CITIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Quartier</Label>
-            {city === "Abidjan" ? (
-              <Select value={zone} onValueChange={setZone}>
-                <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
-                <SelectContent>
-                  {ABIDJAN_ZONES.map((z) => <SelectItem key={z} value={z}>{z}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Input value={zone} onChange={(e) => setZone(e.target.value)} placeholder="Quartier" />
-            )}
-          </div>
-          <div className="sm:col-span-2">
-            <Label htmlFor="addr">Adresse de livraison</Label>
-            <Input
-              id="addr"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Rue, repère, étage…"
-            />
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-border bg-card p-4">
-          <div className="flex items-center justify-between">
-            <Label>Liste des articles / tâches</Label>
+          {/* 2. Articles */}
+          <section className="rounded-2xl border border-border bg-card p-4">
+            <h2 className="text-sm font-semibold">2. Que faut-il acheter / faire ?</h2>
+            <div className="mt-3 space-y-2">
+              {items.map((it, idx) => (
+                <div key={idx} className="flex gap-2">
+                  <Input
+                    className="flex-1"
+                    value={it.label}
+                    onChange={(e) => updateItem(idx, { label: e.target.value })}
+                    placeholder="Ex : Riz parfumé 5 kg"
+                  />
+                  <Input
+                    className="w-20"
+                    value={it.qty}
+                    onChange={(e) => updateItem(idx, { qty: e.target.value })}
+                    placeholder="Qté"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setItems((p) => p.filter((_, i) => i !== idx))}
+                    aria-label="Supprimer l'article"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
             <Button
-              type="button"
-              variant="ghost"
+              variant="outline"
               size="sm"
+              className="mt-2"
               onClick={() => setItems((p) => [...p, { label: "", qty: "1" }])}
             >
-              <Plus className="mr-1 h-4 w-4" /> Ajouter
+              <Plus className="mr-1.5 h-4 w-4" /> Ajouter un article
             </Button>
-          </div>
-          <div className="mt-2 space-y-2">
-            {items.map((it, i) => (
-              <div key={i} className="flex gap-2">
-                <Input
-                  className="flex-1"
-                  value={it.label}
-                  onChange={(e) => updateItem(i, { label: e.target.value })}
-                  placeholder="Ex. Riz parfumé 5 kg"
-                />
-                <Input
-                  className="w-20"
-                  value={it.qty}
-                  onChange={(e) => updateItem(i, { qty: e.target.value })}
-                  placeholder="Qté"
-                />
-                <Button
+            <div className="mt-3">
+              <Label htmlFor="notes">Précisions pour le shopper</Label>
+              <Textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Marque préférée, remplacement autorisé, étage, point de repère…"
+                rows={3}
+              />
+            </div>
+          </section>
+
+          {/* 3. Logistique */}
+          <section className="rounded-2xl border border-border bg-card p-4">
+            <h2 className="text-sm font-semibold">3. Transport et volume</h2>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              {VEHICLE_OPTIONS.map((v) => (
+                <button
+                  key={v.value}
                   type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setItems((p) => p.filter((_, idx) => idx !== i))}
-                  aria-label="Supprimer l'article"
+                  onClick={() => setVehicle(v.value)}
+                  className={`rounded-xl border px-3 py-2 text-left transition-colors ${
+                    vehicle === v.value ? "border-primary bg-primary-soft" : "border-border hover:border-primary/40"
+                  }`}
                 >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                  <p className="text-sm font-medium">{v.emoji} {v.label}</p>
+                  <p className="text-[11px] text-muted-foreground line-clamp-1">{v.hint}</p>
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label>Volume</Label>
+                <Select value={volume} onValueChange={(v) => setVolume(v as VolumeSize)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {VOLUME_OPTIONS.map((v) => (
+                      <SelectItem key={v.value} value={v.value}>{v.label} — {v.hint}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            ))}
-          </div>
-        </section>
+              <div>
+                <Label>Urgence</Label>
+                <Select value={urgency} onValueChange={(v) => setUrgency(v as Urgency)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {URGENCY_OPTIONS.map((v) => (
+                      <SelectItem key={v.value} value={v.value}>{v.label} — {v.hint}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="dist">Distance estimée (km)</Label>
+                <Input id="dist" inputMode="numeric" value={distance} onChange={(e) => setDistance(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="mins">Durée estimée (min)</Label>
+                <Input id="mins" inputMode="numeric" value={minutes} onChange={(e) => setMinutes(e.target.value)} />
+              </div>
+            </div>
+          </section>
 
-        <section className="grid gap-3 rounded-2xl border border-border bg-card p-4 sm:grid-cols-2">
-          <div>
-            <Label htmlFor="budget">Budget estimé (FCFA)</Label>
-            <Input
-              id="budget"
-              inputMode="numeric"
-              value={budget}
-              onChange={(e) => setBudget(e.target.value.replace(/[^0-9]/g, ""))}
-              placeholder="25000"
-            />
-          </div>
-          <div>
-            <Label htmlFor="when">Pour quand ?</Label>
-            <Input
-              id="when"
-              type="datetime-local"
-              value={scheduled}
-              onChange={(e) => setScheduled(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label>Moyen de contact préféré</Label>
-            <Select value={contact} onValueChange={setContact}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="chat">Chat Akwaba</SelectItem>
-                <SelectItem value="call">Appel téléphonique</SelectItem>
-                <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                <SelectItem value="video">Appel vidéo</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Paiement</Label>
-            <Select value={payment} onValueChange={(v) => setPayment(v as PayMethod)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {PAY_METHODS.map((p) => (
-                  <SelectItem key={p.value} value={p.value}>{p.emoji} {p.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="sm:col-span-2">
-            <Label htmlFor="notes">Instructions au shopper</Label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Marques préférées, budget max par article, code portail…"
-              rows={3}
-            />
-          </div>
-        </section>
+          {/* 4. Remise */}
+          <section className="rounded-2xl border border-border bg-card p-4">
+            <h2 className="text-sm font-semibold">4. Comment récupérez-vous la course ?</h2>
+            <div className="mt-3 space-y-2">
+              {DROPOFF_MODES.map((d) => (
+                <button
+                  key={d.value}
+                  type="button"
+                  onClick={() => setDropoff(d.value)}
+                  className={`block w-full rounded-xl border px-3 py-2.5 text-left transition-colors ${
+                    dropoff === d.value ? "border-primary bg-primary-soft" : "border-border hover:border-primary/40"
+                  }`}
+                >
+                  <p className="text-sm font-medium">{d.label}</p>
+                  <p className="text-xs text-muted-foreground">{d.hint}</p>
+                </button>
+              ))}
+            </div>
+            {dropoff === "third_party" && (
+              <div className="mt-3">
+                <Label htmlFor="tp">Contact du livreur tiers (facultatif)</Label>
+                <Input id="tp" value={thirdParty} onChange={(e) => setThirdParty(e.target.value)} placeholder="Nom + numéro du nyango / gbaka" />
+              </div>
+            )}
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label>Ville</Label>
+                <Select value={city} onValueChange={setCity}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CITIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Quartier</Label>
+                <Select value={zone} onValueChange={setZone}>
+                  <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
+                  <SelectContent>
+                    {ABIDJAN_ZONES.map((z) => <SelectItem key={z} value={z}>{z}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="sm:col-span-2">
+                <Label htmlFor="addr">Adresse de remise</Label>
+                <Input id="addr" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Rue, immeuble, repère" />
+              </div>
+              <div className="sm:col-span-2">
+                <Label htmlFor="sched">Date / heure souhaitée (facultatif)</Label>
+                <Input id="sched" type="datetime-local" value={scheduled} onChange={(e) => setScheduled(e.target.value)} />
+              </div>
+            </div>
+          </section>
 
-        <Button className="w-full" size="lg" disabled={saving} onClick={submit}>
-          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Publier ma demande
-        </Button>
+          {/* 5. Argent */}
+          <section className="rounded-2xl border border-border bg-card p-4">
+            <h2 className="text-sm font-semibold">5. L'argent des achats</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Ce montant est une <strong>estimation</strong>, pas un paiement. Rien n'est débité maintenant :
+              on régularise au franc près avec le reçu, après la course.
+            </p>
+            <div className="mt-3 space-y-2">
+              {FUND_MODES.map((f) => (
+                <button
+                  key={f.value}
+                  type="button"
+                  onClick={() => setFundMode(f.value)}
+                  className={`block w-full rounded-xl border px-3 py-2.5 text-left transition-colors ${
+                    fundMode === f.value ? "border-primary bg-primary-soft" : "border-border hover:border-primary/40"
+                  }`}
+                >
+                  <p className="text-sm font-medium">
+                    {f.label} <span className="ml-1 rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">{f.badge}</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">{f.hint}</p>
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="budget">Budget achats estimé (FCFA)</Label>
+                <Input id="budget" inputMode="numeric" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="Ex : 25000" />
+              </div>
+              <div>
+                <Label>Moyen de transfert</Label>
+                <Select value={payment} onValueChange={(v) => setPayment(v as PayMethod)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {PAY_METHODS.map((p) => <SelectItem key={p.value} value={p.value}>{p.emoji} {p.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="sm:col-span-2">
+                <Label>Contact préféré pendant la course</Label>
+                <Select value={contact} onValueChange={setContact}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="chat">Chat dans l'application</SelectItem>
+                    <SelectItem value="call">Appel téléphonique</SelectItem>
+                    <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                    <SelectItem value="video">Visio (choix au marché)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* Devis sticky */}
+        <aside className="lg:sticky lg:top-20 lg:self-start">
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <p className="akw-eyebrow text-muted-foreground">Votre devis</p>
+            <p className="mt-1 font-display text-3xl font-semibold">{formatFcfa(quote.serviceFee)}</p>
+            <p className="text-xs text-muted-foreground">Frais de service Akwaba — connus d'avance</p>
+
+            <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+              <li className="flex justify-between"><span>Base véhicule</span><span>{formatFcfa(quote.base)}</span></li>
+              <li className="flex justify-between"><span>Distance</span><span>{formatFcfa(quote.distanceFee)}</span></li>
+              <li className="flex justify-between"><span>Temps au-delà de 30 min</span><span>{formatFcfa(quote.timeFee)}</span></li>
+              <li className="flex justify-between"><span>Volume</span><span>{formatFcfa(quote.volumeFee)}</span></li>
+              <li className="flex justify-between"><span>Urgence</span><span>{formatFcfa(quote.urgencyFee)}</span></li>
+              {quote.itemsFee > 0 && (
+                <li className="flex justify-between"><span>Longue liste</span><span>{formatFcfa(quote.itemsFee)}</span></li>
+              )}
+              {quote.dropoffAdjustment !== 0 && (
+                <li className="flex justify-between text-primary"><span>Remise remise/retrait</span><span>{formatFcfa(quote.dropoffAdjustment)}</span></li>
+              )}
+            </ul>
+
+            <div className="mt-3 rounded-xl bg-muted/50 p-3 text-xs">
+              <p className="flex justify-between"><span>Part shopper</span><strong>{formatFcfa(quote.runnerPayout)}</strong></p>
+              <p className="flex justify-between text-muted-foreground"><span>Commission Akwaba ({Math.round(COMMISSION_RATE * 100)} %)</span><span>{formatFcfa(quote.commission)}</span></p>
+            </div>
+
+            <div className="mt-3 border-t border-border pt-3 text-sm">
+              <p className="flex justify-between"><span className="text-muted-foreground">Achats (estimation)</span><span>{formatFcfa(budgetNum)}</span></p>
+              <p className="mt-1 flex justify-between font-semibold"><span>Total prévisionnel</span><span>{formatFcfa(budgetNum + quote.serviceFee)}</span></p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Aucun prélèvement immédiat. Vous ne réglez qu'après validation du reçu.
+              </p>
+            </div>
+
+            <Button className="mt-4 w-full" onClick={submit} disabled={saving || !valid}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Publier ma demande
+            </Button>
+            {!valid && (
+              <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                Titre, adresse et au moins un article requis.
+              </p>
+            )}
+          </div>
+        </aside>
       </div>
     </div>
   );
