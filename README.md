@@ -90,7 +90,11 @@ recalculent les montants à partir du barème stocké dans `commission_rules`.
 | `errand_confirm_payment` | Clôture, crédit du portefeuille, idempotente |
 | `errand_cancel`, `errand_open_dispute` | Annulation et litige, gel des gains |
 | `errand_rate_runner` | Notation, moyenne recalculée |
+| `errand_create` | Publication d'une course, devis et code de remise calculés par le serveur |
 | `errand_attach_proof` | Dépôt d'un reçu ou d'une preuve d'avance |
+| `errand_declare_advance` | Le client déclare le budget transféré, le reste à payer est recalculé |
+| `errand_runner_payout_account` | Compte de réception du shopper, visible du seul client concerné |
+| `errand_resolve_dispute` | Arbitrage d'un litige par un modérateur |
 | `payout_request_create` | Retrait, solde vérifié et débité atomiquement |
 | `payout_request_settle` | Traitement administrateur, un refus recrédite |
 | `wallet_release_matured_earnings` | Gains arrivés à maturité, en solde disponible |
@@ -103,6 +107,29 @@ sensibles sur `errands` et `runner_profiles`.
 Une seule source de vérité : la table `commission_rules`, versionnée. La base
 commissionnable est le **frais de service seul**. L'argent des achats revient
 intégralement au marchand et n'est jamais commissionné.
+
+## Application installable
+
+L'application s'installe sur l'écran d'accueil et reste utilisable sur un réseau
+défaillant.
+
+| Élément | Rôle |
+|---|---|
+| `public/manifest.webmanifest` | Nom, couleurs, raccourcis, icônes |
+| `public/sw.js` | Cache des ressources, repli hors ligne, jamais de cache des données |
+| `scripts/generate-icons.mjs` | Génère les icônes depuis la palette de marque |
+| `src/shared/pwa/` | Enregistrement, invite d'installation, bandeau hors ligne |
+
+À chaque livraison qui modifie les ressources, incrémenter la constante
+`VERSION` de `public/sw.js`, sinon les navigateurs conserveront l'ancienne
+version en cache.
+
+## Zones de service
+
+Les villes et quartiers vivent dans `service_cities` et `service_zones`. Ouvrir
+une ville aux courses se fait en base, en activant `errands_enabled` : aucune
+livraison de code n'est nécessaire. Les courses ne sont proposées que là où un
+réseau de shoppers existe.
 
 ## Rôles
 
@@ -120,7 +147,7 @@ protégé par le secret `BOOTSTRAP_ADMIN_TOKEN`.
 
 | Bucket | Visibilité | Contenu |
 |---|---|---|
-| `place-images` | Public | Photographies des établissements |
+| `place-images` | Public | Photographies déposées par les partenaires |
 | `identity-docs` | Privé | Pièces d'identité des shoppers |
 | `errand-proofs` | Privé | Reçus d'achat et preuves d'avance |
 
@@ -147,6 +174,12 @@ node scripts/generate-place-seed.mjs supabase/migrations/<horodatage>_seed.sql
 Le travail part de `develop` et y revient par proposition de fusion, une fois
 l'intégration continue au vert. `main` reçoit une publication revue depuis
 `develop`. Messages de commit au format Conventional Commits, en anglais.
+
+## Hébergement
+
+`vercel.json` et `public/_redirects` portent le repli monopage, indispensable
+pour qu'un lien de fiche partagé par messagerie ouvre bien l'application, ainsi
+que les en-têtes de cache et de sécurité.
 
 ## État du produit
 
