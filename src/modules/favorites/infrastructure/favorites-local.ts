@@ -7,6 +7,8 @@ export interface FavoritesPort {
   list(): string[];
   has(id: string): boolean;
   toggle(id: string): boolean;
+  /** Remplace l'ensemble local, après reprise des favoris du compte. */
+  replace(ids: string[]): void;
   subscribe(cb: () => void): () => void;
 }
 
@@ -43,6 +45,9 @@ class LocalFavorites implements FavoritesPort {
     const next = ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
     this.write(next);
     return next.includes(id);
+  }
+  replace(ids: string[]) {
+    this.write(Array.from(new Set(ids)));
   }
   subscribe(cb: () => void) {
     this.listeners.add(cb);
