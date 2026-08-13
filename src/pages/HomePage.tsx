@@ -7,6 +7,7 @@ import { PlaceCard } from "@/modules/places/ui/PlaceCard";
 import { ItineraryCard } from "@/modules/places/ui/ItineraryCard";
 import { CategoryChip, SectionHeader } from "@/shared/ui/sections";
 import { HorizontalRail } from "@/shared/ui/HorizontalRail";
+import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
 const CATEGORIES = [
   { to: "/explorer?type=lodging", label: "Hébergements", emoji: "🏨" },
@@ -25,6 +26,7 @@ function getGreeting() {
 }
 
 export default function HomePage() {
+  usePageTitle("Découvrir la Côte d'Ivoire", "Adresses sélectionnées, parcours et service de courses en Côte d'Ivoire.");
   const { data: places, loading, error, reload } = usePlaces();
   const featured = places.filter((p) => p.premium).slice(0, 4);
   const tonight = places

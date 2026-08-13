@@ -48,8 +48,10 @@ import {
   type VehicleKind,
   type VolumeSize,
 } from "@/modules/errands/pricing";
+import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
 export default function NewErrandPage() {
+  usePageTitle("Demander une course", "Confiez votre course à un shopper vérifié.");
   const { user } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -150,41 +152,33 @@ export default function NewErrandPage() {
       return;
     }
     setSaving(true);
-    const { data, error } = await supabase
-      .from("errands")
-      .insert({
-        customer_id: user.id,
-        title: title.trim(),
-        category,
-        city,
-        zone: zone || null,
-        delivery_address: address.trim(),
-        lat: coords?.lat ?? null,
-        lng: coords?.lng ?? null,
-        items: cleanItems as unknown as never,
-        notes: notes || null,
-        budget_estimate: budgetNum,
-        preferred_contact: contact,
-        scheduled_for: scheduled ? new Date(scheduled).toISOString() : null,
-        payment_method: payment,
-        status: "open",
-        vehicle_required: vehicle,
-        volume_size: volume,
-        urgency,
-        distance_km: Number(distance) || 0,
-        estimated_minutes: Number(minutes) || 60,
-        dropoff_mode: dropoff,
-        third_party_contact: dropoff === "third_party" ? thirdParty || null : null,
-        fund_mode: fundMode,
-        service_fee: quote.serviceFee,
-        commission_rate: COMMISSION_RATE,
-        commission_amount: quote.commission,
-        runner_payout: quote.runnerPayout,
-        total_amount: budgetNum + quote.serviceFee,
-        handover_code: generateHandoverCode(),
-      })
-      .select("id")
-      .single();
+    // La course est créée par le serveur : il calcule le devis, pose la
+    // commission et tire le code de remise. Le client décrit sa demande, il ne
+    // fixe aucun montant, ce qui est exactement ce que la politique d'insertion
+    // exige et ce qui rend le prix opposable aux deux parties.
+    const { data, error } = await supabase.rpc("errand_create", {
+      p_title: title.trim(),
+      p_category: category,
+      p_city: city,
+      p_zone: zone || null,
+      p_delivery_address: address.trim(),
+      p_items: cleanItems as unknown as never,
+      p_budget_estimate: budgetNum,
+      p_notes: notes || null,
+      p_preferred_contact: contact,
+      p_scheduled_for: scheduled ? new Date(scheduled).toISOString() : null,
+      p_payment_method: payment,
+      p_vehicle_required: vehicle,
+      p_volume_size: volume,
+      p_urgency: urgency,
+      p_distance_km: Number(distance) || 0,
+      p_estimated_minutes: Number(minutes) || 60,
+      p_dropoff_mode: dropoff,
+      p_third_party: dropoff === "third_party" ? thirdParty || null : null,
+      p_fund_mode: fundMode,
+      p_lat: coords?.lat ?? null,
+      p_lng: coords?.lng ?? null,
+    });
     setSaving(false);
     if (error) {
       toast.error(error.message);

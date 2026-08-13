@@ -6,6 +6,7 @@ import { Locate, X, MapPin } from "lucide-react";
 import { usePlaces } from "@/modules/places/application/usePlaces";
 import type { Place } from "@/modules/places/domain/types";
 import { PlaceCard } from "@/modules/places/ui/PlaceCard";
+import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
 // Adapter MapLibre, substituable (Mapbox, MapTiler, Google) sans toucher la page.
 // Fond de carte ouvert, sans clé : aucune dépendance à un service tiers payant.
@@ -23,6 +24,7 @@ const FALLBACK_STYLE = {
 } as unknown as StyleSpecification;
 
 export default function MapPage() {
+  usePageTitle("Carte des adresses", "Situez les meilleures adresses sur la carte.");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MLMap | null>(null);
   const [selected, setSelected] = useState<Place | null>(null);

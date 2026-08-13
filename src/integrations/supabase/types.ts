@@ -839,6 +839,32 @@ export type Database = {
       }
     }
     Views: {
+      errand_market_detail: {
+        Row: {
+          budget_estimate: number | null
+          category: Database["public"]["Enums"]["errand_category"] | null
+          city: string | null
+          commission_amount: number | null
+          created_at: string | null
+          distance_km: number | null
+          dropoff_mode: Database["public"]["Enums"]["dropoff_mode"] | null
+          estimated_minutes: number | null
+          fund_mode: Database["public"]["Enums"]["fund_mode"] | null
+          id: string | null
+          items: Json | null
+          payment_method: Database["public"]["Enums"]["pay_method"] | null
+          runner_payout: number | null
+          scheduled_for: string | null
+          service_fee: number | null
+          status: Database["public"]["Enums"]["errand_status"] | null
+          title: string | null
+          urgency: string | null
+          vehicle_required: string | null
+          volume_size: string | null
+          zone: string | null
+        }
+        Relationships: []
+      }
       open_errands_feed: {
         Row: {
           budget_estimate: number | null
@@ -890,6 +916,36 @@ export type Database = {
       is_errand_participant: {
         Args: { _errand: string; _uid: string }
         Returns: boolean
+      }
+      errand_create: {
+        Args: {
+          p_title: string
+          p_category: Database["public"]["Enums"]["errand_category"]
+          p_city: string
+          p_zone?: string | null
+          p_delivery_address: string
+          p_items?: Json
+          p_budget_estimate?: number
+          p_notes?: string | null
+          p_preferred_contact?: string
+          p_scheduled_for?: string | null
+          p_payment_method?: Database["public"]["Enums"]["pay_method"]
+          p_vehicle_required?: string
+          p_volume_size?: string
+          p_urgency?: string
+          p_distance_km?: number
+          p_estimated_minutes?: number
+          p_dropoff_mode?: Database["public"]["Enums"]["dropoff_mode"]
+          p_third_party?: string | null
+          p_fund_mode?: Database["public"]["Enums"]["fund_mode"]
+          p_lat?: number | null
+          p_lng?: number | null
+        }
+        Returns: Database["public"]["Tables"]["errands"]["Row"]
+      }
+      errand_resolve_dispute: {
+        Args: { p_errand_id: string; p_issue: string; p_note?: string | null }
+        Returns: Database["public"]["Tables"]["errands"]["Row"]
       }
       errand_accept_offer: {
         Args: { p_offer_id: string }

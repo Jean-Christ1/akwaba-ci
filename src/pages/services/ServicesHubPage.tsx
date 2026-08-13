@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, ShoppingBasket, Bike, Hammer, Store, ShieldCheck, Wallet } from "lucide-react";
 import { CATEGORIES } from "@/modules/errands/domain";
+import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
 const PILLARS = [
   {
@@ -40,6 +41,7 @@ const TRUST = [
 ];
 
 export default function ServicesHubPage() {
+  usePageTitle("Services", "Les services Akwaba, dont Akwaba Shopper.");
   return (
     <div className="akw-container py-6 lg:py-8">
       <header className="rounded-3xl bg-editorial px-6 py-8 text-background sm:px-10">

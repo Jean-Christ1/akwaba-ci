@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useTabState } from "@/shared/hooks/useTabState";
 import { toast } from "sonner";
+import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
 type LeadRow = Database["public"]["Tables"]["leads"]["Row"] & {
   /** Jointure select("*, places(name, slug)"). */
@@ -26,6 +27,7 @@ type PlaceRow = Pick<
 type ModerationEventRow = Database["public"]["Tables"]["place_moderation_events"]["Row"];
 
 export default function ProfilePage() {
+  usePageTitle("Mon profil", "Votre compte, vos demandes et vos fiches.");
   const { user, roles, signOut, isPartner, isModerator, isAdmin } = useAuth();
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [profile, setProfile] = useState<{ display_name: string; phone: string; locale: string }>({ display_name: "", phone: "", locale: "fr" });

@@ -12,6 +12,7 @@ import {
   PER_MINUTE,
 } from "@/modules/errands/pricing";
 import { formatFcfa } from "@/modules/errands/domain";
+import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
 const STEPS = [
   {
@@ -47,6 +48,7 @@ const STEPS = [
 ];
 
 export default function HowItWorksPage() {
+  usePageTitle("Comment ça marche", "Le fonctionnement du service Akwaba Shopper.");
   return (
     <div className="akw-container py-6 lg:py-8">
       <header className="rounded-3xl bg-editorial px-6 py-8 text-background sm:px-10">

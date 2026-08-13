@@ -12,8 +12,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { ABIDJAN_ZONES, CITIES, VEHICLES, type RunnerStatus } from "@/modules/errands/domain";
+import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
 export default function RunnerSignupPage() {
+  usePageTitle("Devenir shopper", "Rejoignez le réseau des shoppers Akwaba.");
   const { user } = useAuth();
   const navigate = useNavigate();
   const [existing, setExisting] = useState<{ status: RunnerStatus } | null>(null);

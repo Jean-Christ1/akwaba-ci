@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { formatFcfa } from "@/modules/errands/domain";
 import { MIN_PAYOUT, MOMO_PROVIDERS, type MomoProvider } from "@/modules/errands/pricing";
+import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
 interface WalletRow {
   available_balance: number;
@@ -52,6 +53,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function WalletPage() {
+  usePageTitle("Portefeuille shopper", "Vos gains et vos retraits.");
   const { user } = useAuth();
   const [wallet, setWallet] = useState<WalletRow | null>(null);
   const [accounts, setAccounts] = useState<AccountRow[]>([]);

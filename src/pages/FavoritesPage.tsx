@@ -3,8 +3,10 @@ import { Heart } from "lucide-react";
 import { useFavorites } from "@/modules/favorites/application/useFavorites";
 import { usePlacesByIds } from "@/modules/places/application/usePlaces";
 import { PlaceCard } from "@/modules/places/ui/PlaceCard";
+import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
 export default function FavoritesPage() {
+  usePageTitle("Mes favoris", "Votre carnet d'adresses personnel.");
   const { ids } = useFavorites();
   const { data: places, loading, error, reload } = usePlacesByIds(ids);
 

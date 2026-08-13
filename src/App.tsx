@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AppShell } from "@/shared/ui/AppShell";
+import { ErrorBoundary } from "@/shared/ui/ErrorBoundary";
 import { RequireRole } from "@/shared/ui/RequireRole";
 
 // L'accueil est chargé avec l'application : c'est la première impression et il
@@ -63,7 +64,8 @@ function RouteFallback() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
         <Sonner />
@@ -116,7 +118,8 @@ const App = () => (
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
-  </QueryClientProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

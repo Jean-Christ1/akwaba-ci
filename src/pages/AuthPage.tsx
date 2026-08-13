@@ -8,12 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Logo } from "@/shared/ui/Logo";
+import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
 const emailSchema = z.string().email("Email invalide").max(255);
 const passwordSchema = z.string().min(8, "8 caractères minimum").max(72);
 const nameSchema = z.string().trim().min(2, "Nom trop court").max(80);
 
 export default function AuthPage() {
+  usePageTitle("Connexion", "Connectez-vous pour retrouver vos favoris et vos demandes.");
   const navigate = useNavigate();
   const { user } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");

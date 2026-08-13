@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { formatFcfa, STATUS_LABEL, statusTone, type ErrandStatus } from "@/modules/errands/domain";
+import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
 interface Row {
   id: string;
@@ -18,6 +19,7 @@ interface Row {
 }
 
 export default function MyErrandsPage() {
+  usePageTitle("Mes courses", "Suivez vos courses en cours et passées.");
   const { user, loading } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [busy, setBusy] = useState(true);

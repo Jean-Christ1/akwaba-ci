@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { PlaceType } from "@/modules/places/domain/types";
+import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
 const TYPES: { value: PlaceType | "all"; label: string }[] = [
   { value: "all", label: "Tout" },
@@ -22,6 +23,7 @@ const TYPES: { value: PlaceType | "all"; label: string }[] = [
 type Sort = "relevance" | "name_asc" | "standing_desc";
 
 export default function ExplorerPage() {
+  usePageTitle("Explorer les adresses", "Hôtels, restaurants, maquis et lieux à découvrir en Côte d'Ivoire.");
   const [params, setParams] = useSearchParams();
   const initialType = (params.get("type") as PlaceType) ?? "all";
   const initialCity = params.get("city") ?? "all";
