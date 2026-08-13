@@ -3,10 +3,10 @@ import { ArrowLeft, Clock, MapPin } from "lucide-react";
 import {
   ITINERARIES,
   getItineraryBySlug,
-  getPlacesByIds,
 } from "@/modules/places/infrastructure/data";
 import { ItineraryCard } from "@/modules/places/ui/ItineraryCard";
 import { PlaceCard } from "@/modules/places/ui/PlaceCard";
+import { usePlacesByIds } from "@/modules/places/application/usePlaces";
 
 export function ItinerariesPage() {
   return (
@@ -48,7 +48,11 @@ export function ItineraryDetailPage() {
     );
   }
 
-  const places = getPlacesByIds(it.steps.map((s) => s.placeId));
+  // Les étapes du parcours résolvent des fiches réelles : un parcours doit
+  // refléter le catalogue publié, non une copie figée dans le code.
+  const { data: places, loading: chargementLieux } = usePlacesByIds(
+    it.steps.map((s) => s.placeId)
+  );
 
   return (
     <div className="bg-background pb-16">
@@ -77,6 +81,9 @@ export function ItineraryDetailPage() {
 
       <div className="akw-container mt-6 sm:mt-10">
         <p className="akw-eyebrow mb-4">Le déroulé</p>
+        {chargementLieux && (
+          <p className="py-6 text-sm text-muted-foreground">Chargement des étapes...</p>
+        )}
         <ol className="space-y-6">
           {it.steps.map((step, idx) => {
             const place = places.find((p) => p.id === step.placeId);
