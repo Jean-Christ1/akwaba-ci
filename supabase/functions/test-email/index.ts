@@ -85,7 +85,8 @@ Deno.serve(async (req) => {
     }
   } catch (e) {
     console.error(`[test-email ${reqId}] error`, e);
-    return json({ error: (e as Error).message }, 500);
+    console.error("[edge] erreur non recuperee", e);
+    return json({ error: "Erreur serveur" }, 500);
   }
 });
 

@@ -813,6 +813,29 @@ export type Database = {
       }
     }
     Views: {
+      open_errands_feed: {
+        Row: {
+          budget_estimate: number | null
+          category: Database["public"]["Enums"]["errand_category"] | null
+          city: string | null
+          created_at: string | null
+          distance_km: number | null
+          dropoff_mode: Database["public"]["Enums"]["dropoff_mode"] | null
+          estimated_minutes: number | null
+          fund_mode: Database["public"]["Enums"]["fund_mode"] | null
+          id: string | null
+          items: Json | null
+          runner_payout: number | null
+          scheduled_for: string | null
+          service_fee: number | null
+          title: string | null
+          urgency: string | null
+          vehicle_required: string | null
+          volume_size: string | null
+          zone: string | null
+        }
+        Relationships: []
+      }
       runner_public_profiles: {
         Row: {
           bio: string | null

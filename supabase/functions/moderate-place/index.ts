@@ -165,7 +165,8 @@ Deno.serve(async (req) => {
     return json({ success: true, action, email });
   } catch (e) {
     console.error(`[moderate-place ${reqId}] error`, e);
-    return json({ error: (e as Error).message }, 500);
+    console.error("[edge] erreur non recuperee", e);
+    return json({ error: "Erreur serveur" }, 500);
   }
 });
 

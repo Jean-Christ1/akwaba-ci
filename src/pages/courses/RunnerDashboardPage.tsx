@@ -22,7 +22,8 @@ interface Mission {
   category: string;
   city: string;
   zone: string | null;
-  delivery_address: string;
+  /** Absente du flux ouvert : révélée une fois la course assignée. */
+  delivery_address?: string | null;
   budget_estimate: number;
   status: ErrandStatus;
   created_at: string;
@@ -47,11 +48,21 @@ export default function RunnerDashboardPage() {
     const ok = prof?.status === "approved";
     setApproved(ok);
     if (!ok) return;
+    // Marché ouvert : vue filtrée, sans adresse exacte ni notes du client.
+    // L'adresse complète n'apparaît qu'une fois la course assignée.
     const [{ data: o }, { data: m }] = await Promise.all([
-      supabase.from("errands").select("*").eq("status", "open").order("created_at", { ascending: false }),
+      supabase.from("open_errands_feed").select("*").order("created_at", { ascending: false }),
       supabase.from("errands").select("*").eq("runner_id", user.id).order("created_at", { ascending: false }),
     ]);
-    setOpen((o ?? []) as Mission[]);
+    // Le flux ouvert ne porte ni statut ni affectation : par construction, ces
+    // courses sont ouvertes et sans shopper.
+    setOpen(
+      (o ?? []).map((row) => ({
+        ...row,
+        status: "open" as ErrandStatus,
+        runner_id: null,
+      })) as Mission[]
+    );
     setMine((m ?? []) as Mission[]);
   }, [user]);
 
@@ -109,7 +120,9 @@ export default function RunnerDashboardPage() {
           <p className="text-xs text-muted-foreground">
             {CATEGORIES.find((c) => c.value === m.category)?.label} · {m.zone ? `${m.zone}, ` : ""}{m.city}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">{m.delivery_address}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {m.delivery_address ?? "Adresse exacte communiquée dès l'attribution de la course"}
+          </p>
         </div>
         <div className="shrink-0 text-right">
           <p className="text-sm font-semibold">{formatFcfa(m.budget_estimate)}</p>
