@@ -72,7 +72,13 @@ export default function RunnerDashboardPage() {
     if (!user || !approved) return;
     const channel = supabase
       .channel("runner-feed")
-      .on("postgres_changes", { event: "*", schema: "public", table: "errands" }, () => load())
+      // Abonnement filtre : sans filtre, chaque shopper rechargeait toute sa
+      // liste a la moindre mutation d'une course quelconque de la plateforme.
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "errands", filter: "status=eq.open" },
+        () => load()
+      )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user, approved, load]);

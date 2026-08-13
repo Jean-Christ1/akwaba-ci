@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
+import { logger } from "@/lib/logger";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -158,7 +159,7 @@ export default function AdminPage() {
           "postgres_changes",
           { event: "*", schema: "public", table: "places" },
           (payload) => {
-            console.info("[realtime places]", payload.eventType);
+            logger.debug("[realtime places]", payload.eventType);
             load();
           },
         )
@@ -294,7 +295,7 @@ export default function AdminPage() {
       } else {
         toast.success(baseMsg);
       }
-      console.info("[moderate-place] result", res);
+      logger.debug("[moderate-place] result", res);
       setModTarget(null); setModNote(""); load();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erreur inattendue");

@@ -47,7 +47,7 @@ export function DesktopHeader() {
             <span>Rechercher un lieu, un hôtel…</span>
           </Link>
           <Link
-            to="/profil"
+            to="/auth"
             className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90"
           >
             Connexion

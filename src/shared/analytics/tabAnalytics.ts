@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 /**
  * Lightweight sink for the `akw:tab_change` CustomEvent emitted by useTabState.
  * - Dedupes consecutive events on the same (scope, tab).
@@ -11,7 +12,7 @@ let buffer: TabEvent[] = [];
 let last: { scope: string; tab: string } | null = null;
 let sink: (events: TabEvent[]) => void = (events) => {
   // Default sink: structured console (visible in dev, harmless in prod).
-  if (events.length) console.info("[akw:tabs]", events);
+  if (events.length) logger.debug("[akw:tabs]", events);
 };
 
 export function setTabAnalyticsSink(fn: (events: TabEvent[]) => void) {
