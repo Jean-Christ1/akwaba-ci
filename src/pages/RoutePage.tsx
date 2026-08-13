@@ -100,7 +100,7 @@ export default function RoutePage() {
         const route = json.routes[0];
         setSummary({ km: route.distance / 1000, min: Math.round(route.duration / 60) });
         setSteps(
-          (route.legs?.[0]?.steps ?? []).slice(0, 25).map((s: never & { maneuver: { type: string; modifier?: string }; name: string; distance: number }) => ({
+          (route.legs?.[0]?.steps ?? []).slice(0, 25).map((s: { maneuver: { type: string; modifier?: string }; name: string; distance: number }) => ({
             instruction: `${s.maneuver.type === "depart" ? "Départ" : s.maneuver.type === "arrive" ? "Arrivée" : s.maneuver.modifier ?? "Continuer"} ${s.name ? `sur ${s.name}` : ""}`.trim(),
             distance: s.distance,
           }))
