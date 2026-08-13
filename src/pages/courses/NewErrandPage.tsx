@@ -9,6 +9,7 @@ import {
   estimerDureeMission,
   profilPourVehicule,
   type Adresse,
+  type SourceTrajet,
 } from "@/modules/errands/infrastructure/geocoding";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -87,6 +88,10 @@ export default function NewErrandPage() {
   // Elles ancrent la distance, donc le prix, sur un trajet réel.
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [calculTrajet, setCalculTrajet] = useState(false);
+  // Origine de la distance affichée. Une estimation obtenue sans le service de
+  // routage doit être annoncée : le prix en dépend, le client a le droit de
+  // savoir sur quoi il repose.
+  const [sourceTrajet, setSourceTrajet] = useState<SourceTrajet | null>(null);
 
   // Villes réellement ouvertes aux courses : proposer une ville sans réseau de
   // shoppers reviendrait à promettre un service que personne ne peut assurer.
@@ -105,13 +110,15 @@ export default function NewErrandPage() {
   /**
    * Une adresse vient d'être localisée : on dérive la distance et la durée du
    * trajet réel plutôt que de laisser une valeur saisie à la main servir
-   * d'assiette au prix. Si le service de routage ne répond pas, la saisie
-   * manuelle est conservée telle quelle.
+   * d'assiette au prix. Si le service de routage ne répond pas, une estimation
+   * géométrique prend le relais et son origine est affichée : la demande reste
+   * publiable dans tous les cas.
    */
   const onAdresseLocalisee = useCallback(
     async (adresse: Adresse | null) => {
       if (!adresse) {
         setCoords(null);
+        setSourceTrajet(null);
         return;
       }
 
@@ -125,8 +132,7 @@ export default function NewErrandPage() {
       );
 
       setCalculTrajet(false);
-      if (!trajet) return;
-
+      setSourceTrajet(trajet.source);
       setDistance(String(trajet.distanceKm));
       setMinutes(
         String(
@@ -357,9 +363,11 @@ export default function NewErrandPage() {
             <p className="mt-2 text-[11px] text-muted-foreground">
               {calculTrajet
                 ? "Calcul du trajet en cours..."
-                : coords
+                : sourceTrajet === "routage"
                   ? "Distance et durée calculées depuis l'adresse localisée. Vous pouvez les ajuster."
-                  : "Choisissez une adresse dans les suggestions pour calculer la distance réelle."}
+                  : sourceTrajet === "estimation"
+                    ? "Le calculateur d'itinéraire n'a pas répondu : distance et durée sont estimées à vol d'oiseau, majorées du détour de voirie. Ajustez-les si vous connaissez le trajet."
+                    : "Choisissez une adresse dans les suggestions pour calculer la distance réelle."}
             </p>
           </section>
 

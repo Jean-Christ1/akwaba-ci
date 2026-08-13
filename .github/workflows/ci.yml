@@ -1,7 +1,8 @@
 name: CI
 
 # Porte de qualité sur toute proposition de fusion : rien n'entre dans develop
-# ou main sans que le lint, les types, les tests et le build soient verts.
+# ou main sans que le lint, les types, les tests, le build et l'audit des
+# dépendances soient verts.
 on:
   pull_request:
     branches: [develop, main]
@@ -25,10 +26,14 @@ jobs:
       - name: Installation de Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # La version vient de .nvmrc, qui fait foi pour tout le monde : la
+          # machine du développeur et l'intégration lisent le même fichier.
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Installation des dépendances
+        # L'audit des dépendances a son propre travail plus bas, avec un seuil
+        # explicite. L'audit implicite de npm install ne ferait que bruiter ici.
         run: npm ci --no-audit --no-fund
 
       - name: Lint
@@ -62,6 +67,53 @@ jobs:
             echo "::error::Le point d'entrée dépasse le plafond fixé."
             exit 1
           fi
+
+  dependances:
+    name: Audit des dépendances
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      - name: Unicité du fichier de verrou
+        # Deux verrous concurrents, c'est deux arbres de dépendances possibles
+        # pour le même dépôt, donc un audit qui ne prouve rien. Le projet
+        # installe avec npm ci : package-lock.json fait foi, seul.
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "::error::package-lock.json est absent alors que l'installation se fait avec npm ci."
+            exit 1
+          fi
+          for verrou in bun.lockb bun.lock yarn.lock pnpm-lock.yaml; do
+            if [ -f "$verrou" ]; then
+              echo "::error::$verrou coexiste avec package-lock.json. Un seul gestionnaire, un seul verrou."
+              exit 1
+            fi
+          done
+          echo "Verrou unique : package-lock.json."
+
+      - name: Installation de Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Installation des dépendances
+        run: npm ci --no-audit --no-fund
+
+      - name: Vulnérabilités des dépendances d'exécution
+        # Bloquant. Ce qui est listé ici part dans le navigateur du visiteur.
+        # Les tolérances éventuelles sont déclarées et datées dans
+        # .github/dependency-audit-exceptions.json, jamais passées sous silence.
+        run: node .github/scripts/audit-dependencies.mjs
+
+      - name: Vulnérabilités de l'outillage de développement
+        # Informatif. Un défaut dans un outil de compilation ne part jamais chez
+        # le visiteur : il est signalé, il ne bloque pas la fusion.
+        continue-on-error: true
+        run: npm audit --audit-level=high
 
   edge-functions:
     name: Fonctions edge Deno

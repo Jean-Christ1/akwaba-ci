@@ -62,7 +62,14 @@ export function LeadRequestForm({ placeId, placeName, kind, onClose }: Props) {
       toast.success("Demande envoyée ! Nous revenons vers vous rapidement.");
       onClose?.();
     } catch (err) {
-      const msg = err?.errors?.[0]?.message ?? err?.message ?? "Erreur";
+      // La validation locale et l'appel réseau échouent différemment : on montre
+      // le premier problème de saisie quand il existe, sinon le message technique.
+      const msg =
+        err instanceof z.ZodError
+          ? (err.issues[0]?.message ?? "Erreur")
+          : err instanceof Error
+            ? err.message
+            : "Erreur";
       toast.error(msg);
     } finally {
       setLoading(false);

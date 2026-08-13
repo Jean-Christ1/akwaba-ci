@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { ErrandInspector } from "@/modules/admin/ErrandInspector";
+import { PrivateDocumentButton } from "@/modules/admin/PrivateDocumentButton";
 import { formatFcfa } from "@/modules/errands/domain";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
@@ -49,6 +51,7 @@ export default function DisputesPage() {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [fetching, setFetching] = useState(true);
+  const [courseExaminee, setCourseExaminee] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setFetching(true);
@@ -171,8 +174,12 @@ export default function DisputesPage() {
                     {new Date(litige.created_at).toLocaleDateString("fr-FR")}
                   </p>
                 </div>
-                <Button asChild variant="outline" size="sm">
-                  <Link to={`/courses/${litige.id}`}>Voir la course</Link>
+                {/* L'écran client d'une course est bâti pour ses deux parties :
+                    il n'apprend rien à qui doit arbitrer. Le dossier de
+                    modération réunit les montants, la chronologie et les
+                    pièces. */}
+                <Button variant="outline" size="sm" onClick={() => setCourseExaminee(litige.id)}>
+                  Examiner la course
                 </Button>
               </div>
 
@@ -191,7 +198,14 @@ export default function DisputesPage() {
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">Reçu</dt>
-                  <dd>{litige.receipt_url ? "Déposé" : "Absent"}</dd>
+                  <dd>
+                    <PrivateDocumentButton
+                      bucket="errand-proofs"
+                      path={litige.receipt_url}
+                      label="Ouvrir le reçu"
+                      emptyLabel="Aucun reçu déposé"
+                    />
+                  </dd>
                 </div>
               </dl>
 
@@ -254,6 +268,8 @@ export default function DisputesPage() {
           ))}
         </div>
       )}
+
+      <ErrandInspector errandId={courseExaminee} onClose={() => setCourseExaminee(null)} />
     </div>
   );
 }

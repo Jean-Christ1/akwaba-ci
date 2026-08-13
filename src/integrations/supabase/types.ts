@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       commission_rules: {
         Row: {
+          settlement: Database["public"]["Enums"]["settlement_mode"]
+          tip_cap: number
           base: string
           created_at: string
           effective_from: string
@@ -35,6 +37,8 @@ export type Database = {
           version: number
         }
         Insert: {
+          settlement?: Database["public"]["Enums"]["settlement_mode"]
+          tip_cap?: number
           base?: string
           created_at?: string
           effective_from?: string
@@ -54,6 +58,8 @@ export type Database = {
           version: number
         }
         Update: {
+          settlement?: Database["public"]["Enums"]["settlement_mode"]
+          tip_cap?: number
           base?: string
           created_at?: string
           effective_from?: string
@@ -1025,6 +1031,8 @@ export type Database = {
       }
       runner_wallets: {
         Row: {
+          commission_due: number
+          commission_settled: number
           available_balance: number
           created_at: string
           id: string
@@ -1034,6 +1042,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          commission_due?: number
+          commission_settled?: number
           available_balance?: number
           created_at?: string
           id?: string
@@ -1043,6 +1053,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          commission_due?: number
+          commission_settled?: number
           available_balance?: number
           created_at?: string
           id?: string
@@ -1114,6 +1126,19 @@ export type Database = {
       }
     }
     Views: {
+      commission_receivables: {
+        Row: {
+          commission_due: number | null
+          commission_settled: number | null
+          derniere_commission: string | null
+          full_name: string | null
+          jobs_completed: number | null
+          lifetime_earnings: number | null
+          phone: string | null
+          runner_id: string | null
+        }
+        Relationships: []
+      }
       errand_performance: {
         Row: {
           accepted_at: string | null
@@ -1283,6 +1308,14 @@ export type Database = {
           retraits_en_attente: number
           montant_a_verser: number
         }[]
+      }
+      commission_settlement_record: {
+        Args: {
+          p_runner_id: string
+          p_amount: number
+          p_reference?: string | null
+        }
+        Returns: Database["public"]["Tables"]["runner_wallets"]["Row"]
       }
       commission_rule_publish: {
         Args: {
@@ -1468,6 +1501,7 @@ export type Database = {
         | "culture"
         | "shopping"
       runner_status: "pending" | "approved" | "suspended" | "rejected"
+      settlement_mode: "direct" | "escrow"
       wallet_entry_kind:
         | "earning"
         | "commission"
@@ -1475,6 +1509,8 @@ export type Database = {
         | "payout"
         | "adjustment"
         | "bonus"
+        | "commission_due"
+        | "commission_settlement"
     }
     CompositeTypes: {
       [_ in never]: never

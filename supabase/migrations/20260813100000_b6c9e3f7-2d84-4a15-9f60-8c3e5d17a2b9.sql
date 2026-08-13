@@ -109,6 +109,13 @@ $$;
 -- 2. Precision et positivite des montants
 -- ---------------------------------------------------------------------------
 
+-- PostgreSQL refuse de changer le type d'une colonne citée par une politique.
+-- Deux politiques d'insertion vérifient des montants : on les retire le temps
+-- de la conversion, puis on les rétablit à l'identique juste après. Sans cela,
+-- toute la chaîne de migrations bute ici.
+DROP POLICY IF EXISTS "Customer creates errand" ON public.errands;
+DROP POLICY IF EXISTS "Participants create payments" ON public.errand_payments;
+
 ALTER TABLE public.errands
   ALTER COLUMN budget_estimate  TYPE numeric(12,2),
   ALTER COLUMN items_total      TYPE numeric(12,2),
@@ -133,6 +140,41 @@ ALTER TABLE public.wallet_entries  ALTER COLUMN amount TYPE numeric(12,2);
 ALTER TABLE public.payout_requests ALTER COLUMN amount TYPE numeric(12,2);
 ALTER TABLE public.errand_payments ALTER COLUMN amount TYPE numeric(12,2);
 ALTER TABLE public.errand_offers   ALTER COLUMN price  TYPE numeric(12,2);
+
+-- Rétablissement des deux politiques retirées pour la conversion, à
+-- l'identique. Une course naît sans aucun montant calculé : c'est le serveur
+-- qui les pose ensuite, le client ne peut pas les fixer lui-même.
+CREATE POLICY "Customer creates errand"
+  ON public.errands FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    customer_id = auth.uid()
+    AND char_length(title) >= 3
+    AND char_length(title) <= 160
+    AND char_length(delivery_address) >= 3
+    AND char_length(delivery_address) <= 400
+    AND status = ANY (ARRAY['draft'::errand_status, 'open'::errand_status])
+    AND payment_status = 'pending'::pay_status
+    AND runner_id IS NULL
+    AND items_total = 0::numeric
+    AND commission_amount = 0::numeric
+    AND runner_payout = 0::numeric
+    AND tip_amount = 0::numeric
+    AND balance_due = 0::numeric
+    AND rating IS NULL
+    AND budget_estimate >= 0::numeric
+    AND service_fee >= 0::numeric
+    AND delivery_fee >= 0::numeric
+  );
+
+CREATE POLICY "Participants create payments"
+  ON public.errand_payments FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    payer_id = auth.uid()
+    AND public.is_errand_participant(errand_id, auth.uid())
+    AND amount >= 0::numeric
+  );
 
 DO $$
 BEGIN

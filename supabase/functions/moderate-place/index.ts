@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { escapeHtml, escapeHtmlMultiline, safeOrigin, sanitizeHeaderText } from "../_shared/html.ts";
+import { isEmail, isUuid } from "../_shared/validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -54,8 +56,8 @@ Deno.serve(async (req) => {
       place_id?: string; action?: "approved" | "rejected" | "note"; note?: string;
     };
 
-    if (!place_id || !["approved", "rejected", "note"].includes(action ?? "")) {
-      return json({ error: "place_id et action requis" }, 400);
+    if (!isUuid(place_id) || !["approved", "rejected", "note"].includes(action ?? "")) {
+      return json({ error: "place_id (uuid) et action requis" }, 400);
     }
 
     const v = validateNote(action!, note);
@@ -87,7 +89,7 @@ Deno.serve(async (req) => {
       .insert({ place_id, moderator_id: userId, action, note: v.note });
     if (evErr) throw evErr;
 
-    // Email delivery — return verbose status
+    // Email delivery - return verbose status
     const RESEND = Deno.env.get("RESEND_API_KEY");
     const LOVABLE = Deno.env.get("LOVABLE_API_KEY");
     let email: { status: string; detail?: string; provider_id?: string; recipient?: string } = {
@@ -96,10 +98,14 @@ Deno.serve(async (req) => {
     };
 
     if (action !== "note") {
-      let recipient = (place.email ?? "").trim() || null;
+      // L'adresse de la fiche est saisie par le partenaire : elle n'est
+      // retenue que si elle a la forme d'une adresse.
+      const declared = (place.email ?? "").trim();
+      let recipient: string | null = isEmail(declared) ? declared : null;
       if (!recipient && place.owner_id) {
         const { data: { user } } = await admin.auth.admin.getUserById(place.owner_id);
-        recipient = user?.email ?? null;
+        const ownerEmail = (user?.email ?? "").trim();
+        recipient = isEmail(ownerEmail) ? ownerEmail : null;
       }
       if (!recipient) {
         email = { status: "no_recipient", detail: "Aucune adresse email connue pour cette fiche." };
@@ -110,17 +116,21 @@ Deno.serve(async (req) => {
           recipient,
         };
       } else {
-        const origin = req.headers.get("origin") ?? "https://akwaba.app";
+        // Le nom de la fiche et l'en-tête Origin viennent tous deux de
+        // l'extérieur : ils sont nettoyés avant d'entrer dans le courriel.
+        const origin = safeOrigin(req.headers.get("origin"), "https://akwaba.app");
+        const placeName = sanitizeHeaderText(place.name, 120) || "votre établissement";
         const subject = action === "approved"
-          ? `Votre fiche "${place.name}" est validée 🎉`
-          : `Votre fiche "${place.name}" nécessite des ajustements`;
+          ? `Votre fiche "${placeName}" est validée`
+          : `Votre fiche "${placeName}" nécessite des ajustements`;
+        const safeName = escapeHtml(placeName);
         const intro = action === "approved"
-          ? `<p>Bonne nouvelle ! Votre établissement <strong>${place.name}</strong> est désormais publié sur Akwaba.</p>`
-          : `<p>Votre fiche <strong>${place.name}</strong> n'a pas pu être validée en l'état.</p>`;
+          ? `<p>Bonne nouvelle ! Votre établissement <strong>${safeName}</strong> est désormais publié sur Akwaba.</p>`
+          : `<p>Votre fiche <strong>${safeName}</strong> n'a pas pu être validée en l'état.</p>`;
         const noteHtml = v.note
-          ? `<p><em>Note du modérateur :</em><br/>${v.note.replace(/</g, "&lt;").replace(/\n/g, "<br/>")}</p>`
+          ? `<p><em>Note du modérateur :</em><br/>${escapeHtmlMultiline(v.note)}</p>`
           : "";
-        const cta = `<p><a href="${origin}/profil" style="display:inline-block;padding:10px 16px;background:#0f766e;color:#fff;text-decoration:none;border-radius:6px">Accéder à mon profil</a></p>`;
+        const cta = `<p><a href="${escapeHtml(`${origin}/profil`)}" style="display:inline-block;padding:10px 16px;background:#0f766e;color:#fff;text-decoration:none;border-radius:6px">Accéder à mon profil</a></p>`;
         try {
           const resp = await fetch("https://connector-gateway.lovable.dev/resend/emails", {
             method: "POST",
@@ -165,7 +175,6 @@ Deno.serve(async (req) => {
     return json({ success: true, action, email });
   } catch (e) {
     console.error(`[moderate-place ${reqId}] error`, e);
-    console.error("[edge] erreur non recuperee", e);
     return json({ error: "Erreur serveur" }, 500);
   }
 });

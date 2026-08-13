@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Verrous des autres gestionnaires. Le projet installe avec npm ci : seul
+# package-lock.json fait foi. Un second verrou versionné laisserait deux
+# personnes installer deux arbres de dépendances différents.
+bun.lockb
+bun.lock
+yarn.lock
+pnpm-lock.yaml
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

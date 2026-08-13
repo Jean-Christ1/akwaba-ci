@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { formatFcfa } from "@/modules/errands/domain";
+import { CommissionReceivables } from "./CommissionReceivables";
 
 type PayoutStatus = "requested" | "processing" | "paid" | "rejected";
 
@@ -141,9 +142,23 @@ export default function PayoutsPage() {
   return (
     <div className="akw-container max-w-5xl py-6">
       <p className="akw-eyebrow">Back-office</p>
-      <h1 className="font-display text-2xl font-semibold">Retraits shoppers</h1>
+      <h1 className="font-display text-2xl font-semibold">Règlements</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Ce que la plateforme doit encaisser, et ce qu'elle doit verser.
+      </p>
+
+      {/* Les deux sens de l'argent au même endroit : la commission que les
+          shoppers doivent, et les retraits qu'ils demandent. Les séparer
+          laisserait croire que seul le second existe, ce qui a longtemps été
+          le cas à l'écran. */}
+      <div className="mt-5">
+        <CommissionReceivables />
+      </div>
+
+      <h2 className="mt-8 font-display text-lg font-semibold">Retraits shoppers</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Le solde du shopper est débité dès la demande. Un refus le lui recrédite automatiquement.
+        En règlement direct, ce solde reste à zéro : le client paie le shopper lui-même.
       </p>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-3">

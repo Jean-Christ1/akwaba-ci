@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import {
+  QUARTIERS_DE_SECOURS,
+  VILLES_DE_SECOURS,
+} from "../domain/service-areas-fallback";
 
 export interface ServiceCity {
   slug: string;
@@ -37,8 +41,11 @@ interface Etat {
  * stockent le nom affiché.
  */
 export function useServiceAreas(): Etat {
-  const [cities, setCities] = useState<ServiceCity[]>([]);
-  const [zones, setZones] = useState<ServiceZone[]>([]);
+  // On part du référentiel de secours plutôt que du vide : si la base tarde ou
+  // ne répond pas, l'utilisateur voit quand même la liste des villes au lieu
+  // d'un formulaire qu'il ne peut pas remplir.
+  const [cities, setCities] = useState<ServiceCity[]>(VILLES_DE_SECOURS);
+  const [zones, setZones] = useState<ServiceZone[]>(QUARTIERS_DE_SECOURS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
@@ -47,6 +54,15 @@ export function useServiceAreas(): Etat {
     let annule = false;
     setLoading(true);
     setError(null);
+
+    // Le repli couvre trois cas qui se ressemblent à l'écran et se distinguent
+    // ici : la table n'existe pas encore, la lecture est refusée, ou le réseau
+    // a coupé. Dans les trois, une liste vide rendrait la commande impossible.
+    const replier = () => {
+      if (annule) return;
+      setCities(VILLES_DE_SECOURS);
+      setZones(QUARTIERS_DE_SECOURS);
+    };
 
     Promise.all([
       supabase
@@ -63,19 +79,24 @@ export function useServiceAreas(): Etat {
       .then(([villes, quartiers]) => {
         if (annule) return;
         if (villes.error || quartiers.error) {
-          setError("Impossible de charger les villes couvertes.");
+          replier();
           return;
         }
-        setCities(
-          (villes.data ?? []).map((v) => ({
-            slug: v.slug,
-            name: v.name,
-            region: v.region,
-            lat: Number(v.lat),
-            lng: Number(v.lng),
-            errandsEnabled: v.errands_enabled,
-          }))
-        );
+        const listeVilles = (villes.data ?? []).map((v) => ({
+          slug: v.slug,
+          name: v.name,
+          region: v.region,
+          lat: Number(v.lat),
+          lng: Number(v.lng),
+          errandsEnabled: v.errands_enabled,
+        }));
+        // Une table présente mais vide n'est pas une réponse utilisable non
+        // plus : le référentiel de secours reste préférable au néant.
+        if (listeVilles.length === 0) {
+          replier();
+          return;
+        }
+        setCities(listeVilles);
         setZones(
           (quartiers.data ?? []).map((z) => ({
             citySlug: z.city_slug,
@@ -84,9 +105,7 @@ export function useServiceAreas(): Etat {
           }))
         );
       })
-      .catch(() => {
-        if (!annule) setError("Impossible de charger les villes couvertes.");
-      })
+      .catch(replier)
       .finally(() => {
         if (!annule) setLoading(false);
       });

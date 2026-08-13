@@ -1,9 +1,22 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { escapeHtml, safeOrigin } from "../_shared/html.ts";
+import { SlidingWindowRateLimiter } from "../_shared/rate_limit.ts";
+import { isEmail } from "../_shared/validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+/**
+ * Cette fonction envoie un courriel à une adresse libre. Un compte de
+ * modération compromis en ferait un relais de messages : le nombre d'envois
+ * par modérateur est donc plafonné.
+ */
+const SEND_WINDOW_MS = 10 * 60 * 1000;
+const SEND_LIMIT = 5;
+
+const sendLimiter = new SlidingWindowRateLimiter({ limit: SEND_LIMIT, windowMs: SEND_WINDOW_MS });
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -25,7 +38,7 @@ Deno.serve(async (req) => {
     const userId = claims.claims.sub as string;
 
     const { recipient } = (await req.json().catch(() => ({}))) as { recipient?: string };
-    if (!recipient || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(recipient)) {
+    if (!isEmail(recipient)) {
       return json({ status: "no_recipient", detail: "Adresse email invalide." }, 400);
     }
 
@@ -37,6 +50,17 @@ Deno.serve(async (req) => {
     const allowed = (roles ?? []).some((r) => r.role === "admin" || r.role === "moderator");
     if (!allowed) return json({ error: "Forbidden" }, 403);
 
+    // Le plafond est appliqué après le contrôle de rôle : un appelant sans
+    // droit ne doit pas pouvoir consommer le quota d'un modérateur.
+    const decision = sendLimiter.consume(userId);
+    if (!decision.allowed) {
+      return json({
+        status: "rate_limited",
+        detail: "Trop d'envois de test. Réessayez dans quelques minutes.",
+        recipient,
+      }, 429, { "Retry-After": String(decision.retryAfterSeconds) });
+    }
+
     const RESEND = Deno.env.get("RESEND_API_KEY");
     const LOVABLE = Deno.env.get("LOVABLE_API_KEY");
     if (!RESEND || !LOVABLE) {
@@ -47,7 +71,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const origin = req.headers.get("origin") ?? "https://akwaba.app";
+    // L'en-tête Origin est choisi par l'appelant : il est validé avant de
+    // devenir un lien dans le courriel.
+    const origin = safeOrigin(req.headers.get("origin"), "https://akwaba.app");
     try {
       const resp = await fetch("https://connector-gateway.lovable.dev/resend/emails", {
         method: "POST",
@@ -59,10 +85,10 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           from: "Akwaba <onboarding@resend.dev>",
           to: [recipient],
-          subject: "Akwaba — test de livraison email",
+          subject: "Akwaba - test de livraison email",
           html: `<p>Ceci est un email de test envoyé depuis l'AdminPage Akwaba.</p>
             <p>Si vous recevez ce message, le connecteur Resend est correctement configuré.</p>
-            <p><a href="${origin}/admin">Retour au back-office</a></p>`,
+            <p><a href="${escapeHtml(`${origin}/admin`)}">Retour au back-office</a></p>`,
         }),
       });
       const text = await resp.text();
@@ -85,13 +111,13 @@ Deno.serve(async (req) => {
     }
   } catch (e) {
     console.error(`[test-email ${reqId}] error`, e);
-    console.error("[edge] erreur non recuperee", e);
     return json({ error: "Erreur serveur" }, 500);
   }
 });
 
-function json(body: unknown, status = 200) {
+function json(body: unknown, status = 200, extraHeaders: Record<string, string> = {}) {
   return new Response(JSON.stringify(body), {
-    status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json", ...extraHeaders },
   });
 }

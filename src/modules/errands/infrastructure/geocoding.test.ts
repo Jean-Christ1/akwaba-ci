@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   CENTRES_VILLES,
   centreVille,
+  distanceOrthodromiqueKm,
   estimerDureeMission,
+  estimerTrajetSansRoutage,
   profilPourVehicule,
 } from "./geocoding";
 
@@ -42,6 +44,51 @@ describe("centreVille", () => {
   });
 });
 
+describe("distanceOrthodromiqueKm", () => {
+  it("mesure une distance connue entre deux villes couvertes", () => {
+    // Abidjan, Grand-Bassam : une quarantaine de kilomètres à vol d'oiseau.
+    const km = distanceOrthodromiqueKm(CENTRES_VILLES.Abidjan, CENTRES_VILLES["Grand-Bassam"]);
+    expect(km).toBeGreaterThan(30);
+    expect(km).toBeLessThan(45);
+  });
+
+  it("renvoie zéro pour deux points confondus", () => {
+    expect(distanceOrthodromiqueKm(CENTRES_VILLES.Abidjan, CENTRES_VILLES.Abidjan)).toBe(0);
+  });
+
+  it("est symétrique", () => {
+    const aller = distanceOrthodromiqueKm(CENTRES_VILLES.Daloa, CENTRES_VILLES.Korhogo);
+    const retour = distanceOrthodromiqueKm(CENTRES_VILLES.Korhogo, CENTRES_VILLES.Daloa);
+    expect(aller).toBeCloseTo(retour, 6);
+  });
+});
+
+describe("estimerTrajetSansRoutage", () => {
+  const depart = CENTRES_VILLES.Abidjan;
+  const arrivee = CENTRES_VILLES["Grand-Bassam"];
+
+  it("se déclare comme une estimation, jamais comme un routage", () => {
+    expect(estimerTrajetSansRoutage(depart, arrivee).source).toBe("estimation");
+  });
+
+  it("majore la distance à vol d'oiseau du détour de voirie", () => {
+    const volDoiseau = distanceOrthodromiqueKm(depart, arrivee);
+    expect(estimerTrajetSansRoutage(depart, arrivee).distanceKm).toBeGreaterThan(volDoiseau);
+  });
+
+  it("allonge la durée quand le mode de déplacement est plus lent", () => {
+    const enVoiture = estimerTrajetSansRoutage(depart, arrivee, "driving");
+    const aPied = estimerTrajetSansRoutage(depart, arrivee, "walking");
+    expect(aPied.dureeMinutes).toBeGreaterThan(enVoiture.dureeMinutes);
+  });
+
+  it("renvoie toujours au moins une minute, même sur un trajet nul", () => {
+    const surPlace = estimerTrajetSansRoutage(depart, depart);
+    expect(surPlace.distanceKm).toBe(0);
+    expect(surPlace.dureeMinutes).toBeGreaterThanOrEqual(1);
+  });
+});
+
 describe("estimerDureeMission", () => {
   const trajet = { distanceKm: 8, dureeMinutes: 20 };
 
@@ -69,7 +116,7 @@ describe("estimerDureeMission", () => {
   });
 
   it("renvoie toujours un entier de minutes positif", () => {
-    const duree = estimerDureeMission({ distanceKm: 0, dureeMinutes: 1 }, 0, false);
+    const duree = estimerDureeMission({ dureeMinutes: 1 }, 0, false);
     expect(Number.isInteger(duree)).toBe(true);
     expect(duree).toBeGreaterThan(0);
   });

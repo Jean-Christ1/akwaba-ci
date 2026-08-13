@@ -3,6 +3,11 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=10.0.0"
+  },
+  "packageManager": "npm@10.9.3",
   "scripts": {
     "build": "vite build",
     "build:dev": "vite build --mode development",
@@ -12,7 +17,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
+    "audit:runtime": "npm audit --omit=dev --audit-level=high",
     "verify": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
@@ -61,7 +67,7 @@
     "react-hook-form": "^7.61.1",
     "react-map-gl": "^8.1.1",
     "react-resizable-panels": "^2.1.9",
-    "react-router-dom": "^6.30.1",
+    "react-router-dom": "^7.18.2",
     "recharts": "^2.15.4",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",
@@ -85,11 +91,12 @@
     "globals": "^15.15.0",
     "jsdom": "^20.0.3",
     "lovable-tagger": "^1.1.13",
+    "pg": "^8.23.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
-    "vite": "^5.4.19",
+    "vite": "^7.3.6",
     "vitest": "^3.2.4"
   },
   "description": "Akwaba CI, decouverte touristique et service Akwaba Shopper en Cote d'Ivoire."

@@ -63,6 +63,10 @@ export default function WalletPage() {
   const [entries, setEntries] = useState<EntryRow[]>([]);
   const [payouts, setPayouts] = useState<PayoutRow[]>([]);
   const [loading, setLoading] = useState(true);
+  // Un portefeuille illisible n'est pas un portefeuille vide. Afficher zéro
+  // franc sur un refus de droits ferait croire au shopper qu'il a perdu ses
+  // gains, alors que la donnée n'a simplement pas pu être lue.
+  const [messageErreur, setMessageErreur] = useState<string | null>(null);
 
   const [provider, setProvider] = useState<MomoProvider>("wave");
   const [number, setNumber] = useState("");
@@ -76,8 +80,10 @@ export default function WalletPage() {
       return;
     }
     // Les gains arrivés au bout du délai anti-litige basculent en solde
-    // disponible. L'opération est idempotente et pilotée par le serveur.
-    await supabase.rpc("wallet_release_matured_earnings");
+    // disponible. L'opération est idempotente et pilotée par le serveur. Son
+    // échec n'empêche pas l'affichage : les soldes lus restent justes, seule
+    // la bascule attendra le prochain passage.
+    const { error: erreurMaturation } = await supabase.rpc("wallet_release_matured_earnings");
 
     const [w, a, e, p] = await Promise.all([
       supabase.from("runner_wallets").select("available_balance,pending_balance,lifetime_earnings").eq("user_id", user.id).maybeSingle(),
@@ -85,6 +91,10 @@ export default function WalletPage() {
       supabase.from("wallet_entries").select("id,kind,amount,label,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(30),
       supabase.from("payout_requests").select("id,amount,status,transfer_reference,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
     ]);
+    const premiereErreur =
+      w.error ?? a.error ?? e.error ?? p.error ?? erreurMaturation ?? null;
+    setMessageErreur(premiereErreur ? premiereErreur.message : null);
+
     setWallet((w.data as WalletRow) ?? null);
     setAccounts((a.data ?? []) as AccountRow[]);
     setEntries((e.data ?? []) as EntryRow[]);
@@ -178,6 +188,19 @@ export default function WalletPage() {
           <Link to="/courses/shopper">Mes missions</Link>
         </Button>
       </header>
+
+      {messageErreur && (
+        <div className="mt-4 rounded-2xl border border-destructive/40 bg-destructive/5 p-4 text-sm">
+          <p className="font-medium text-destructive">
+            Votre portefeuille n'a pas pu être chargé entièrement.
+          </p>
+          <p className="mt-1 text-muted-foreground">{messageErreur}</p>
+          <p className="mt-1 text-muted-foreground">
+            Les montants ci-dessous peuvent être incomplets : ne demandez pas de retrait tant que
+            cette erreur persiste.
+          </p>
+        </div>
+      )}
 
       <section className="mt-4 grid gap-3 sm:grid-cols-3">
         <div className="rounded-2xl border border-border bg-card p-4">

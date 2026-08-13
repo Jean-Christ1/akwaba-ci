@@ -34,7 +34,10 @@ export type Filters = {
 
 export type Sort = "date_desc" | "date_asc" | "status" | "city";
 
-export function filterPlaces(rows: PlaceRow[], f: Filters): PlaceRow[] {
+// Génériques sur la ligne : l'écran travaille sur la ligne complète de la base
+// et a besoin de récupérer, après filtrage, les colonnes que ce module ignore
+// (image, description). Un retour figé sur PlaceRow les effacerait.
+export function filterPlaces<T extends PlaceRow>(rows: T[], f: Filters): T[] {
   const q = f.search.trim().toLowerCase();
   const sinceTs = f.since ? new Date(f.since).getTime() : 0;
   return rows.filter((p) =>
@@ -46,7 +49,7 @@ export function filterPlaces(rows: PlaceRow[], f: Filters): PlaceRow[] {
   );
 }
 
-export function sortPlaces(rows: PlaceRow[], sort: Sort): PlaceRow[] {
+export function sortPlaces<T extends PlaceRow>(rows: T[], sort: Sort): T[] {
   const out = [...rows];
   out.sort((a, b) => {
     if (sort === "date_asc") return +new Date(a.created_at) - +new Date(b.created_at);

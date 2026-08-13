@@ -44,7 +44,17 @@ export default function ProfilePage() {
       .order("created_at", { ascending: false })
       .then(({ data }) => setLeads(data ?? []));
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle()
-      .then(({ data }) => data && setProfile(data));
+      .then(({ data }) => {
+        if (!data) return;
+        // Les colonnes du profil sont nullables en base alors que le formulaire est
+        // contrôlé : on convertit chaque absence en chaîne vide pour ne pas basculer
+        // les champs en mode non contrôlé.
+        setProfile({
+          display_name: data.display_name ?? "",
+          phone: data.phone ?? "",
+          locale: data.locale ?? "fr",
+        });
+      });
     if (isPartner || isAdmin) {
       supabase.from("places").select("id, name, status, city")
         .eq("owner_id", user.id).order("created_at", { ascending: false })

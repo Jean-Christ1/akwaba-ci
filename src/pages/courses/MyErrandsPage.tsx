@@ -23,6 +23,9 @@ export default function MyErrandsPage() {
   const { user, loading } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [busy, setBusy] = useState(true);
+  // Un refus de lecture n'est pas une liste vide. Les confondre annonce au
+  // client qu'il n'a aucune course alors que ses courses existent bel et bien.
+  const [messageErreur, setMessageErreur] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -31,15 +34,20 @@ export default function MyErrandsPage() {
     }
     let active = true;
     const load = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("errands")
         .select("id,title,city,zone,status,budget_estimate,total_amount,created_at")
         .eq("customer_id", user.id)
         .order("created_at", { ascending: false });
-      if (active) {
-        setRows((data ?? []) as Row[]);
+      if (!active) return;
+      if (error) {
+        setMessageErreur(error.message);
         setBusy(false);
+        return;
       }
+      setMessageErreur(null);
+      setRows((data ?? []) as Row[]);
+      setBusy(false);
     };
     load();
 
@@ -78,7 +86,14 @@ export default function MyErrandsPage() {
         </div>
       )}
 
-      {user && !busy && rows.length === 0 && (
+      {user && !busy && messageErreur && (
+        <div className="mt-6 rounded-2xl border border-destructive/40 bg-destructive/5 p-6 text-center text-sm">
+          <p className="font-medium text-destructive">Vos courses n'ont pas pu être chargées.</p>
+          <p className="mt-1 text-muted-foreground">{messageErreur}</p>
+        </div>
+      )}
+
+      {user && !busy && !messageErreur && rows.length === 0 && (
         <div className="mt-6 rounded-2xl border border-dashed border-border p-10 text-center">
           <PackageSearch className="mx-auto h-8 w-8 text-muted-foreground" />
           <p className="mt-2 text-sm text-muted-foreground">Aucune course pour le moment.</p>

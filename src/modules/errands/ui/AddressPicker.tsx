@@ -33,6 +33,9 @@ export function AddressPicker({
   const [chargement, setChargement] = useState(false);
   const [ouvert, setOuvert] = useState(false);
   const [localisee, setLocalisee] = useState(false);
+  // Le service d'adresses est hébergé chez un tiers sans engagement : sa panne
+  // doit être dite, pas déguisée en absence de résultat.
+  const [serviceIndisponible, setServiceIndisponible] = useState(false);
   const controleur = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -48,9 +51,11 @@ export function AddressPicker({
       controleur.current = ctrl;
 
       setChargement(true);
-      const resultats = await rechercherAdresse(value, ctrl.signal);
+      const resultat = await rechercherAdresse(value, ctrl.signal);
+      if (ctrl.signal.aborted) return;
       setChargement(false);
-      setSuggestions(resultats);
+      setSuggestions(resultat.adresses);
+      setServiceIndisponible(resultat.indisponible);
     }, 500);
 
     return () => window.clearTimeout(minuteur);
@@ -61,6 +66,7 @@ export function AddressPicker({
     onLocated(adresse);
     setLocalisee(true);
     setSuggestions([]);
+    setServiceIndisponible(false);
     setOuvert(false);
   };
 
@@ -95,6 +101,13 @@ export function AddressPicker({
       {localisee && (
         <p className="mt-1 text-[11px] text-primary">
           Adresse localisée, le prix est calculé sur la distance réelle.
+        </p>
+      )}
+
+      {!localisee && serviceIndisponible && !chargement && (
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          La recherche d'adresses ne répond pas. Décrivez votre adresse librement : la course
+          reste publiable, la distance sera simplement celle que vous indiquez.
         </p>
       )}
 

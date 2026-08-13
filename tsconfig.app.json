@@ -15,12 +15,14 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting */
-    "strict": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noImplicitAny": false,
-    "noFallthroughCasesInSwitch": false,
+    /* Vérifications. Elles sont toutes actives : une commande de typage qui ne
+       refuse rien ne prouve rien. strict couvre notamment strictNullChecks,
+       qui est la seule barrière contre les valeurs nulles venues de la base. */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitAny": true,
+    "noFallthroughCasesInSwitch": true,
 
     "paths": {
       "@/*": ["./src/*"]

@@ -5,10 +5,20 @@
  * qu'elles sont saisies à la main, le prix n'est adossé à rien de vérifiable :
  * ce module les dérive d'une adresse réelle.
  *
- * Les services publics utilisés ici, Nominatim et OSRM, conviennent à un
- * démarrage mais n'offrent aucun engagement de service. Le passage en volume
- * suppose un fournisseur avec clé et quota : c'est la raison pour laquelle les
- * points d'entrée sont regroupés ici, derrière une interface stable.
+ * Les instances publiques de démonstration de Nominatim et d'OSRM, retenues par
+ * défaut, n'offrent aucun engagement de service et leurs conditions d'usage
+ * excluent l'exploitation en production. Deux conséquences sont traitées ici.
+ *
+ * D'abord, leur adresse se règle par variable d'environnement,
+ * VITE_NOMINATIM_URL et VITE_OSRM_URL : basculer vers une instance dédiée ou un
+ * fournisseur commercial compatible ne demande alors aucune modification du
+ * code.
+ *
+ * Ensuite, leur indisponibilité ne bloque jamais l'utilisateur. Toute requête
+ * est bornée dans le temps, et le calcul d'itinéraire retombe sur une
+ * estimation géométrique dont l'origine est signalée à l'appelant, qui doit
+ * l'annoncer à l'écran. Un prix approché et assumé vaut mieux qu'un formulaire
+ * figé sur une attente sans fin.
  */
 
 export interface Adresse {
@@ -19,16 +29,49 @@ export interface Adresse {
   quartier?: string;
 }
 
+/** Origine d'un trajet : mesuré par le routeur, ou approché sans lui. */
+export type SourceTrajet = "routage" | "estimation";
+
 export interface Trajet {
   distanceKm: number;
   dureeMinutes: number;
+  source: SourceTrajet;
 }
 
-const NOMINATIM = "https://nominatim.openstreetmap.org/search";
-const OSRM = "https://router.project-osrm.org/route/v1";
+export interface ResultatRecherche {
+  adresses: Adresse[];
+  /** Vrai lorsque le service n'a pas répondu, à distinguer d'une absence de résultat. */
+  indisponible: boolean;
+}
+
+export type ProfilTrajet = "driving" | "cycling" | "walking";
+
+const NOMINATIM =
+  import.meta.env.VITE_NOMINATIM_URL ?? "https://nominatim.openstreetmap.org/search";
+const OSRM = import.meta.env.VITE_OSRM_URL ?? "https://router.project-osrm.org/route/v1";
+
+/** Au delà, on considère le service muet et on sert l'estimation de repli. */
+const DELAI_REPONSE_MS = 8_000;
 
 /** Boîte englobante approximative de la Côte d'Ivoire, pour écarter le bruit. */
 const VIEWBOX = "-8.6,10.7,-2.4,4.2";
+
+const RAYON_TERRE_KM = 6371;
+
+/**
+ * Rapport entre la distance routière et la distance à vol d'oiseau.
+ *
+ * La voirie ne va jamais tout droit. Ce coefficient, volontairement prudent,
+ * évite de sous-estimer la course lorsque le routeur est injoignable.
+ */
+const FACTEUR_DETOUR = 1.35;
+
+/** Vitesses moyennes retenues en agglomération ivoirienne, en km/h. */
+const VITESSES_KMH: Record<ProfilTrajet, number> = {
+  walking: 4.5,
+  cycling: 18,
+  driving: 22,
+};
 
 interface NominatimRow {
   display_name?: string;
@@ -38,29 +81,54 @@ interface NominatimRow {
 }
 
 /**
+ * Appel réseau borné dans le temps.
+ *
+ * Sans échéance, un service muet laisse la promesse en suspens et l'écran
+ * bloqué sur son indicateur de chargement, ce qui est le pire des deux mondes :
+ * ni résultat, ni possibilité de continuer.
+ */
+async function requeteBornee(
+  url: string,
+  signal?: AbortSignal,
+  entetes?: HeadersInit
+): Promise<Response> {
+  const controleur = new AbortController();
+  const echeance = window.setTimeout(() => controleur.abort(), DELAI_REPONSE_MS);
+  const relayerAbandon = () => controleur.abort();
+  signal?.addEventListener("abort", relayerAbandon);
+
+  try {
+    return await fetch(url, { signal: controleur.signal, headers: entetes });
+  } finally {
+    window.clearTimeout(echeance);
+    signal?.removeEventListener("abort", relayerAbandon);
+  }
+}
+
+/**
  * Recherche d'adresses, limitée à la Côte d'Ivoire.
  *
- * Renvoie une liste vide plutôt qu'une erreur : une recherche d'adresse qui
- * échoue ne doit jamais empêcher de créer une course, la saisie manuelle reste
- * toujours possible.
+ * Le drapeau `indisponible` sépare deux situations que l'appelant ne doit pas
+ * confondre : une recherche sans résultat, qui invite à reformuler, et un
+ * service en panne, qui invite à saisir l'adresse librement.
  */
-export async function rechercherAdresse(requete: string, signal?: AbortSignal): Promise<Adresse[]> {
+export async function rechercherAdresse(
+  requete: string,
+  signal?: AbortSignal
+): Promise<ResultatRecherche> {
   const terme = requete.trim();
-  if (terme.length < 3) return [];
+  if (terme.length < 3) return { adresses: [], indisponible: false };
 
   const url =
     `${NOMINATIM}?format=jsonv2&limit=5&countrycodes=ci&addressdetails=1` +
     `&viewbox=${VIEWBOX}&bounded=1&q=${encodeURIComponent(terme)}`;
 
   try {
-    const reponse = await fetch(url, {
-      signal,
-      headers: { Accept: "application/json" },
-    });
-    if (!reponse.ok) return [];
+    const reponse = await requeteBornee(url, signal, { Accept: "application/json" });
+    if (!reponse.ok) return { adresses: [], indisponible: true };
 
     const lignes = (await reponse.json()) as NominatimRow[];
-    return lignes
+    const adresses = lignes
       .filter((l) => l.lat && l.lon)
       .map((l) => {
         const a = l.address ?? {};
@@ -73,48 +141,87 @@ export async function rechercherAdresse(requete: string, signal?: AbortSignal): 
         };
       })
       .filter((a) => Number.isFinite(a.lat) && Number.isFinite(a.lng));
+
+    return { adresses, indisponible: false };
   } catch {
-    return [];
+    // Une frappe suivante annule la précédente : ce n'est pas une panne.
+    return { adresses: [], indisponible: signal?.aborted !== true };
   }
+}
+
+/** Distance à vol d'oiseau entre deux points, en kilomètres. */
+export function distanceOrthodromiqueKm(
+  depart: { lat: number; lng: number },
+  arrivee: { lat: number; lng: number }
+): number {
+  const rad = (degres: number) => (degres * Math.PI) / 180;
+  const dLat = rad(arrivee.lat - depart.lat);
+  const dLng = rad(arrivee.lng - depart.lng);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(rad(depart.lat)) * Math.cos(rad(arrivee.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * RAYON_TERRE_KM * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
+/**
+ * Trajet approché, sans service de routage.
+ *
+ * La distance à vol d'oiseau est majorée du détour de voirie, et la durée
+ * dérivée d'une vitesse moyenne par mode de déplacement. C'est une
+ * approximation, mais elle est reproductible et adossée à une géographie
+ * réelle, là où un formulaire bloqué ne produit rien du tout.
+ */
+export function estimerTrajetSansRoutage(
+  depart: { lat: number; lng: number },
+  arrivee: { lat: number; lng: number },
+  profil: ProfilTrajet = "driving"
+): Trajet {
+  const distanceKm = Math.round(distanceOrthodromiqueKm(depart, arrivee) * FACTEUR_DETOUR * 10) / 10;
+  const dureeMinutes = Math.max(1, Math.round((distanceKm / VITESSES_KMH[profil]) * 60));
+  return { distanceKm, dureeMinutes, source: "estimation" };
 }
 
 /**
  * Distance routière et durée entre deux points.
  *
- * Renvoie null si le service ne répond pas : l'appelant conserve alors sa
- * saisie manuelle plutôt que de se voir imposer une valeur inventée.
+ * Ne renvoie jamais null : si le routeur ne répond pas, l'estimation
+ * géométrique prend le relais et le champ `source` le signale, à charge pour
+ * l'écran appelant de le dire à l'utilisateur.
  */
 export async function calculerTrajet(
   depart: { lat: number; lng: number },
   arrivee: { lat: number; lng: number },
-  profil: "driving" | "cycling" | "walking" = "driving",
+  profil: ProfilTrajet = "driving",
   signal?: AbortSignal
-): Promise<Trajet | null> {
+): Promise<Trajet> {
   const url =
     `${OSRM}/${profil}/${depart.lng},${depart.lat};${arrivee.lng},${arrivee.lat}` +
     `?overview=false&alternatives=false`;
 
   try {
-    const reponse = await fetch(url, { signal });
-    if (!reponse.ok) return null;
+    const reponse = await requeteBornee(url, signal);
+    if (!reponse.ok) return estimerTrajetSansRoutage(depart, arrivee, profil);
 
     const data = (await reponse.json()) as {
       routes?: { distance?: number; duration?: number }[];
     };
     const route = data.routes?.[0];
-    if (!route?.distance || !route?.duration) return null;
+    if (!route?.distance || !route?.duration) {
+      return estimerTrajetSansRoutage(depart, arrivee, profil);
+    }
 
     return {
       distanceKm: Math.round((route.distance / 1000) * 10) / 10,
       dureeMinutes: Math.max(1, Math.round(route.duration / 60)),
+      source: "routage",
     };
   } catch {
-    return null;
+    return estimerTrajetSansRoutage(depart, arrivee, profil);
   }
 }
 
 /** Profil de trajet correspondant au véhicule choisi pour la mission. */
-export function profilPourVehicule(vehicule: string): "driving" | "cycling" | "walking" {
+export function profilPourVehicule(vehicule: string): ProfilTrajet {
   if (vehicule === "a_pied") return "walking";
   if (vehicule === "moto" || vehicule === "tricycle") return "cycling";
   return "driving";
@@ -128,7 +235,7 @@ export function profilPourVehicule(vehicule: string): "driving" | "cycling" | "w
  * lorsque le shopper livre lui-même.
  */
 export function estimerDureeMission(
-  trajet: Trajet,
+  trajet: Pick<Trajet, "dureeMinutes">,
   nombreArticles: number,
   livraisonParLeShopper: boolean
 ): number {

@@ -40,17 +40,27 @@ export default function RunnerDashboardPage() {
   const [eta, setEta] = useState("60");
   const [msg, setMsg] = useState("");
   const [sending, setSending] = useState(false);
+  // Un refus de lecture ne doit pas se déguiser en « aucune mission » : le
+  // shopper croirait le marché vide alors qu'il ne peut simplement pas le voir.
+  const [messageErreur, setMessageErreur] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
-    const { data: prof } = await supabase
+    const { data: prof, error: erreurProfil } = await supabase
       .from("runner_profiles").select("status").eq("user_id", user.id).maybeSingle();
+    if (erreurProfil) {
+      // Sans profil lisible, on ignore si le compte est validé : le dire plutôt
+      // que d'afficher l'invitation à candidater à un shopper déjà validé.
+      setMessageErreur(erreurProfil.message);
+      setApproved(null);
+      return;
+    }
     const ok = prof?.status === "approved";
     setApproved(ok);
     if (!ok) return;
     // Marché ouvert : vue filtrée, sans adresse exacte ni notes du client.
     // L'adresse complète n'apparaît qu'une fois la course assignée.
-    const [{ data: o }, { data: m }] = await Promise.all([
+    const [ouvertes, miennes] = await Promise.all([
       supabase.from("open_errands_feed").select("*").order("created_at", { ascending: false }),
       // Colonnes explicites : la lecture d'errands est accordée colonne par
       // colonne pour protéger le code de remise, et une étoile demanderait
@@ -63,16 +73,20 @@ export default function RunnerDashboardPage() {
         .eq("runner_id", user.id)
         .order("created_at", { ascending: false }),
     ]);
+
+    const erreur = ouvertes.error ?? miennes.error;
+    setMessageErreur(erreur ? erreur.message : null);
+
     // Le flux ouvert ne porte ni statut ni affectation : par construction, ces
     // courses sont ouvertes et sans shopper.
     setOpen(
-      (o ?? []).map((row) => ({
+      (ouvertes.data ?? []).map((row) => ({
         ...row,
         status: "open" as ErrandStatus,
         runner_id: null,
       })) as Mission[]
     );
-    setMine((m ?? []) as Mission[]);
+    setMine((miennes.data ?? []) as Mission[]);
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
@@ -161,6 +175,13 @@ export default function RunnerDashboardPage() {
     <div className="akw-container max-w-4xl py-6">
       <p className="akw-eyebrow">Espace shopper</p>
       <h1 className="font-display text-2xl font-semibold">Missions</h1>
+
+      {messageErreur && (
+        <div className="mt-4 rounded-2xl border border-destructive/40 bg-destructive/5 p-4 text-sm">
+          <p className="font-medium text-destructive">Les missions n'ont pas pu être chargées.</p>
+          <p className="mt-1 text-muted-foreground">{messageErreur}</p>
+        </div>
+      )}
 
       <Tabs defaultValue="open" className="mt-4">
         <TabsList>
