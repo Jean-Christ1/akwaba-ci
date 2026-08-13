@@ -47,6 +47,7 @@ const PlaceEditorPage = lazy(() => import("./pages/admin/PlaceEditorPage"));
 const BootstrapAdminPage = lazy(() => import("./pages/admin/BootstrapAdminPage"));
 const ShoppersPage = lazy(() => import("./pages/admin/ShoppersPage"));
 const PayoutsPage = lazy(() => import("./pages/admin/PayoutsPage"));
+const DisputesPage = lazy(() => import("./pages/admin/DisputesPage"));
 const TermsPage = lazy(() =>
   import("./pages/legal/LegalPages").then((m) => ({ default: m.TermsPage }))
 );
@@ -114,6 +115,7 @@ const App = () => (
 
                 <Route element={<RequireRole role="moderator" />}>
                   <Route path="/admin/shoppers" element={<ShoppersPage />} />
+                  <Route path="/admin/litiges" element={<DisputesPage />} />
                 </Route>
 
                 <Route element={<RequireRole role="admin" />}>

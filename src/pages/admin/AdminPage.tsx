@@ -371,6 +371,37 @@ export default function AdminPage() {
                 <n.icon className="h-4 w-4" /> {n.label}
               </button>
             ))}
+
+            {/* Espaces dédiés, hors des onglets internes. Ils étaient
+                inatteignables : aucun lien n'y menait depuis le back-office. */}
+            {(isModerator || isAdmin) && (
+              <div className="mt-3 space-y-1 border-t border-border pt-3">
+                {isModerator && (
+                  <>
+                    <Link
+                      to="/admin/shoppers"
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground transition hover:bg-muted/50"
+                    >
+                      <Users className="h-4 w-4" /> Shoppers
+                    </Link>
+                    <Link
+                      to="/admin/litiges"
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground transition hover:bg-muted/50"
+                    >
+                      <ShieldCheck className="h-4 w-4" /> Litiges
+                    </Link>
+                  </>
+                )}
+                {isAdmin && (
+                  <Link
+                    to="/admin/payouts"
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground transition hover:bg-muted/50"
+                  >
+                    <Inbox className="h-4 w-4" /> Retraits
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
         </aside>
 
