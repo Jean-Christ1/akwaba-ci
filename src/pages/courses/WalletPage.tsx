@@ -15,8 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatFcfa } from "@/modules/errands/domain";
-import { MIN_PAYOUT, MOMO_PROVIDERS, type MomoProvider } from "@/modules/errands/pricing";
+import { MOMO_PROVIDERS, type MomoProvider } from "@/modules/errands/pricing";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
+import { useCommissionRule } from "@/modules/errands/application/useCommissionRule";
 
 interface WalletRow {
   available_balance: number;
@@ -55,6 +56,8 @@ const STATUS_LABEL: Record<string, string> = {
 export default function WalletPage() {
   usePageTitle("Portefeuille shopper", "Vos gains et vos retraits.");
   const { user } = useAuth();
+  // Le seuil de retrait fait autorité côté serveur : on affiche le même.
+  const { rule } = useCommissionRule();
   const [wallet, setWallet] = useState<WalletRow | null>(null);
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
   const [entries, setEntries] = useState<EntryRow[]>([]);
@@ -125,7 +128,7 @@ export default function WalletPage() {
     if (!user) return;
     const value = Number(amount) || 0;
     const available = wallet?.available_balance ?? 0;
-    if (value < MIN_PAYOUT) return toast.error(`Minimum ${formatFcfa(MIN_PAYOUT)}.`);
+    if (value < rule.minPayout) return toast.error(`Minimum ${formatFcfa(rule.minPayout)}.`);
     if (value > available) return toast.error("Montant supérieur au solde disponible.");
     const def = accounts.find((a) => a.is_default) ?? accounts[0];
     if (!def) return toast.error("Ajoutez d'abord un compte de retrait.");
@@ -183,7 +186,7 @@ export default function WalletPage() {
           <p className="font-display text-2xl font-semibold">{formatFcfa(wallet?.available_balance)}</p>
         </div>
         <div className="rounded-2xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground">En attente (24 h)</p>
+          <p className="text-xs text-muted-foreground">En attente</p>
           <p className="font-display text-2xl font-semibold">{formatFcfa(wallet?.pending_balance)}</p>
         </div>
         <div className="rounded-2xl border border-border bg-card p-4">
@@ -197,7 +200,7 @@ export default function WalletPage() {
         <section className="rounded-2xl border border-border bg-card p-4">
           <h2 className="font-display text-lg font-semibold">Retirer mes gains</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Minimum {formatFcfa(MIN_PAYOUT)}. Virement sur votre compte mobile money sous 1 jour ouvré.
+            Minimum {formatFcfa(rule.minPayout)}. Virement sur votre compte mobile money sous 1 jour ouvré.
           </p>
           <div className="mt-3 flex gap-2">
             <Input

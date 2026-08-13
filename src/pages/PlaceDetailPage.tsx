@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -25,6 +26,43 @@ import { PlaceImage } from "@/shared/ui/PlaceImage";
 export default function PlaceDetailPage() {
   const { slug } = useParams();
   const { data: place, loading } = usePlace(slug);
+
+  // Données structurées de la fiche : ce sont elles qui permettent à un moteur
+  // d'afficher l'adresse, la note et le type d'établissement dans ses résultats.
+  useEffect(() => {
+    if (!place) return;
+    const balise = document.createElement("script");
+    balise.type = "application/ld+json";
+    balise.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type":
+        place.type === "lodging"
+          ? "LodgingBusiness"
+          : place.type === "restaurant" || place.type === "maquis"
+            ? "Restaurant"
+            : "TouristAttraction",
+      name: place.name,
+      description: place.tagline || place.description,
+      image: place.image ? `https://akwaba.ci${place.image}` : undefined,
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: place.address,
+        addressLocality: place.zone ?? place.city,
+        addressCountry: "CI",
+      },
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: place.coords.lat,
+        longitude: place.coords.lng,
+      },
+      telephone: place.phone,
+      url: `https://akwaba.ci/lieu/${place.slug}`,
+    });
+    document.head.appendChild(balise);
+    return () => {
+      document.head.removeChild(balise);
+    };
+  }, [place]);
   const { data: allPlaces } = usePlaces();
   const { has, toggle } = useFavorites();
   const [tab, setTab] = useTabState(`place:${slug ?? "unknown"}`, "about");

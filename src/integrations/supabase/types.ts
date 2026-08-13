@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      commission_rules: {
+        Row: {
+          base: string
+          created_at: string
+          effective_from: string
+          hold_hours: number
+          id: string
+          is_active: boolean
+          min_payout: number
+          min_service_fee: number
+          rate: number
+          version: number
+        }
+        Insert: {
+          base?: string
+          created_at?: string
+          effective_from?: string
+          hold_hours?: number
+          id?: string
+          is_active?: boolean
+          min_payout?: number
+          min_service_fee?: number
+          rate: number
+          version: number
+        }
+        Update: {
+          base?: string
+          created_at?: string
+          effective_from?: string
+          hold_hours?: number
+          id?: string
+          is_active?: boolean
+          min_payout?: number
+          min_service_fee?: number
+          rate?: number
+          version?: number
+        }
+        Relationships: []
+      }
       errand_events: {
         Row: {
           actor_id: string | null
