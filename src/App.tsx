@@ -26,6 +26,9 @@ import NewErrandPage from "./pages/courses/NewErrandPage";
 import ErrandDetailPage from "./pages/courses/ErrandDetailPage";
 import RunnerSignupPage from "./pages/courses/RunnerSignupPage";
 import RunnerDashboardPage from "./pages/courses/RunnerDashboardPage";
+import HowItWorksPage from "./pages/courses/HowItWorksPage";
+import WalletPage from "./pages/courses/WalletPage";
+import RoutePage from "./pages/RoutePage";
 import ShoppersPage from "./pages/admin/ShoppersPage";
 import NotFound from "./pages/NotFound";
 
