@@ -206,6 +206,7 @@ export default function WalletPage() {
             <Input
               inputMode="numeric"
               placeholder="Montant en FCFA"
+              aria-label="Montant du retrait en francs CFA"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
@@ -235,7 +236,7 @@ export default function WalletPage() {
 
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
             <div>
-              <Label className="text-xs">Opérateur</Label>
+              <Label className="text-xs" htmlFor="operateur">Opérateur</Label>
               <Select value={provider} onValueChange={(v) => setProvider(v as MomoProvider)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -246,12 +247,12 @@ export default function WalletPage() {
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Numéro</Label>
-              <Input value={number} onChange={(e) => setNumber(e.target.value)} placeholder="07 00 00 00 00" />
+              <Label className="text-xs" htmlFor="numero">Numéro</Label>
+              <Input id="numero" type="tel" inputMode="tel" autoComplete="tel" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="07 00 00 00 00" />
             </div>
             <div>
-              <Label className="text-xs">Titulaire</Label>
-              <Input value={holder} onChange={(e) => setHolder(e.target.value)} placeholder="Nom complet" />
+              <Label className="text-xs" htmlFor="titulaire">Titulaire</Label>
+              <Input id="titulaire" autoComplete="name" value={holder} onChange={(e) => setHolder(e.target.value)} placeholder="Nom complet" />
             </div>
           </div>
           <Button variant="outline" size="sm" className="mt-2" onClick={addAccount} disabled={busy}>

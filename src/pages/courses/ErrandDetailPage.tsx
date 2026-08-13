@@ -444,7 +444,7 @@ export default function ErrandDetailPage() {
 
           <section className="flex h-[420px] flex-col rounded-2xl border border-border bg-card">
             <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-              <MessageCircle className="h-4 w-4 text-primary" />
+              <MessageCircle className="h-4 w-4 text-primary" aria-hidden="true" />
               <h2 className="font-display text-base font-semibold">Discussion</h2>
             </div>
             <div className="flex-1 space-y-2 overflow-y-auto p-4">
@@ -479,7 +479,7 @@ export default function ErrandDetailPage() {
                   placeholder="Écrire un message…"
                 />
                 <Button size="icon" onClick={send} aria-label="Envoyer">
-                  <Send className="h-4 w-4" />
+                  <Send className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
             )}
@@ -496,8 +496,11 @@ export default function ErrandDetailPage() {
               </p>
               <div className="mt-3 grid grid-cols-3 gap-2">
                 <Button asChild variant="outline" size="sm" disabled={!assignedRunner.phone}>
-                  <a href={assignedRunner.phone ? `tel:${assignedRunner.phone}` : undefined}>
-                    <Phone className="h-4 w-4" />
+                  <a
+                    href={assignedRunner.phone ? `tel:${assignedRunner.phone}` : undefined}
+                    aria-label={`Appeler ${assignedRunner.full_name}`}
+                  >
+                    <Phone className="h-4 w-4" aria-hidden="true" />
                   </a>
                 </Button>
                 <Button
@@ -510,12 +513,15 @@ export default function ErrandDetailPage() {
                     href={waLink(assignedRunner.whatsapp ?? assignedRunner.phone, `Bonjour, à propos de la course "${errand.title}"`) ?? "#"}
                     target="_blank"
                     rel="noreferrer"
+                    aria-label={`Écrire à ${assignedRunner.full_name} sur WhatsApp`}
                   >
-                    <MessageCircle className="h-4 w-4" />
+                    <MessageCircle className="h-4 w-4" aria-hidden="true" />
                   </a>
                 </Button>
                 <Button asChild variant="outline" size="sm">
-                  <a href={videoUrl} target="_blank" rel="noreferrer"><Video className="h-4 w-4" /></a>
+                  <a href={videoUrl} target="_blank" rel="noreferrer" aria-label="Ouvrir la visioconférence">
+                    <Video className="h-4 w-4" aria-hidden="true" />
+                  </a>
                 </Button>
               </div>
               <p className="mt-2 text-[11px] text-muted-foreground">Appel · WhatsApp · Visio</p>
@@ -619,7 +625,7 @@ export default function ErrandDetailPage() {
 
           <section className="rounded-2xl border border-border bg-card p-4">
             <div className="flex items-center gap-2">
-              <Receipt className="h-4 w-4 text-primary" />
+              <Receipt className="h-4 w-4 text-primary" aria-hidden="true" />
               <h2 className="font-display text-base font-semibold">Facturation</h2>
             </div>
             {isRunner && errand.status !== "completed" ? (
@@ -725,7 +731,7 @@ export default function ErrandDetailPage() {
             </p>
             {isCustomer && errand.payment_status !== "paid" && errand.status === "delivered" && (
               <Button className="mt-3 w-full" onClick={confirmPayment}>
-                <CheckCircle2 className="mr-2 h-4 w-4" /> Confirmer le paiement
+                <CheckCircle2 className="mr-2 h-4 w-4" aria-hidden="true" /> Confirmer le paiement
               </Button>
             )}
           </section>
