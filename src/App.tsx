@@ -47,6 +47,12 @@ const PlaceEditorPage = lazy(() => import("./pages/admin/PlaceEditorPage"));
 const BootstrapAdminPage = lazy(() => import("./pages/admin/BootstrapAdminPage"));
 const ShoppersPage = lazy(() => import("./pages/admin/ShoppersPage"));
 const PayoutsPage = lazy(() => import("./pages/admin/PayoutsPage"));
+const TermsPage = lazy(() =>
+  import("./pages/legal/LegalPages").then((m) => ({ default: m.TermsPage }))
+);
+const PrivacyPage = lazy(() =>
+  import("./pages/legal/LegalPages").then((m) => ({ default: m.PrivacyPage }))
+);
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 import { initTabAnalytics } from "@/shared/analytics/tabAnalytics";
@@ -98,6 +104,8 @@ const App = () => (
                     secret côté fonction edge. */}
                 <Route path="/admin/bootstrap" element={<BootstrapAdminPage />} />
                 <Route path="/partner/signup" element={<PartnerSignupPage />} />
+                <Route path="/conditions" element={<TermsPage />} />
+                <Route path="/confidentialite" element={<PrivacyPage />} />
 
                 <Route element={<RequireRole role="partner" />}>
                   <Route path="/admin" element={<AdminPage />} />

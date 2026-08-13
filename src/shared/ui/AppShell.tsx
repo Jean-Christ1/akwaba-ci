@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import { InstallPrompt } from "@/shared/pwa/InstallPrompt";
 import { OfflineBanner } from "@/shared/pwa/OfflineBanner";
 import { DesktopHeader } from "./DesktopHeader";
+import { SiteFooter } from "./SiteFooter";
 import { MobileTabBar } from "./MobileTabBar";
 
 export function AppShell() {
@@ -26,6 +27,7 @@ export function AppShell() {
         className="flex-1 pb-[calc(env(safe-area-inset-bottom)+5rem)] lg:pb-0"
       >
         <Outlet />
+        <SiteFooter />
       </main>
 
       <MobileTabBar />

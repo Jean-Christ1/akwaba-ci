@@ -99,6 +99,19 @@ export default function AuthPage() {
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} autoComplete={mode === "signup" ? "new-password" : "current-password"} enterKeyHint="go" />
             </div>
           )}
+          {mode === "signup" && (
+            <p className="text-xs text-muted-foreground">
+                En créant un compte, vous acceptez nos{" "}
+                <Link className="text-primary underline" to="/conditions">
+                  conditions générales
+                </Link>{" "}
+                et notre{" "}
+                <Link className="text-primary underline" to="/confidentialite">
+                  politique de confidentialité
+                </Link>
+                .
+              </p>
+          )}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "..." : mode === "signin" ? "Se connecter" : mode === "signup" ? "Créer" : "Envoyer le lien"}
           </Button>
