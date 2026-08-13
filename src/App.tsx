@@ -26,6 +26,9 @@ import NewErrandPage from "./pages/courses/NewErrandPage";
 import ErrandDetailPage from "./pages/courses/ErrandDetailPage";
 import RunnerSignupPage from "./pages/courses/RunnerSignupPage";
 import RunnerDashboardPage from "./pages/courses/RunnerDashboardPage";
+import HowItWorksPage from "./pages/courses/HowItWorksPage";
+import WalletPage from "./pages/courses/WalletPage";
+import RoutePage from "./pages/RoutePage";
 import ShoppersPage from "./pages/admin/ShoppersPage";
 import NotFound from "./pages/NotFound";
 
@@ -57,6 +60,9 @@ const App = () => (
               <Route path="/services" element={<ServicesHubPage />} />
               <Route path="/courses" element={<MyErrandsPage />} />
               <Route path="/courses/nouvelle" element={<NewErrandPage />} />
+              <Route path="/courses/comment-ca-marche" element={<HowItWorksPage />} />
+              <Route path="/courses/portefeuille" element={<WalletPage />} />
+              <Route path="/itineraire" element={<RoutePage />} />
               <Route path="/courses/devenir-shopper" element={<RunnerSignupPage />} />
               <Route path="/courses/shopper" element={<RunnerDashboardPage />} />
               <Route path="/courses/:id" element={<ErrandDetailPage />} />

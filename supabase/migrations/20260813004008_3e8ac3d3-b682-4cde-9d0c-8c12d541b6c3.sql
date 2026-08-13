@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.ensure_runner_wallet() FROM PUBLIC, anon, authenticated;
