@@ -78,13 +78,24 @@ jobs:
           deno-version: v1.x
 
       - name: Vérification statique des fonctions
-        # Les tests d'intégration RLS exigent des secrets Supabase : ils sont
-        # exclus ici et se lancent depuis un environnement authentifié.
         run: |
           for f in supabase/functions/*/index.ts; do
             echo "Vérification de $f"
             deno check "$f"
           done
 
+      - name: Vérification statique des tests d'intégration
+        run: deno check supabase/functions/_tests/*.ts
+
       - name: Tests unitaires des fonctions
         run: deno test --allow-none supabase/functions/moderate-place/validate_test.ts
+
+      - name: Tests d'intégration des protections
+        # Ces tests prouvent contre une vraie base que l'auto-validation shopper
+        # et l'écriture des montants sont bien refusées. Sans les secrets, ils
+        # s'ignorent d'eux-mêmes plutôt que d'échouer.
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: deno test --allow-net --allow-env supabase/functions/_tests/
