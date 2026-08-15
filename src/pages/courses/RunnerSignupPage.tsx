@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { compresserImage } from "@/shared/media/compresserImage";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -59,16 +60,26 @@ export default function RunnerSignupPage() {
 
   // La pièce d'identité part dans un bucket privé : elle n'est lisible que par
   // son propriétaire et par les modérateurs qui instruisent la candidature.
-  const uploadIdDoc = async (file: File) => {
+  const uploadIdDoc = async (choisi: File) => {
     if (!user) return;
-    if (file.size > 8 * 1024 * 1024) {
-      return toast.error("Fichier trop lourd, 8 Mo maximum.");
-    }
+
     const accepted = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
-    if (!accepted.includes(file.type)) {
+    if (!accepted.includes(choisi.type)) {
       return toast.error("Formats acceptés : JPEG, PNG, WebP ou PDF.");
     }
+
     setUploadingDoc(true);
+
+    // Une pièce d'identité photographiée pèse plusieurs mégaoctets. On la réduit
+    // avant l'envoi, sans quoi la candidature échoue sur un réseau lent, au
+    // moment précis où le candidat vient de faire tout le reste du formulaire.
+    const { fichier: file } = await compresserImage(choisi);
+
+    if (file.size > 8 * 1024 * 1024) {
+      setUploadingDoc(false);
+      return toast.error("Fichier trop lourd, 8 Mo maximum même après réduction.");
+    }
+
     const extension = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
     const path = `${user.id}/piece-identite-${Date.now()}.${extension}`;
     const { error } = await supabase.storage
@@ -215,9 +226,24 @@ export default function RunnerSignupPage() {
             Carte nationale, passeport ou permis. Le document reste confidentiel : seuls les
             modérateurs qui instruisent votre candidature peuvent le consulter.
           </p>
+          {/* Sur telephone, capture ouvre directement l'appareil photo : le
+              candidat photographie sa piece au lieu de la chercher dans sa
+              galerie, ou elle n'est le plus souvent pas encore. */}
           <Input
             type="file"
-            className="mt-2"
+            className="mt-2 min-h-[44px]"
+            accept="image/*"
+            capture="environment"
+            disabled={uploadingDoc}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) uploadIdDoc(file);
+              e.target.value = "";
+            }}
+          />
+          <Input
+            type="file"
+            className="mt-2 min-h-[44px]"
             accept="image/jpeg,image/png,image/webp,application/pdf"
             disabled={uploadingDoc}
             onChange={(e) => {

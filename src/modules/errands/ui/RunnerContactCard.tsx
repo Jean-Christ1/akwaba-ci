@@ -15,8 +15,9 @@ interface RunnerContactCardProps {
  * Moyens de joindre le shopper assigné.
  *
  * Les coordonnées ne sont chargées que pour le shopper effectivement affecté à
- * la course : les boutons restent inactifs tant qu'elles manquent, plutôt que
- * d'ouvrir un lien vide.
+ * la course. Quand l'une d'elles manque, le bouton correspondant n'est pas
+ * rendu comme un lien : l'attribut disabled n'a aucun effet sur une ancre, si
+ * bien qu'un bouton « désactivé » ouvrait tout de même un onglet vide.
  */
 export function RunnerContactCard({ runner, errandTitle, videoUrl }: RunnerContactCardProps) {
   const lienWhatsapp = waLink(
@@ -32,24 +33,35 @@ export function RunnerContactCard({ runner, errandTitle, videoUrl }: RunnerConta
         {runner.vehicle} · ★ {runner.rating} · {runner.jobs_completed} missions
       </p>
       <div className="mt-3 grid grid-cols-3 gap-2">
-        <Button asChild variant="outline" size="sm" disabled={!runner.phone}>
-          <a
-            href={runner.phone ? `tel:${runner.phone}` : undefined}
-            aria-label={`Appeler ${runner.full_name}`}
-          >
+        {runner.phone ? (
+          <Button asChild variant="outline" size="sm">
+            <a href={`tel:${runner.phone}`} aria-label={`Appeler ${runner.full_name}`}>
+              <Phone className="h-4 w-4" aria-hidden="true" />
+            </a>
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" disabled aria-label="Numéro de téléphone indisponible">
             <Phone className="h-4 w-4" aria-hidden="true" />
-          </a>
-        </Button>
-        <Button asChild variant="outline" size="sm" disabled={!lienWhatsapp}>
-          <a
-            href={lienWhatsapp ?? "#"}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={`Écrire à ${runner.full_name} sur WhatsApp`}
-          >
+          </Button>
+        )}
+
+        {lienWhatsapp ? (
+          <Button asChild variant="outline" size="sm">
+            <a
+              href={lienWhatsapp}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Écrire à ${runner.full_name} sur WhatsApp`}
+            >
+              <MessageCircle className="h-4 w-4" aria-hidden="true" />
+            </a>
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" disabled aria-label="WhatsApp indisponible">
             <MessageCircle className="h-4 w-4" aria-hidden="true" />
-          </a>
-        </Button>
+          </Button>
+        )}
+
         <Button asChild variant="outline" size="sm">
           <a
             href={videoUrl}

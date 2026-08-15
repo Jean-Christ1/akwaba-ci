@@ -90,6 +90,16 @@ Si le client a choisi d'avancer le budget, il voit le **compte de réception du
 shopper**, copie le numéro, transfère, puis déclare le montant envoyé. Le reste
 à payer se recalcule.
 
+### Étape 4 bis, un article manque
+
+Le shopper renseigne chaque article : trouvé, introuvable, ou remplacement
+proposé, avec ce qu'il propose et à quel prix. Le client accepte ou refuse, et
+sa décision est horodatée.
+
+Cette trace n'est pas décorative : elle départage le jour où l'un affirme avoir
+prévenu et l'autre n'avoir rien accepté. Les deux parties sont notifiées, et
+l'état d'un article ne s'écrit que par les fonctions serveur.
+
 ### Étape 5, la facture
 
 Le shopper saisit le total des achats et dépose le reçu photographié.
@@ -234,16 +244,17 @@ Tout ce qui précède décrit le code du dépôt. Cette section dit ce qui manqu
 pour que ce code devienne un service. Les points sont classés du plus grave au
 moins grave, et aucun n'est arrondi.
 
-### 9.1 Rien n'a jamais tourné contre une base
+### 9.1 Ce qui reste hors de portée du dépôt
 
-**Aucune migration du dépôt n'est appliquée en base.** Tant qu'elles ne sont pas
-jouées, rien de ce document n'est actif : ni les fonctions serveur, ni les
-déclencheurs de garde, ni les privilèges par colonne. Les corrections apportées jusqu'ici ont été vérifiées
-par lecture, par typage et par les tests du dépôt, ce qui n'est pas la même
-chose que par l'exécution.
+Les migrations sont appliquées et le parcours complet d'une course s'exécute
+contre la base, refus attendus compris. Ce qui suit ne relève donc plus d'un
+défaut de code, mais de décisions et de contrats qui n'appartiennent pas au
+dépôt : un compte chez un prestataire de paiement, un domaine expéditeur, une
+adresse de support.
 
-La procédure d'application figure dans [EXPLOITATION.md](EXPLOITATION.md),
-section 2.
+La procédure d'application des migrations figure dans
+[EXPLOITATION.md](EXPLOITATION.md), section 2, et la recette dans
+`scripts/recette-parcours.mjs`.
 
 ### 9.2 Le règlement est direct, et la commission est une créance
 
@@ -278,24 +289,35 @@ client, l'état passe à « remboursée » mais **aucun argent ne part**. Le
 remboursement effectif se fait hors application. Voir
 [EXPLOITATION.md](EXPLOITATION.md), section 9.
 
-### 9.4 Le moteur monétaire n'a aucun test exécuté
+### 9.4 Le moteur monétaire s'exécute, mais pas dans la chaîne d'intégration
 
-Les tests d'intégration PL/pgSQL existent mais sont ignorés faute de base de
-test accessible. Ils ne couvrent d'ailleurs ni la maturation des gains, ni le
-pourboire, ni la cohérence entre le journal du portefeuille et les soldes. Les
-tests qui passent portent sur le calcul du devis, le rendu des écrans et la
-cohérence des migrations.
+`scripts/recette-parcours.mjs` joue le parcours entier contre une vraie base,
+dans une transaction annulée, avec deux comptes sans privilège : publication,
+offre, acceptation, exécution, facture, remise avec code, clôture, écritures du
+portefeuille et maturation. Il vérifie aussi les refus : un client qui réécrit
+ses montants, un shopper qui lit le code de remise, un shopper qui se sert
+lui-même, une annulation après livraison.
 
-### 9.5 Aucune notification hors application
+Ce qui manque est son automatisation : la recette se lance à la main, avec les
+identifiants d'une base. La chaîne d'intégration, elle, ne dispose d'aucune
+base de test et ne peut donc pas la jouer à chaque livraison.
 
-Ni courriel ni message pour prévenir qu'une offre est arrivée, qu'une course
-attend une confirmation, qu'un gain est disponible ou qu'un litige a été
-tranché. Une seule fonction d'envoi existe, `test-email`, déclenchée à la main
-depuis la console d'administration, et elle passe par un expéditeur de bac à
-sable qui ne convient pas à un envoi réel.
+### 9.5 Les notifications hors application partent d'une file en base
 
-Les douze événements à couvrir et ce que suppose leur branchement sont listés
-dans [EXPLOITATION.md](EXPLOITATION.md), section 8.
+Six événements déposent désormais une notification : une offre arrive, un
+shopper est retenu, une course est livrée, un dépassement attend un accord, un
+litige s'ouvre, un remplacement d'article est proposé ou tranché.
+
+Le découplage est délibéré. La base dépose ce qu'il faut dire, un envoyeur le
+porte. Écrire l'envoi dans les fonctions du moteur aurait lié la clôture d'une
+course à la disponibilité d'un service de courriel : une panne de messagerie
+aurait alors empêché de payer.
+
+Ce qui reste à la charge de l'éditeur est le moyen d'envoi lui-même, qui
+suppose un compte chez un fournisseur et un nom de domaine expéditeur. Tant
+qu'il n'est pas configuré, **la file est conservée intacte** : rien n'est
+perdu, et tout part le jour où la clé est renseignée. Voir
+[EXPLOITATION.md](EXPLOITATION.md), section 8, et `.env.example`.
 
 ### 9.6 Le canal de support et la remontée d'erreur sont préparés, pas ouverts
 
@@ -308,8 +330,3 @@ s'affiche que si une adresse est configurée, et une référence d'incident au
 format `AKW-XXXX-XXXX` produite au moment de l'erreur. Il reste à renseigner
 l'adresse, décision de l'éditeur, et à poser ces deux pièces sur les écrans.
 Voir [EXPLOITATION.md](EXPLOITATION.md), sections 6 et 7.
-
-### 9.7 Les substitutions d'articles ne sont pas modélisées
-
-Quand un article est introuvable ou plus cher, l'échange se fait dans la
-conversation, sans décision tracée ligne par ligne.

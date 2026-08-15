@@ -232,7 +232,57 @@ try {
     await c.query('SELECT public.errand_advance_status($1, $2)', [errandId, 'delivering'])
   })
 
+  // --- Les articles, leurs manques et leurs remplacements -------------------
+  await pas('La liste détaillée naît avec la course', async () => {
+    await redevenirProprietaire()
+    const r = await c.query(
+      'SELECT count(*)::int n FROM public.errand_items WHERE errand_id = $1', [errandId]
+    )
+    if (r.rows[0].n === 0) throw new Error('aucun article détaillé')
+    return `${r.rows[0].n} article(s)`
+  })
+
+  await pas('Le shopper propose un remplacement, le client tranche', async () => {
+    await redevenirProprietaire()
+    const article = (await c.query(
+      'SELECT id FROM public.errand_items WHERE errand_id = $1 ORDER BY position LIMIT 1', [errandId]
+    )).rows[0]
+    if (!article) return 'aucun article à éprouver'
+
+    await devenir(SHOPPER)
+    await c.query(
+      `SELECT public.errand_item_report($1, 'substitute', 'Produit équivalent', 1200, NULL)`,
+      [article.id]
+    )
+
+    await devenir(CLIENT)
+    await c.query('SELECT public.errand_item_decide($1, true)', [article.id])
+
+    await redevenirProprietaire()
+    const etat = (await c.query(
+      'SELECT state::text, decided_at FROM public.errand_items WHERE id = $1', [article.id]
+    )).rows[0]
+    if (etat.state !== 'accepted') throw new Error('état ' + etat.state)
+    if (!etat.decided_at) throw new Error("la décision n'est pas horodatée")
+    return 'remplacement accepté et daté'
+  })
+
+  await refus(
+    'Le client ne peut pas se déclarer shopper sur un article',
+    async () => {
+      const article = (await c.query(
+        'SELECT id FROM public.errand_items WHERE errand_id = $1 ORDER BY position LIMIT 1', [errandId]
+      )).rows[0]
+      await devenir(CLIENT)
+      return c.query(`SELECT public.errand_item_report($1, 'found')`, [article.id])
+    }
+  )
+
   await pas('Le shopper enregistre sa facture', async () => {
+    // Les étapes précédentes ont pu changer d'acteur : on redevient
+    // explicitement le shopper, sinon l'échec porterait sur l'identité et non
+    // sur ce que l'on croit éprouver.
+    await devenir(SHOPPER)
     await c.query('SELECT public.errand_save_invoice($1, $2, $3, $4, $5)', [
       errandId, 14000, 0, 0, 'https://exemple.invalid/recu.jpg',
     ])
@@ -367,6 +417,21 @@ try {
       throw new Error(`versé ${verse} alors que le gain net est ${e.runner_payout} : la commission fuit`)
     }
     return `versé ${verse}, gain net ${e.runner_payout}`
+  })
+
+  // --- Les notifications ----------------------------------------------------
+  await pas('Le parcours a déposé des notifications aux deux parties', async () => {
+    await redevenirProprietaire()
+    const r = await c.query(
+      `SELECT event, user_id FROM public.notification_outbox WHERE errand_id = $1`, [errandId]
+    )
+    if (r.rowCount === 0) throw new Error('aucune notification déposée')
+
+    const destinataires = new Set(r.rows.map((x) => x.user_id))
+    if (destinataires.size < 2) {
+      throw new Error("un seul destinataire : le shopper ou le client n'est pas prévenu")
+    }
+    return `${r.rowCount} notification(s), ${destinataires.size} destinataires`
   })
 
   await devenir(CLIENT)

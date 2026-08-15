@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
+import { vibrer } from "@/shared/media/retourHaptique";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ import {
 import { BudgetOverrunNotice } from "@/modules/errands/ui/BudgetOverrunNotice";
 import { ErrandChat } from "@/modules/errands/ui/ErrandChat";
 import { ErrandInvoice } from "@/modules/errands/ui/ErrandInvoice";
+import { ErrandItemList } from "@/modules/errands/ui/ErrandItemList";
 import { ErrandOffers } from "@/modules/errands/ui/ErrandOffers";
 import { ErrandPaymentPanel } from "@/modules/errands/ui/ErrandPaymentPanel";
 import { ErrandTimeline } from "@/modules/errands/ui/ErrandTimeline";
@@ -87,6 +89,29 @@ export default function ErrandDetailPage() {
         return toast.error("Demandez au client son code de remise à quatre chiffres.");
       }
       setBusy(true);
+
+      // La vérification passe d'abord par sa fonction dédiée, car c'est elle
+      // qui compte les échecs. La progression de statut ne peut pas le faire :
+      // elle refuse un code faux en levant une exception, ce qui annulerait le
+      // compteur qu'elle vient d'incrémenter. Sans ce premier appel, quatre
+      // chiffres se devinent en dix mille essais sans que rien ne s'y oppose.
+      const { data: valide, error: erreurCode } = await supabase.rpc(
+        "errand_verify_handover_code",
+        { p_errand_id: errand.id, p_code: code }
+      );
+      if (erreurCode) {
+        setBusy(false);
+        return toast.error(erreurCode.message);
+      }
+      if (!valide) {
+        setBusy(false);
+        setHandoverInput("");
+        vibrer("echec");
+        return toast.error(
+          "Code de remise incorrect. Après cinq essais, la remise sera bloquée et devra être rouverte par un modérateur."
+        );
+      }
+
       const { error } = await supabase.rpc("errand_advance_status", {
         p_errand_id: errand.id,
         p_next: next,
@@ -95,6 +120,7 @@ export default function ErrandDetailPage() {
       setBusy(false);
       if (error) return toast.error(error.message);
       setHandoverInput("");
+      vibrer("succes");
       toast.success("Remise confirmée.");
       return recharger();
     }
@@ -213,19 +239,34 @@ export default function ErrandDetailPage() {
             />
           )}
 
+          {/* La liste détaillée remplace l'énumération figée dès que la course
+              est attribuée : c'est à partir de là qu'un article peut manquer et
+              qu'un remplacement doit se décider, pas avant. */}
+          {errand.runner_id ? (
+            <ErrandItemList
+              errandId={errand.id}
+              isRunner={isRunner}
+              isCustomer={isCustomer}
+              figee={errand.payment_status === "paid"}
+            />
+          ) : (
+            <section className="rounded-2xl border border-border bg-card p-4">
+              <h2 className="font-display text-base font-semibold">Liste demandée</h2>
+              <ul className="mt-2 space-y-1 text-sm">
+                {articles.map((it, i) => (
+                  <li
+                    key={i}
+                    className="flex justify-between border-b border-border/60 py-1 last:border-0"
+                  >
+                    <span>{it.label}</span>
+                    <span className="text-muted-foreground">×{it.qty}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <section className="rounded-2xl border border-border bg-card p-4">
-            <h2 className="font-display text-base font-semibold">Liste demandée</h2>
-            <ul className="mt-2 space-y-1 text-sm">
-              {articles.map((it, i) => (
-                <li
-                  key={i}
-                  className="flex justify-between border-b border-border/60 py-1 last:border-0"
-                >
-                  <span>{it.label}</span>
-                  <span className="text-muted-foreground">×{it.qty}</span>
-                </li>
-              ))}
-            </ul>
             {errand.notes && (
               <p className="mt-3 rounded-xl bg-muted/50 p-3 text-sm text-muted-foreground">
                 {errand.notes}

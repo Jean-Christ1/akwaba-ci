@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { Search, Sparkles, ArrowRight } from "lucide-react";
 import heroImg from "@/assets/hero-abidjan.jpg";
-import { CITIES, ITINERARIES } from "@/modules/places/infrastructure/data";
+import { ITINERARIES } from "@/modules/places/infrastructure/data";
+import { useCatalogCities } from "@/modules/places/application/useCatalogCities";
 import { usePlaces } from "@/modules/places/application/usePlaces";
 import { PlaceCard } from "@/modules/places/ui/PlaceCard";
 import { ItineraryCard } from "@/modules/places/ui/ItineraryCard";
@@ -26,6 +27,8 @@ function getGreeting() {
 }
 
 export default function HomePage() {
+  // Les villes fermees en console disparaissent de l'accueil.
+  const { cities: CITIES } = useCatalogCities();
   usePageTitle("Découvrir la Côte d'Ivoire", "Adresses sélectionnées, parcours et service de courses en Côte d'Ivoire.");
   const { data: places, loading, error, reload } = usePlaces();
   const featured = places.filter((p) => p.premium).slice(0, 4);

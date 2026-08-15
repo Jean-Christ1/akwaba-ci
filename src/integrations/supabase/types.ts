@@ -115,6 +115,54 @@ export type Database = {
           },
         ]
       }
+      errand_items: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          errand_id: string
+          id: string
+          label: string
+          position: number
+          proposed_at: string | null
+          qty: string | null
+          state: Database["public"]["Enums"]["errand_item_state"]
+          substitute_label: string | null
+          substitute_note: string | null
+          substitute_price: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          errand_id: string
+          id?: string
+          label: string
+          position?: number
+          proposed_at?: string | null
+          qty?: string | null
+          state?: Database["public"]["Enums"]["errand_item_state"]
+          substitute_label?: string | null
+          substitute_note?: string | null
+          substitute_price?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          errand_id?: string
+          id?: string
+          label?: string
+          position?: number
+          proposed_at?: string | null
+          qty?: string | null
+          state?: Database["public"]["Enums"]["errand_item_state"]
+          substitute_label?: string | null
+          substitute_note?: string | null
+          substitute_price?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       errand_messages: {
         Row: {
           attachment_url: string | null
@@ -1250,6 +1298,43 @@ export type Database = {
         Args: { _errand: string; _uid: string }
         Returns: boolean
       }
+      errand_verify_handover_code: {
+        Args: {
+          p_errand_id: string
+          p_code: string
+        }
+        Returns: boolean
+      }
+      errand_unlock_handover: {
+        Args: {
+          p_errand_id: string
+        }
+        Returns: Database["public"]["Tables"]["errands"]["Row"]
+      }
+      errand_confirm_advance: {
+        Args: {
+          p_errand_id: string
+          p_amount?: number | null
+        }
+        Returns: Database["public"]["Tables"]["errands"]["Row"]
+      }
+      errand_item_report: {
+        Args: {
+          p_item_id: string
+          p_state: string
+          p_label?: string | null
+          p_price?: number | null
+          p_note?: string | null
+        }
+        Returns: Database["public"]["Tables"]["errand_items"]["Row"]
+      }
+      errand_item_decide: {
+        Args: {
+          p_item_id: string
+          p_accept: boolean
+        }
+        Returns: Database["public"]["Tables"]["errand_items"]["Row"]
+      }
       errand_create: {
         Args: {
           p_title: string
@@ -1444,6 +1529,13 @@ export type Database = {
     Enums: {
       app_role: "admin" | "moderator" | "partner" | "user"
       dropoff_mode: "runner_delivers" | "third_party" | "customer_pickup"
+      errand_item_state:
+        | "requested"
+        | "found"
+        | "substitute"
+        | "accepted"
+        | "refused"
+        | "unavailable"
       errand_category:
         | "grocery"
         | "market"

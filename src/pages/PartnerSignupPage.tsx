@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useServiceAreas } from "@/modules/places/application/useServiceAreas";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Check, Upload } from "lucide-react";
 
@@ -22,7 +23,6 @@ const TYPES = [
   { value: "shopping", label: "Boutique / Marché" },
 ];
 
-const CITIES = ["Abidjan", "Grand-Bassam", "Assinie", "Yamoussoukro", "Bouaké", "San-Pédro", "Korhogo", "Man"];
 const PRICES = ["€", "€€", "€€€", "€€€€"];
 
 type FormState = {
@@ -54,6 +54,10 @@ const initial: FormState = {
 const STEPS = ["Compte", "Type", "Identité", "Localisation", "Contact", "Détails", "Médias", "Validation"];
 
 export default function PartnerSignupPage() {
+  // Les villes viennent du referentiel : inscrire un etablissement dans une
+  // ville que la plateforme ne dessert pas ne menerait a rien.
+  const { cities: villesCouvertes } = useServiceAreas();
+  const CITIES = villesCouvertes.map((v) => v.name);
   const { user, refreshRoles } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(user ? 1 : 0);

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { CITIES } from "@/modules/places/infrastructure/data";
+import { useCatalogCities } from "@/modules/places/application/useCatalogCities";
 import { usePlaces } from "@/modules/places/application/usePlaces";
 import { PlaceCard } from "@/modules/places/ui/PlaceCard";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
@@ -23,6 +23,7 @@ const TYPES: { value: PlaceType | "all"; label: string }[] = [
 type Sort = "relevance" | "name_asc" | "standing_desc";
 
 export default function ExplorerPage() {
+  const { cities: CITIES } = useCatalogCities();
   usePageTitle("Explorer les adresses", "Hôtels, restaurants, maquis et lieux à découvrir en Côte d'Ivoire.");
   const [params, setParams] = useSearchParams();
   const initialType = (params.get("type") as PlaceType) ?? "all";
