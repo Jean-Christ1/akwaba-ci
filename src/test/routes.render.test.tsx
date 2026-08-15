@@ -72,6 +72,7 @@ const ROUTES = [
   { chemin: "/admin/pilotage", nom: "Pilotage" },
   { chemin: "/admin/parametres", nom: "Paramètres" },
   { chemin: "/admin/litiges", nom: "Litiges" },
+  { chemin: "/admin/courses", nom: "Suivi des courses" },
   { chemin: "/admin/payouts", nom: "Retraits" },
   { chemin: "/admin/shoppers", nom: "Shoppers" },
   { chemin: "/route-qui-nexiste-pas", nom: "Page introuvable" },

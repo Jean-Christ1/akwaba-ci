@@ -8,6 +8,7 @@ import {
   Search,
   ShieldCheck,
   Store,
+  ShoppingBasket,
   Users,
 } from "lucide-react";
 
@@ -37,6 +38,9 @@ const NAV: { key: View; label: string; icon: LucideIcon; role: "any" | "moderato
 ];
 
 const LIENS_ESPACES: { to: string; label: string; icon: LucideIcon; role: "moderator" | "admin" }[] = [
+  // Le suivi des courses vient en premier : c'est le seul écran qui dit s'il y
+  // a quelque chose à faire maintenant, les autres attendent qu'on les ouvre.
+  { to: "/admin/courses", label: "Courses", icon: ShoppingBasket, role: "moderator" },
   { to: "/admin/shoppers", label: "Shoppers", icon: Users, role: "moderator" },
   { to: "/admin/pilotage", label: "Pilotage", icon: LayoutDashboard, role: "moderator" },
   { to: "/admin/litiges", label: "Litiges", icon: ShieldCheck, role: "moderator" },
