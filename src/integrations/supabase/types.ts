@@ -2641,6 +2641,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: { alerte: string; nombre: number }[]
       }
+      errand_duplicate: {
+        Args: { p_errand_id: string }
+        Returns: Database["public"]["Tables"]["errands"]["Row"]
+      }
       errand_create: {
         Args: {
           p_budget_estimate: number

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Plus, PackageSearch } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Plus, PackageSearch, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { formatFcfa, STATUS_LABEL, statusTone, type ErrandStatus } from "@/modules/errands/domain";
@@ -19,6 +20,29 @@ interface Row {
 }
 
 export default function MyErrandsPage() {
+  const navigate = useNavigate();
+  const [refaisant, setRefaisant] = useState<string | null>(null);
+
+  /**
+   * Refaire une course reprend la demande, jamais le calcul : le devis est
+   * refait au barème du jour, un nouveau code de remise est tiré, et aucun
+   * shopper n'est repris. Les courses du quotidien se répètent, et
+   * reconstituer la même liste article par article suffit à décourager la
+   * deuxième commande.
+   */
+  const refaire = async (id: string, titre: string) => {
+    setRefaisant(id);
+    const { data, error } = await supabase.rpc("errand_duplicate", { p_errand_id: id });
+    setRefaisant(null);
+
+    if (error) return toast.error(error.message);
+    const creee = data as { id?: string } | null;
+    if (!creee?.id) return toast.error("La course n'a pas pu être recréée.");
+
+    toast.success(`« ${titre} » republiée, les shoppers peuvent proposer leur prix.`);
+    navigate(`/courses/${creee.id}`);
+  };
+
   usePageTitle("Mes courses", "Suivez vos courses en cours et passées.");
   const { user, loading } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
@@ -123,6 +147,20 @@ export default function MyErrandsPage() {
                 </p>
               </div>
             </Link>
+
+            {/* Hors du lien : imbriquer un bouton dans une ancre rend la carte
+                imprévisible au toucher comme au clavier. */}
+            {(r.status === "completed" || r.status === "cancelled") && (
+              <button
+                type="button"
+                className="mt-1 inline-flex min-h-[44px] items-center gap-1.5 rounded-full px-3 text-xs font-medium text-primary transition-colors hover:bg-primary-soft disabled:opacity-60"
+                disabled={refaisant === r.id}
+                onClick={() => void refaire(r.id, r.title)}
+              >
+                <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+                {refaisant === r.id ? "Republication…" : "Refaire cette course"}
+              </button>
+            )}
           </li>
         ))}
       </ul>
