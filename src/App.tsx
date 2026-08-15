@@ -41,6 +41,7 @@ const RunnerSignupPage = lazy(() => import("./pages/courses/RunnerSignupPage"));
 const RunnerDashboardPage = lazy(() => import("./pages/courses/RunnerDashboardPage"));
 const HowItWorksPage = lazy(() => import("./pages/courses/HowItWorksPage"));
 const WalletPage = lazy(() => import("./pages/courses/WalletPage"));
+const SchedulesPage = lazy(() => import("./pages/courses/SchedulesPage"));
 
 const AdminPage = lazy(() => import("./pages/admin/AdminPage"));
 const PlaceEditorPage = lazy(() => import("./pages/admin/PlaceEditorPage"));
@@ -97,6 +98,7 @@ const App = () => (
                 <Route path="/courses" element={<MyErrandsPage />} />
                 <Route path="/courses/nouvelle" element={<NewErrandPage />} />
                 <Route path="/courses/comment-ca-marche" element={<HowItWorksPage />} />
+                <Route path="/courses/programmees" element={<SchedulesPage />} />
                 <Route path="/courses/portefeuille" element={<WalletPage />} />
                 <Route path="/itineraire" element={<RoutePage />} />
                 <Route path="/courses/devenir-shopper" element={<RunnerSignupPage />} />
