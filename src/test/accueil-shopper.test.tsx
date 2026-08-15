@@ -66,7 +66,7 @@ async function afficherAccueil() {
   // Le catalogue se charge après le montage : on attend que la page soit stable.
   await waitFor(
     () => {
-      expect(screen.getByRole("link", { name: "Demander une course" })).toBeInTheDocument();
+      expect(screen.getAllByRole("link", { name: "Demander une course" }).length).toBeGreaterThan(0);
     },
     { timeout: 15000 }
   );
@@ -74,12 +74,33 @@ async function afficherAccueil() {
 }
 
 describe("accueil : le Shopper est le service principal", () => {
+  it(
+    "annonce le service dès la première ligne, pas seulement plus bas",
+    { timeout: 30000 },
+    async () => {
+      const { container } = await afficherAccueil();
+
+      const titre = container.querySelector("h1");
+      expect(titre, "l'accueil doit avoir un titre principal").toBeTruthy();
+
+      // Le titre annonçait la découverte touristique, ce qui reléguait le
+      // service principal à un bloc que le visiteur devait faire défiler pour
+      // trouver. Il doit désormais parler de courses.
+      expect(titre?.textContent ?? "").toMatch(/course/i);
+
+      // Et l'action doit être atteignable sans défilement, donc dans le héros.
+      const heros = container.querySelector("section");
+      const liens = heros?.querySelectorAll('a[href="/courses/nouvelle"]') ?? [];
+      expect(liens.length, "le héros doit porter l'accès à la demande de course").toBeGreaterThan(0);
+    }
+  );
+
   // Les contrôles sont regroupés en deux cas : monter l'accueil complet coûte
   // plusieurs secondes, et multiplier les montages fragilise toute la suite.
   it("expose les trois accès au service et des cas d'usage réels", { timeout: 30000 }, async () => {
     const { container } = await afficherAccueil();
 
-    expect(screen.getByRole("link", { name: "Demander une course" })).toHaveAttribute(
+    expect(screen.getAllByRole("link", { name: "Demander une course" })[0]).toHaveAttribute(
       "href",
       "/courses/nouvelle"
     );
@@ -112,7 +133,7 @@ describe("accueil : le Shopper est le service principal", () => {
   it("place ces accès avant toutes les sections de découverte", { timeout: 30000 }, async () => {
     const { container } = await afficherAccueil();
 
-    const cta = screen.getByRole("link", { name: "Demander une course" });
+    const cta = screen.getAllByRole("link", { name: "Demander une course" })[0];
     const methode = screen.getByRole("link", { name: "Comment ça marche" });
 
     for (const repere of REPERES_DECOUVERTE) {

@@ -56,27 +56,39 @@ export default function HomePage() {
           <div className="akw-container relative z-10 flex h-full flex-col justify-end pb-10 sm:pb-14">
             <div className="max-w-2xl animate-slide-up">
               <p className="akw-eyebrow text-background/70 mb-3">
-                Côte d'Ivoire · Compagnon de voyage premium
+                Côte d'Ivoire · Courses et services du quotidien
               </p>
+              {/* La première ligne dit le service principal. Elle annonçait
+                  jusqu'ici les hôtels et les parcours, ce qui plaçait la
+                  découverte devant la promesse et laissait le visiteur
+                  découvrir le Shopper plus bas, s'il faisait défiler. */}
               <h1 className="font-display text-3xl font-semibold leading-[1.05] text-background sm:text-4xl lg:text-5xl text-balance">
-                {getGreeting()}. Voici ce qui vaut le détour, près de vous.
+                {getGreeting()}. Vos courses faites pour vous, sans vous déplacer.
               </h1>
               <p className="mt-3 max-w-xl text-sm text-background/85 sm:text-base text-pretty">
-                Hôtels, tables, lieux et parcours sélectionnés à Abidjan, Bassam, Assinie, Yamoussoukro.
+                Un shopper vérifié va au marché, en pharmacie ou au supermarché à votre place.
+                Et quand vous cherchez où sortir, le meilleur de la Côte d'Ivoire reste juste en dessous.
               </p>
 
-              <Link
-                to="/explorer"
-                className="mt-5 inline-flex w-full max-w-lg items-center gap-3 rounded-full bg-background/95 px-5 py-3 text-left shadow-elevation-2 backdrop-blur-md transition-transform hover:-translate-y-0.5 sm:w-auto"
-              >
-                <Search className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
-                <span className="flex-1 text-sm text-muted-foreground">
-                  Restaurant, hôtel, lieu, parcours…
-                </span>
-                <span className="hidden rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground sm:inline">
-                  Rechercher
-                </span>
-              </Link>
+              <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Link
+                  to="/courses/nouvelle"
+                  className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-elevation-2 transition-transform hover:-translate-y-0.5"
+                >
+                  Demander une course
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+
+                <Link
+                  to="/explorer"
+                  className="inline-flex min-h-[48px] flex-1 items-center gap-3 rounded-full bg-background/95 px-5 text-left shadow-elevation-2 backdrop-blur-md transition-transform hover:-translate-y-0.5 sm:max-w-md"
+                >
+                  <Search className="h-5 w-5 flex-shrink-0 text-muted-foreground" aria-hidden="true" />
+                  <span className="flex-1 text-sm text-muted-foreground">
+                    Restaurant, hôtel, lieu, parcours…
+                  </span>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
