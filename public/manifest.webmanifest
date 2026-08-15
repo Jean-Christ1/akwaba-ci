@@ -1,7 +1,7 @@
 {
-  "name": "Akwaba, Côte d'Ivoire",
+  "name": "Akwaba, vos courses en Côte d'Ivoire",
   "short_name": "Akwaba",
-  "description": "Découvrez les meilleures adresses de Côte d'Ivoire et confiez vos courses à un shopper vérifié.",
+  "description": "Confiez vos courses à un shopper vérifié : marché, pharmacie, supermarché, démarches. Et découvrez les meilleures adresses du pays.",
   "lang": "fr",
   "dir": "ltr",
   "start_url": "/",
@@ -10,7 +10,11 @@
   "orientation": "portrait",
   "background_color": "#faf8f3",
   "theme_color": "#195752",
-  "categories": ["travel", "lifestyle", "shopping"],
+  "categories": [
+    "travel",
+    "lifestyle",
+    "shopping"
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",
