@@ -22,6 +22,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useTabState } from "@/shared/hooks/useTabState";
 import { PlaceImage } from "@/shared/ui/PlaceImage";
+import { RouteDialog } from "@/shared/ui/RouteDialog";
 
 export default function PlaceDetailPage() {
   const { slug } = useParams();
@@ -89,13 +90,12 @@ export default function PlaceDetailPage() {
 
   const fav = has(place.id);
   const nearby = allPlaces.filter((p) => p.id !== place.id && p.city === place.city).slice(0, 4);
-  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${place.coords.lat},${place.coords.lng}`;
   const waUrl = place.whatsapp ? `https://wa.me/${place.whatsapp.replace(/[^0-9]/g, "")}` : null;
   const telUrl = place.phone ? `tel:${place.phone}` : null;
 
   return (
     <article className="bg-background pb-32 lg:pb-12">
-      {/* HERO — compact */}
+      {/* HERO - compact */}
       <header className="relative">
         <div className="relative aspect-[16/9] w-full overflow-hidden sm:aspect-[21/9] lg:aspect-[24/8] lg:max-h-[420px]">
           <PlaceImage
@@ -158,7 +158,7 @@ export default function PlaceDetailPage() {
                 <blockquote className="mt-5 border-l-2 border-accent bg-accent-soft/40 py-3 pl-4 pr-3">
                   <p className="text-sm italic text-foreground">« {place.curatorNote} »</p>
                   <p className="mt-1 text-[11px] uppercase tracking-wider text-muted-foreground">
-                    — Note de notre équipe
+                    - Note de notre équipe
                   </p>
                 </blockquote>
               )}
@@ -189,7 +189,7 @@ export default function PlaceDetailPage() {
               </ul>
             </section>
 
-            {/* DETAILS — Tabs compacts (densité ↑, scroll ↓) */}
+            {/* DETAILS - Tabs compacts (densité ↑, scroll ↓) */}
             <Tabs value={tab} onValueChange={setTab} className="w-full">
               <TabsList aria-label="Sections de la fiche" className="h-9 w-full justify-start gap-1 overflow-x-auto bg-muted/60 p-1 transition-colors">
 
@@ -287,15 +287,24 @@ export default function PlaceDetailPage() {
                       </DialogContent>
                     </Dialog>
                   )}
-                  <a
-                    href={mapsUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+                  {/* L'itinéraire s'ouvre dans l'application : le visiteur garde
+                      sous les yeux la fiche, la réservation et le service de
+                      courses. Les applications de navigation externes restent
+                      proposées en secours à l'intérieur du panneau. */}
+                  <RouteDialog
+                    lat={place.coords.lat}
+                    lng={place.coords.lng}
+                    name={place.name}
+                    address={place.address}
                   >
-                    <Navigation className="h-4 w-4" />
-                    Itinéraire
-                  </a>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+                    >
+                      <Navigation className="h-4 w-4" aria-hidden="true" />
+                      Itinéraire
+                    </button>
+                  </RouteDialog>
                   {waUrl && (
                     <a
                       href={waUrl}
@@ -383,14 +392,38 @@ export default function PlaceDetailPage() {
               </DialogContent>
             </Dialog>
           ) : (
-            <a
-              href={mapsUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-semibold text-primary-foreground"
+            <RouteDialog
+              lat={place.coords.lat}
+              lng={place.coords.lng}
+              name={place.name}
+              address={place.address}
             >
-              <Navigation className="h-4 w-4" aria-hidden="true" /> Itinéraire
-            </a>
+              <button
+                type="button"
+                className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-semibold text-primary-foreground"
+              >
+                <Navigation className="h-4 w-4" aria-hidden="true" /> Itinéraire
+              </button>
+            </RouteDialog>
+          )}
+          {/* Sur téléphone, la réservation occupe déjà la place principale :
+              l'itinéraire reste accessible en bouton compact plutôt que
+              d'être renvoyé hors de l'application. */}
+          {(place.type === "lodging" || place.type === "restaurant") && (
+            <RouteDialog
+              lat={place.coords.lat}
+              lng={place.coords.lng}
+              name={place.name}
+              address={place.address}
+            >
+              <button
+                type="button"
+                aria-label={`Itinéraire vers ${place.name}`}
+                className="flex w-12 shrink-0 items-center justify-center rounded-full border border-border bg-background py-3"
+              >
+                <Navigation className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </RouteDialog>
           )}
         </div>
       </div>

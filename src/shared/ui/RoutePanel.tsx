@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { Map as MLMap, Marker } from "maplibre-gl";
-import { Car, Footprints, Bike, Loader2, ExternalLink, Navigation } from "lucide-react";
+import { Car, Footprints, Bike, Loader2, ExternalLink, Navigation, RotateCcw, LocateFixed } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +25,12 @@ const PROFILES: { value: Profile; label: string; icon: typeof Car }[] = [
   { value: "foot", label: "À pied", icon: Footprints },
 ];
 
+/** Position de l'utilisateur : chaque état appelle un message et une action différents. */
+type PositionState = "pending" | "ready" | "refused" | "unsupported";
+
+/** Calcul de l'itinéraire : distinguer l'attente de l'échec évite un écran figé. */
+type RouteState = "idle" | "loading" | "ready" | "error";
+
 interface Step {
   instruction: string;
   distance: number;
@@ -47,13 +53,16 @@ export interface RoutePanelProps {
 export function RoutePanel({ lat, lng, name, address, mapClassName, className }: RoutePanelProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MLMap | null>(null);
+  const originMarkerRef = useRef<Marker | null>(null);
   const [origin, setOrigin] = useState<[number, number] | null>(null);
   const [profile, setProfile] = useState<Profile>("driving");
   const [summary, setSummary] = useState<{ km: number; min: number } | null>(null);
   const [steps, setSteps] = useState<Step[]>([]);
   const [showSteps, setShowSteps] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [geoError, setGeoError] = useState<string | null>(null);
+  const [positionState, setPositionState] = useState<PositionState>("pending");
+  const [routeState, setRouteState] = useState<RouteState>("idle");
+  // Compteur d'essais : le relancer suffit à rejouer le calcul sans remonter la carte.
+  const [attempt, setAttempt] = useState(0);
 
   const valid = Number.isFinite(lat) && Number.isFinite(lng);
 
@@ -75,32 +84,43 @@ export function RoutePanel({ lat, lng, name, address, mapClassName, className }:
       window.clearTimeout(t);
       map.remove();
       mapRef.current = null;
+      originMarkerRef.current = null;
     };
   }, [lat, lng, valid]);
 
-  useEffect(() => {
+  const demanderPosition = useCallback(() => {
     if (!navigator.geolocation) {
-      setGeoError("Géolocalisation indisponible sur cet appareil.");
+      setPositionState("unsupported");
       return;
     }
+    setPositionState("pending");
     navigator.geolocation.getCurrentPosition(
-      (pos) => setOrigin([pos.coords.longitude, pos.coords.latitude]),
-      () => setGeoError("Activez la localisation pour calculer l'itinéraire depuis votre position."),
+      (pos) => {
+        setOrigin([pos.coords.longitude, pos.coords.latitude]);
+        setPositionState("ready");
+      },
+      () => setPositionState("refused"),
       { enableHighAccuracy: true, timeout: 8000 }
     );
   }, []);
 
   useEffect(() => {
+    demanderPosition();
+  }, [demanderPosition]);
+
+  useEffect(() => {
     const map = mapRef.current;
     if (!map || !origin || !valid) return;
     let cancelled = false;
-    setLoading(true);
+    setRouteState("loading");
     (async () => {
       try {
         const url = `https://router.project-osrm.org/route/v1/${profile}/${origin[0]},${origin[1]};${lng},${lat}?overview=full&geometries=geojson&steps=true`;
         const res = await fetch(url);
+        if (!res.ok) throw new Error(`routage indisponible (${res.status})`);
         const json = await res.json();
-        if (cancelled || !json.routes?.length) return;
+        if (cancelled) return;
+        if (!json.routes?.length) throw new Error("aucun trajet renvoyé");
         const route = json.routes[0];
         setSummary({ km: route.distance / 1000, min: Math.round(route.duration / 60) });
         setSteps(
@@ -132,7 +152,9 @@ export function RoutePanel({ lat, lng, name, address, mapClassName, className }:
               layout: { "line-cap": "round", "line-join": "round" },
             });
           }
-          new Marker({ color: "#c08b3e" }).setLngLat(origin).addTo(map);
+          // Un seul repère de départ : le recalcul ne doit pas empiler les marqueurs.
+          if (originMarkerRef.current) originMarkerRef.current.setLngLat(origin);
+          else originMarkerRef.current = new Marker({ color: "#c08b3e" }).setLngLat(origin).addTo(map);
           const coords: [number, number][] = route.geometry.coordinates;
           const bounds = coords.reduce(
             (b, c) => b.extend(c),
@@ -142,16 +164,19 @@ export function RoutePanel({ lat, lng, name, address, mapClassName, className }:
         };
         if (map.isStyleLoaded()) apply();
         else map.once("load", apply);
+        setRouteState("ready");
       } catch {
-        if (!cancelled) setGeoError("Impossible de calculer l'itinéraire pour le moment.");
-      } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setSteps([]);
+          setSummary(null);
+          setRouteState("error");
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [origin, profile, lat, lng, valid]);
+  }, [origin, profile, lat, lng, valid, attempt]);
 
   const externalLinks = useMemo(
     () => [
@@ -161,6 +186,18 @@ export function RoutePanel({ lat, lng, name, address, mapClassName, className }:
     ],
     [lat, lng]
   );
+
+  // Phrase unique lue par les lecteurs d'écran : la carte, elle, n'est pas descriptible.
+  const annonce = useMemo(() => {
+    if (routeState === "ready" && summary) {
+      return `Itinéraire vers ${name} : ${summary.min} minutes, ${summary.km.toFixed(1)} kilomètres.`;
+    }
+    if (routeState === "error") return `Le calcul de l'itinéraire vers ${name} a échoué.`;
+    if (positionState === "refused") return "Localisation refusée : la carte montre la destination seule.";
+    if (positionState === "unsupported") return "Géolocalisation indisponible sur cet appareil.";
+    if (routeState === "loading") return "Calcul de l'itinéraire en cours.";
+    return "Recherche de votre position en cours.";
+  }, [routeState, positionState, summary, name]);
 
   if (!valid) {
     return (
@@ -176,7 +213,12 @@ export function RoutePanel({ lat, lng, name, address, mapClassName, className }:
         ref={containerRef}
         role="application"
         aria-label={`Carte de l'itinéraire vers ${name}`}
-        className={cn("w-full overflow-hidden rounded-xl border border-border", mapClassName ?? "h-[45vh] min-h-[240px]")}
+        className={cn(
+          "w-full overflow-hidden rounded-xl border border-border",
+          // Sur téléphone la carte reste bornée : la distance, la durée et les
+          // étapes doivent rester visibles sans faire défiler l'écran.
+          mapClassName ?? "h-[34vh] min-h-[190px] max-h-[300px] sm:h-[45vh] sm:max-h-none"
+        )}
       />
 
       <div className="flex items-center gap-2">
@@ -196,33 +238,59 @@ export function RoutePanel({ lat, lng, name, address, mapClassName, className }:
         ))}
       </div>
 
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          {loading ? (
-            <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Calcul de l'itinéraire…
-            </p>
-          ) : summary ? (
-            <p className="text-sm">
-              <strong className="font-display text-lg">{summary.min} min</strong>{" "}
-              <span className="text-muted-foreground">· {summary.km.toFixed(1)} km</span>
-            </p>
-          ) : (
-            <p className="text-sm text-muted-foreground">{geoError ?? "Localisation en cours…"}</p>
-          )}
+          <p className="sr-only" role="status" aria-live="polite">
+            {annonce}
+          </p>
+          <div aria-hidden="true">
+            {routeState === "ready" && summary ? (
+              <p className="text-sm">
+                <strong className="font-display text-lg">{summary.min} min</strong>{" "}
+                <span className="text-muted-foreground">· {summary.km.toFixed(1)} km</span>
+              </p>
+            ) : routeState === "error" ? (
+              <p className="text-sm text-destructive">Itinéraire indisponible pour le moment.</p>
+            ) : positionState === "refused" ? (
+              <p className="text-sm text-muted-foreground">
+                Sans votre position, seule la destination est affichée.
+              </p>
+            ) : positionState === "unsupported" ? (
+              <p className="text-sm text-muted-foreground">Géolocalisation indisponible sur cet appareil.</p>
+            ) : (
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {routeState === "loading" ? "Calcul de l'itinéraire…" : "Localisation en cours…"}
+              </p>
+            )}
+          </div>
           {address && <p className="truncate text-xs text-muted-foreground">{address}</p>}
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          className="shrink-0"
-          onClick={() => setShowSteps((v) => !v)}
-          aria-expanded={showSteps}
-          disabled={steps.length === 0}
-        >
-          <Navigation className="mr-1.5 h-4 w-4" aria-hidden="true" />
-          {showSteps ? "Masquer" : "Étapes"}
-        </Button>
+
+        <div className="flex shrink-0 items-center gap-2">
+          {routeState === "error" && (
+            <Button size="sm" variant="outline" onClick={() => setAttempt((n) => n + 1)}>
+              <RotateCcw className="mr-1.5 h-4 w-4" aria-hidden="true" />
+              Réessayer
+            </Button>
+          )}
+          {(positionState === "refused" || positionState === "unsupported") && (
+            <Button size="sm" variant="outline" onClick={demanderPosition}>
+              <LocateFixed className="mr-1.5 h-4 w-4" aria-hidden="true" />
+              Me localiser
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowSteps((v) => !v)}
+            aria-expanded={showSteps}
+            disabled={steps.length === 0}
+          >
+            <Navigation className="mr-1.5 h-4 w-4" aria-hidden="true" />
+            {showSteps ? "Masquer" : "Étapes"}
+          </Button>
+        </div>
       </div>
 
       {showSteps && (
@@ -247,6 +315,7 @@ export function RoutePanel({ lat, lng, name, address, mapClassName, className }:
               href={l.href}
               target="_blank"
               rel="noreferrer"
+              aria-label={`${l.label}, ouverture dans une application externe`}
               className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
             >
               {l.label} <ExternalLink className="h-3 w-3" aria-hidden="true" />
