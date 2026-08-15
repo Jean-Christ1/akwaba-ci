@@ -286,7 +286,7 @@ export default function ProfilePage() {
         <aside className="akw-card p-6 h-fit">
           <Logo />
           <p className="akw-prose mt-4 text-sm">
-            Akwaba est votre compagnon de voyage en Côte d'Ivoire. Tous nos lieux sont sélectionnés
+            Akwaba fait vos courses par un shopper vérifié, et vous fait découvrir la Côte d'Ivoire. Nos lieux sont sélectionnés
             et vérifiés par une équipe locale.
           </p>
           <Link to="/" className="mt-5 inline-block text-sm font-semibold text-primary hover:underline">
