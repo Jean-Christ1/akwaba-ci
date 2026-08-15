@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { StyleSpecification } from "maplibre-gl";
 import maplibregl, { Map as MLMap, Marker } from "maplibre-gl";
 import { Link } from "react-router-dom";
-import { Locate, X, MapPin } from "lucide-react";
+import { Locate, X, MapPin, Navigation } from "lucide-react";
+import { RouteDialog } from "@/shared/ui/RouteDialog";
 import { usePlaces } from "@/modules/places/application/usePlaces";
 import type { Place } from "@/modules/places/domain/types";
 import { PlaceCard } from "@/modules/places/ui/PlaceCard";
@@ -116,12 +117,30 @@ export default function MapPage() {
               <X className="h-4 w-4" />
             </button>
             <PlaceCard place={selected} variant="compact" />
-            <Link
-              to={`/lieu/${selected.slug}`}
-              className="mt-2 flex w-full items-center justify-center rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
-            >
-              Voir la fiche complète
-            </Link>
+            {/* Depuis la carte, le geste attendu est d'y aller : l'itinéraire
+                se calcule ici même, sans bascule vers une autre application. */}
+            <div className="mt-2 flex gap-2">
+              <Link
+                to={`/lieu/${selected.slug}`}
+                className="flex flex-1 items-center justify-center rounded-full border border-border bg-background px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-muted"
+              >
+                Voir la fiche
+              </Link>
+              <RouteDialog
+                lat={selected.coords.lat}
+                lng={selected.coords.lng}
+                name={selected.name}
+                address={selected.address}
+              >
+                <button
+                  type="button"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
+                >
+                  <Navigation className="h-4 w-4" aria-hidden="true" />
+                  Itinéraire
+                </button>
+              </RouteDialog>
+            </div>
           </div>
         </div>
       )}

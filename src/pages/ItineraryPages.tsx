@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Clock, MapPin } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Navigation } from "lucide-react";
+import { RouteDialog } from "@/shared/ui/RouteDialog";
 import {
   ITINERARIES,
   getItineraryBySlug,
@@ -105,6 +106,22 @@ export function ItineraryDetailPage() {
                       <MapPin className="h-3 w-3" /> {step.transportHint}
                     </p>
                   )}
+                  {/* Se rendre à l'étape sans quitter le parcours : le fil du
+                      déroulé reste sous les yeux au retour. */}
+                  <RouteDialog
+                    lat={place.coords.lat}
+                    lng={place.coords.lng}
+                    name={place.name}
+                    address={place.address}
+                  >
+                    <button
+                      type="button"
+                      className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-border px-4 text-xs font-semibold transition-colors hover:bg-muted"
+                    >
+                      <Navigation className="h-3.5 w-3.5" aria-hidden="true" />
+                      Itinéraire vers cette étape
+                    </button>
+                  </RouteDialog>
                   {step.notes && <p className="text-sm text-muted-foreground italic">« {step.notes} »</p>}
                 </div>
               </li>

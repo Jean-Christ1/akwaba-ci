@@ -8,6 +8,8 @@ import { PlaceCard } from "@/modules/places/ui/PlaceCard";
 import { ItineraryCard } from "@/modules/places/ui/ItineraryCard";
 import { CategoryChip, SectionHeader } from "@/shared/ui/sections";
 import { HorizontalRail } from "@/shared/ui/HorizontalRail";
+import { OtherServicesSection } from "@/shared/ui/OtherServicesSection";
+import { ShopperSpotlight } from "@/modules/errands/ui/ShopperSpotlight";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
 const CATEGORIES = [
@@ -38,7 +40,7 @@ export default function HomePage() {
 
   return (
     <div>
-      {/* HERO — compact, sub-fold visible */}
+      {/* HERO - compact, sub-fold visible */}
       <section className="relative overflow-hidden">
         <div className="relative h-[62vh] min-h-[440px] max-h-[640px] w-full">
           <img
@@ -79,6 +81,12 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* SHOPPER - service principal, placé avant toute section de découverte */}
+      <ShopperSpotlight />
+
+      {/* AUTRES SERVICES - index sobre des verticales de découverte */}
+      <OtherServicesSection />
 
       {/* CATÉGORIES */}
       <section className="border-b border-border/60 bg-background py-5">
@@ -196,7 +204,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* PROMESSE — compact */}
+      {/* PROMESSE - compact */}
       <section className="border-t border-border bg-background py-10 sm:py-14">
         <div className="akw-container max-w-3xl text-center">
           <Sparkles className="mx-auto h-5 w-5 text-accent" />
