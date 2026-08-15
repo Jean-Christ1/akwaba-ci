@@ -76,7 +76,7 @@ export function ProofUpload({
       p_errand_id: errandId,
       p_kind: kind,
       p_path: path,
-      p_amount: amount ?? null,
+      p_amount: amount ?? undefined,
     });
 
     setBusy(false);

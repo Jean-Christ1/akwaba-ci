@@ -104,9 +104,9 @@ export function ErrandItemList({ errandId, isRunner, isCustomer, figee }: Errand
     const { error } = await supabase.rpc("errand_item_report", {
       p_item_id: article.id,
       p_state: etat,
-      p_label: etat === "substitute" ? saisie.label.trim() : null,
-      p_price: etat === "substitute" ? Number(saisie.prix) || 0 : null,
-      p_note: null,
+      p_label: etat === "substitute" ? saisie.label.trim() : undefined,
+      p_price: etat === "substitute" ? Number(saisie.prix) || 0 : undefined,
+      p_note: undefined,
     });
     setEnCours(null);
 
