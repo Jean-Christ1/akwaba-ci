@@ -223,6 +223,33 @@ try {
   })
 
   // --- La mission se déroule ------------------------------------------------
+  await refus(
+    'Une course deja attribuee ne peut plus etre acceptee',
+    async () => {
+      // Un second shopper propose, puis le client tente d'accepter cette
+      // seconde offre : la course a deja son shopper. Ce cas se produit
+      // reellement quand deux offres arrivent presque en meme temps et que le
+      // client clique deux fois. Le refus doit etre metier et lisible, non un
+      // interblocage de la base.
+      await redevenirProprietaire()
+      const autre = await creerCompte('shopper-concurrent@example.invalid')
+      await c.query(
+        `INSERT INTO public.runner_profiles (user_id, full_name, phone, city, vehicle, status)
+         VALUES ($1, 'Second shopper', '+2250000001', 'Abidjan', 'moto', 'approved')`,
+        [autre]
+      )
+      await devenir(autre)
+      const offre2 = (await c.query(
+        `INSERT INTO public.errand_offers (errand_id, runner_id, price, eta_minutes)
+         VALUES ($1, $2, 2600, 80) RETURNING id`,
+        [errandId, autre]
+      )).rows[0].id
+
+      await devenir(CLIENT)
+      return c.query('SELECT public.errand_accept_offer($1)', [offre2])
+    }
+  )
+
   await pas('Le shopper commence les courses', async () => {
     await devenir(SHOPPER)
     await c.query('SELECT public.errand_advance_status($1, $2)', [errandId, 'shopping'])
