@@ -169,6 +169,57 @@ export type Database = {
           },
         ]
       }
+      errand_schedules: {
+        Row: {
+          created_at: string
+          customer_id: string
+          day_of_month: number | null
+          day_of_week: number | null
+          hour_of_day: number
+          id: string
+          is_active: boolean
+          label: string
+          last_run_at: string | null
+          next_run_at: string
+          rhythm: Database["public"]["Enums"]["schedule_rhythm"]
+          runs_count: number
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          day_of_month?: number | null
+          day_of_week?: number | null
+          hour_of_day?: number
+          id?: string
+          is_active?: boolean
+          label: string
+          last_run_at?: string | null
+          next_run_at: string
+          rhythm: Database["public"]["Enums"]["schedule_rhythm"]
+          runs_count?: number
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          day_of_month?: number | null
+          day_of_week?: number | null
+          hour_of_day?: number
+          id?: string
+          is_active?: boolean
+          label?: string
+          last_run_at?: string | null
+          next_run_at?: string
+          rhythm?: Database["public"]["Enums"]["schedule_rhythm"]
+          runs_count?: number
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       errand_items: {
         Row: {
           created_at: string
@@ -2645,6 +2696,21 @@ export type Database = {
         Args: { p_errand_id: string }
         Returns: Database["public"]["Tables"]["errands"]["Row"]
       }
+      errand_schedule_create: {
+        Args: {
+          p_errand_id: string
+          p_label: string
+          p_rhythm: string
+          p_day_of_week?: number | null
+          p_day_of_month?: number | null
+          p_hour?: number | null
+        }
+        Returns: Database["public"]["Tables"]["errand_schedules"]["Row"]
+      }
+      errand_schedule_set_active: {
+        Args: { p_schedule_id: string; p_active: boolean }
+        Returns: Database["public"]["Tables"]["errand_schedules"]["Row"]
+      }
       errand_create: {
         Args: {
           p_budget_estimate: number
@@ -3482,6 +3548,7 @@ export type Database = {
       wallet_release_matured_earnings: { Args: never; Returns: number }
     }
     Enums: {
+      schedule_rhythm: "weekly" | "biweekly" | "monthly"
       substitution_policy: "never" | "ask" | "similar"
       app_role: "admin" | "moderator" | "partner" | "user"
       dropoff_mode: "runner_delivers" | "third_party" | "customer_pickup"
