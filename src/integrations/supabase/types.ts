@@ -1604,6 +1604,38 @@ export type Database = {
           },
         ]
       }
+      errand_operations: {
+        Row: {
+          accepted_at: string | null
+          alerte: string | null
+          budget_estimate: number | null
+          budget_overrun_pending: boolean | null
+          category: Database["public"]["Enums"]["errand_category"] | null
+          city: string | null
+          client_nom: string | null
+          client_telephone: string | null
+          commission_amount: number | null
+          created_at: string | null
+          customer_id: string | null
+          delivered_at: string | null
+          handover_locked_at: string | null
+          heures_depuis_creation: number | null
+          id: string | null
+          offres_en_attente: number | null
+          payment_status: Database["public"]["Enums"]["pay_status"] | null
+          remplacements_en_attente: number | null
+          runner_id: string | null
+          service_fee: number | null
+          shopper_nom: string | null
+          shopper_telephone: string | null
+          status: Database["public"]["Enums"]["errand_status"] | null
+          substitution_policy: Database["public"]["Enums"]["substitution_policy"] | null
+          title: string | null
+          total_amount: number | null
+          zone: string | null
+        }
+        Relationships: []
+      }
       errand_performance: {
         Row: {
           actual_distance_km: number | null
@@ -2605,6 +2637,10 @@ export type Database = {
         }
         Returns: Database["public"]["Tables"]["errands"]["Row"]
       }
+      errand_alert_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: { alerte: string; nombre: number }[]
+      }
       errand_create: {
         Args: {
           p_budget_estimate: number
@@ -3442,6 +3478,7 @@ export type Database = {
       wallet_release_matured_earnings: { Args: never; Returns: number }
     }
     Enums: {
+      substitution_policy: "never" | "ask" | "similar"
       app_role: "admin" | "moderator" | "partner" | "user"
       dropoff_mode: "runner_delivers" | "third_party" | "customer_pickup"
       errand_category:
