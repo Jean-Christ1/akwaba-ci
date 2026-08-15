@@ -70,6 +70,9 @@ export default function NewErrandPage() {
   const [budget, setBudget] = useState("");
   const [notes, setNotes] = useState("");
   const [contact, setContact] = useState("chat");
+  // Consigne de remplacement, donnee d'avance plutot qu'en pleine course : le
+  // client est rarement disponible au moment ou le shopper est devant le rayon.
+  const [substitution, setSubstitution] = useState<"never" | "ask" | "similar">("ask");
   const [scheduled, setScheduled] = useState("");
   const [payment, setPayment] = useState<PayMethod>("wave");
   const [saving, setSaving] = useState(false);
@@ -201,6 +204,18 @@ export default function NewErrandPage() {
       p_lng: coords?.lng ?? undefined,
     });
     setSaving(false);
+    // La consigne est posee juste apres la creation : errand_create garde sa
+    // signature, ce qui evite de casser tout appel existant.
+    if (!error && data) {
+      const creee = data as { id?: string } | null;
+      if (creee?.id) {
+        await supabase.rpc("errand_set_substitution_policy", {
+          p_errand_id: creee.id,
+          p_policy: substitution,
+        });
+      }
+    }
+
     if (error) {
       toast.error(error.message);
       return;
@@ -484,6 +499,27 @@ export default function NewErrandPage() {
                     <SelectItem value="video">Visio (choix au marché)</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="sm:col-span-2">
+                <Label>Si un article manque</Label>
+                <Select
+                  value={substitution}
+                  onValueChange={(v) => setSubstitution(v as typeof substitution)}
+                >
+                  <SelectTrigger className="min-h-[44px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ask">Me demander avant de remplacer</SelectItem>
+                    <SelectItem value="similar">Prendre un équivalent, à prix voisin</SelectItem>
+                    <SelectItem value="never">Ne rien remplacer, laisser de côté</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {substitution === "never"
+                    ? "Le shopper marquera l'article introuvable sans rien acheter d'autre."
+                    : substitution === "similar"
+                      ? "Un équivalent nettement plus cher vous sera quand même soumis."
+                      : "Vous validez chaque remplacement, article par article."}
+                </p>
               </div>
             </div>
           </section>

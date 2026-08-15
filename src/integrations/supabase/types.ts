@@ -2597,6 +2597,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      errand_set_substitution_policy: {
+        Args: {
+          p_errand_id: string
+          p_policy: string
+          p_tolerance?: number | null
+        }
+        Returns: Database["public"]["Tables"]["errands"]["Row"]
+      }
       errand_create: {
         Args: {
           p_budget_estimate: number
