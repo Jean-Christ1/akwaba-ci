@@ -108,7 +108,7 @@ export default function DisputesPage() {
     const { error } = await supabase.rpc("errand_resolve_dispute", {
       p_errand_id: litige.id,
       p_issue: issue,
-      p_note: notes[litige.id]?.trim() || null,
+      p_note: notes[litige.id]?.trim() || undefined,
     });
     setBusy(null);
 

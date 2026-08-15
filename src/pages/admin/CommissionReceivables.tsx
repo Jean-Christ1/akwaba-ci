@@ -62,7 +62,7 @@ export function CommissionReceivables() {
     const { error } = await supabase.rpc("commission_settlement_record", {
       p_runner_id: ligne.runner_id,
       p_amount: saisi,
-      p_reference: references[ligne.runner_id]?.trim() || null,
+      p_reference: references[ligne.runner_id]?.trim() || undefined,
     });
     setEnCours(null);
     if (error) {

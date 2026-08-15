@@ -101,8 +101,8 @@ export default function PayoutsPage() {
     const { error } = await supabase.rpc("payout_request_settle", {
       p_request_id: row.id,
       p_status: status,
-      p_reference: (reference[row.id] ?? "").trim() || null,
-      p_note: null,
+      p_reference: (reference[row.id] ?? "").trim() || undefined,
+      p_note: undefined,
     });
     setBusy(null);
     if (error) return toast.error(error.message);
