@@ -139,6 +139,20 @@ export function ShopperSpotlight() {
           ))}
         </ul>
       </div>
+
+      {/* Le hub des services porte le detail : marchands, artisans, moyens de
+          paiement. L'accueil reste la porte courte, sans quoi les deux ecrans
+          racontent la meme chose et le visiteur ne sait plus lequel ouvrir. */}
+      <div className="akw-container mt-6 text-center">
+        <Link
+          to="/services"
+          className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+        >
+          Tous les services Akwaba
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
+      </div>
+
     </section>
   );
 }
