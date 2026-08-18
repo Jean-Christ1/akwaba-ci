@@ -49,7 +49,7 @@ export default function HomePage() {
             width={1920}
             height={1080}
             className="absolute inset-0 h-full w-full object-cover"
-            fetchPriority="high"
+            {...{ fetchpriority: "high" }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-editorial/20 via-editorial/40 to-editorial" />
 
