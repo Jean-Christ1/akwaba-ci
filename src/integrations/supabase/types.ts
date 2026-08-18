@@ -150,6 +150,13 @@ export type Database = {
             foreignKeyName: "errand_events_errand_id_fkey"
             columns: ["errand_id"]
             isOneToOne: false
+            referencedRelation: "errand_operations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "errand_events_errand_id_fkey"
+            columns: ["errand_id"]
+            isOneToOne: false
             referencedRelation: "errand_performance"
             referencedColumns: ["id"]
           },
@@ -168,57 +175,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      errand_schedules: {
-        Row: {
-          created_at: string
-          customer_id: string
-          day_of_month: number | null
-          day_of_week: number | null
-          hour_of_day: number
-          id: string
-          is_active: boolean
-          label: string
-          last_run_at: string | null
-          next_run_at: string
-          rhythm: Database["public"]["Enums"]["schedule_rhythm"]
-          runs_count: number
-          template_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          customer_id: string
-          day_of_month?: number | null
-          day_of_week?: number | null
-          hour_of_day?: number
-          id?: string
-          is_active?: boolean
-          label: string
-          last_run_at?: string | null
-          next_run_at: string
-          rhythm: Database["public"]["Enums"]["schedule_rhythm"]
-          runs_count?: number
-          template_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          customer_id?: string
-          day_of_month?: number | null
-          day_of_week?: number | null
-          hour_of_day?: number
-          id?: string
-          is_active?: boolean
-          label?: string
-          last_run_at?: string | null
-          next_run_at?: string
-          rhythm?: Database["public"]["Enums"]["schedule_rhythm"]
-          runs_count?: number
-          template_id?: string | null
-          updated_at?: string
-        }
-        Relationships: []
       }
       errand_items: {
         Row: {
@@ -272,6 +228,13 @@ export type Database = {
             columns: ["errand_id"]
             isOneToOne: false
             referencedRelation: "errand_market_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "errand_items_errand_id_fkey"
+            columns: ["errand_id"]
+            isOneToOne: false
+            referencedRelation: "errand_operations"
             referencedColumns: ["id"]
           },
           {
@@ -334,6 +297,13 @@ export type Database = {
             foreignKeyName: "errand_messages_errand_id_fkey"
             columns: ["errand_id"]
             isOneToOne: false
+            referencedRelation: "errand_operations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "errand_messages_errand_id_fkey"
+            columns: ["errand_id"]
+            isOneToOne: false
             referencedRelation: "errand_performance"
             referencedColumns: ["id"]
           },
@@ -390,6 +360,13 @@ export type Database = {
             columns: ["errand_id"]
             isOneToOne: false
             referencedRelation: "errand_market_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "errand_offers_errand_id_fkey"
+            columns: ["errand_id"]
+            isOneToOne: false
+            referencedRelation: "errand_operations"
             referencedColumns: ["id"]
           },
           {
@@ -467,6 +444,13 @@ export type Database = {
             foreignKeyName: "errand_payments_errand_id_fkey"
             columns: ["errand_id"]
             isOneToOne: false
+            referencedRelation: "errand_operations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "errand_payments_errand_id_fkey"
+            columns: ["errand_id"]
+            isOneToOne: false
             referencedRelation: "errand_performance"
             referencedColumns: ["id"]
           },
@@ -480,6 +464,93 @@ export type Database = {
           {
             foreignKeyName: "errand_payments_errand_id_fkey"
             columns: ["errand_id"]
+            isOneToOne: false
+            referencedRelation: "open_errands_feed"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      errand_schedules: {
+        Row: {
+          created_at: string
+          customer_id: string
+          day_of_month: number | null
+          day_of_week: number | null
+          hour_of_day: number
+          id: string
+          is_active: boolean
+          label: string
+          last_run_at: string | null
+          next_run_at: string
+          rhythm: Database["public"]["Enums"]["schedule_rhythm"]
+          runs_count: number
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          day_of_month?: number | null
+          day_of_week?: number | null
+          hour_of_day?: number
+          id?: string
+          is_active?: boolean
+          label: string
+          last_run_at?: string | null
+          next_run_at: string
+          rhythm: Database["public"]["Enums"]["schedule_rhythm"]
+          runs_count?: number
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          day_of_month?: number | null
+          day_of_week?: number | null
+          hour_of_day?: number
+          id?: string
+          is_active?: boolean
+          label?: string
+          last_run_at?: string | null
+          next_run_at?: string
+          rhythm?: Database["public"]["Enums"]["schedule_rhythm"]
+          runs_count?: number
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "errand_schedules_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "errand_market_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "errand_schedules_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "errand_operations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "errand_schedules_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "errand_performance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "errand_schedules_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "errands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "errand_schedules_template_id_fkey"
+            columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "open_errands_feed"
             referencedColumns: ["id"]
@@ -520,6 +591,13 @@ export type Database = {
             columns: ["errand_id"]
             isOneToOne: false
             referencedRelation: "errand_market_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "errand_tracking_errand_id_fkey"
+            columns: ["errand_id"]
+            isOneToOne: false
+            referencedRelation: "errand_operations"
             referencedColumns: ["id"]
           },
           {
@@ -602,6 +680,8 @@ export type Database = {
           shopping_at: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["errand_status"]
+          substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct: number
           third_party_contact: string | null
           tip_amount: number
           title: string
@@ -668,6 +748,8 @@ export type Database = {
           shopping_at?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["errand_status"]
+          substitution_policy?: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct?: number
           third_party_contact?: string | null
           tip_amount?: number
           title: string
@@ -734,6 +816,8 @@ export type Database = {
           shopping_at?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["errand_status"]
+          substitution_policy?: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct?: number
           third_party_contact?: string | null
           tip_amount?: number
           title?: string
@@ -868,6 +952,13 @@ export type Database = {
             columns: ["errand_id"]
             isOneToOne: false
             referencedRelation: "errand_market_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_outbox_errand_id_fkey"
+            columns: ["errand_id"]
+            isOneToOne: false
+            referencedRelation: "errand_operations"
             referencedColumns: ["id"]
           },
           {
@@ -1487,6 +1578,13 @@ export type Database = {
             foreignKeyName: "wallet_entries_errand_id_fkey"
             columns: ["errand_id"]
             isOneToOne: false
+            referencedRelation: "errand_operations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_entries_errand_id_fkey"
+            columns: ["errand_id"]
+            isOneToOne: false
             referencedRelation: "errand_performance"
             referencedColumns: ["id"]
           },
@@ -1593,6 +1691,40 @@ export type Database = {
         }
         Relationships: []
       }
+      errand_operations: {
+        Row: {
+          accepted_at: string | null
+          alerte: string | null
+          budget_estimate: number | null
+          budget_overrun_pending: boolean | null
+          category: Database["public"]["Enums"]["errand_category"] | null
+          city: string | null
+          client_nom: string | null
+          client_telephone: string | null
+          commission_amount: number | null
+          created_at: string | null
+          customer_id: string | null
+          delivered_at: string | null
+          handover_locked_at: string | null
+          heures_depuis_creation: number | null
+          id: string | null
+          offres_en_attente: number | null
+          payment_status: Database["public"]["Enums"]["pay_status"] | null
+          remplacements_en_attente: number | null
+          runner_id: string | null
+          service_fee: number | null
+          shopper_nom: string | null
+          shopper_telephone: string | null
+          status: Database["public"]["Enums"]["errand_status"] | null
+          substitution_policy:
+            | Database["public"]["Enums"]["substitution_policy"]
+            | null
+          title: string | null
+          total_amount: number | null
+          zone: string | null
+        }
+        Relationships: []
+      }
       errand_payment_history: {
         Row: {
           amount: number | null
@@ -1636,6 +1768,13 @@ export type Database = {
             foreignKeyName: "errand_payments_errand_id_fkey"
             columns: ["errand_id"]
             isOneToOne: false
+            referencedRelation: "errand_operations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "errand_payments_errand_id_fkey"
+            columns: ["errand_id"]
+            isOneToOne: false
             referencedRelation: "errand_performance"
             referencedColumns: ["id"]
           },
@@ -1654,38 +1793,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      errand_operations: {
-        Row: {
-          accepted_at: string | null
-          alerte: string | null
-          budget_estimate: number | null
-          budget_overrun_pending: boolean | null
-          category: Database["public"]["Enums"]["errand_category"] | null
-          city: string | null
-          client_nom: string | null
-          client_telephone: string | null
-          commission_amount: number | null
-          created_at: string | null
-          customer_id: string | null
-          delivered_at: string | null
-          handover_locked_at: string | null
-          heures_depuis_creation: number | null
-          id: string | null
-          offres_en_attente: number | null
-          payment_status: Database["public"]["Enums"]["pay_status"] | null
-          remplacements_en_attente: number | null
-          runner_id: string | null
-          service_fee: number | null
-          shopper_nom: string | null
-          shopper_telephone: string | null
-          status: Database["public"]["Enums"]["errand_status"] | null
-          substitution_policy: Database["public"]["Enums"]["substitution_policy"] | null
-          title: string | null
-          total_amount: number | null
-          zone: string | null
-        }
-        Relationships: []
       }
       errand_performance: {
         Row: {
@@ -2089,6 +2196,8 @@ export type Database = {
           shopping_at: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["errand_status"]
+          substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct: number
           third_party_contact: string | null
           tip_amount: number
           title: string
@@ -2164,6 +2273,8 @@ export type Database = {
           shopping_at: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["errand_status"]
+          substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct: number
           third_party_contact: string | null
           tip_amount: number
           title: string
@@ -2243,6 +2354,8 @@ export type Database = {
           shopping_at: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["errand_status"]
+          substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct: number
           third_party_contact: string | null
           tip_amount: number
           title: string
@@ -2259,6 +2372,13 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      errand_alert_counts: {
+        Args: never
+        Returns: {
+          alerte: string
+          nombre: number
+        }[]
       }
       errand_approve_budget_overrun: {
         Args: { p_errand_id: string }
@@ -2318,6 +2438,8 @@ export type Database = {
           shopping_at: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["errand_status"]
+          substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct: number
           third_party_contact: string | null
           tip_amount: number
           title: string
@@ -2398,6 +2520,8 @@ export type Database = {
           shopping_at: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["errand_status"]
+          substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct: number
           third_party_contact: string | null
           tip_amount: number
           title: string
@@ -2473,6 +2597,8 @@ export type Database = {
           shopping_at: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["errand_status"]
+          substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct: number
           third_party_contact: string | null
           tip_amount: number
           title: string
@@ -2588,6 +2714,8 @@ export type Database = {
           shopping_at: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["errand_status"]
+          substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct: number
           third_party_contact: string | null
           tip_amount: number
           title: string
@@ -2663,6 +2791,8 @@ export type Database = {
           shopping_at: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["errand_status"]
+          substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct: number
           third_party_contact: string | null
           tip_amount: number
           title: string
@@ -2679,37 +2809,6 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
-      }
-      errand_set_substitution_policy: {
-        Args: {
-          p_errand_id: string
-          p_policy: string
-          p_tolerance?: number | null
-        }
-        Returns: Database["public"]["Tables"]["errands"]["Row"]
-      }
-      errand_alert_counts: {
-        Args: Record<PropertyKey, never>
-        Returns: { alerte: string; nombre: number }[]
-      }
-      errand_duplicate: {
-        Args: { p_errand_id: string }
-        Returns: Database["public"]["Tables"]["errands"]["Row"]
-      }
-      errand_schedule_create: {
-        Args: {
-          p_errand_id: string
-          p_label: string
-          p_rhythm: string
-          p_day_of_week?: number | null
-          p_day_of_month?: number | null
-          p_hour?: number | null
-        }
-        Returns: Database["public"]["Tables"]["errand_schedules"]["Row"]
-      }
-      errand_schedule_set_active: {
-        Args: { p_schedule_id: string; p_active: boolean }
-        Returns: Database["public"]["Tables"]["errand_schedules"]["Row"]
       }
       errand_create: {
         Args: {
@@ -2791,6 +2890,8 @@ export type Database = {
           shopping_at: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["errand_status"]
+          substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct: number
           third_party_contact: string | null
           tip_amount: number
           title: string
@@ -2866,6 +2967,85 @@ export type Database = {
           shopping_at: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["errand_status"]
+          substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct: number
+          third_party_contact: string | null
+          tip_amount: number
+          title: string
+          total_amount: number
+          updated_at: string
+          urgency: string
+          vehicle_required: string
+          volume_size: string
+          zone: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "errands"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      errand_duplicate: {
+        Args: { p_errand_id: string }
+        Returns: {
+          accepted_at: string | null
+          actual_distance_km: number | null
+          actual_minutes: number | null
+          advance_amount: number
+          advance_confirmed_at: string | null
+          advance_declared_amount: number
+          advance_declared_at: string | null
+          advance_proof_url: string | null
+          balance_due: number
+          budget_approved_amount: number | null
+          budget_approved_at: string | null
+          budget_estimate: number
+          budget_overrun_pending: boolean
+          category: Database["public"]["Enums"]["errand_category"]
+          city: string
+          commission_amount: number
+          commission_rate: number
+          commission_rule_id: string | null
+          created_at: string
+          customer_id: string | null
+          delivered_at: string | null
+          delivering_at: string | null
+          delivery_address: string
+          delivery_fee: number
+          distance_km: number
+          dropoff_mode: Database["public"]["Enums"]["dropoff_mode"]
+          estimated_minutes: number
+          extra_distance_km: number
+          fund_mode: Database["public"]["Enums"]["fund_mode"]
+          handover_attempts: number
+          handover_code: string | null
+          handover_locked_at: string | null
+          handover_verified_at: string | null
+          id: string
+          items: Json
+          items_total: number
+          lat: number | null
+          lng: number | null
+          notes: string | null
+          overrun_approved_at: string | null
+          overrun_fee: number
+          overtime_minutes: number
+          payment_method: Database["public"]["Enums"]["pay_method"]
+          payment_status: Database["public"]["Enums"]["pay_status"]
+          preferred_contact: string
+          rating: number | null
+          receipt_url: string | null
+          review: string | null
+          runner_id: string | null
+          runner_payout: number
+          scheduled_for: string | null
+          service_fee: number
+          shopping_at: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["errand_status"]
+          substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct: number
           third_party_contact: string | null
           tip_amount: number
           title: string
@@ -2997,6 +3177,8 @@ export type Database = {
           shopping_at: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["errand_status"]
+          substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct: number
           third_party_contact: string | null
           tip_amount: number
           title: string
@@ -3072,6 +3254,8 @@ export type Database = {
           shopping_at: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["errand_status"]
+          substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct: number
           third_party_contact: string | null
           tip_amount: number
           title: string
@@ -3147,6 +3331,8 @@ export type Database = {
           shopping_at: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["errand_status"]
+          substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct: number
           third_party_contact: string | null
           tip_amount: number
           title: string
@@ -3236,6 +3422,150 @@ export type Database = {
           shopping_at: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["errand_status"]
+          substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct: number
+          third_party_contact: string | null
+          tip_amount: number
+          title: string
+          total_amount: number
+          updated_at: string
+          urgency: string
+          vehicle_required: string
+          volume_size: string
+          zone: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "errands"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      errand_schedule_create: {
+        Args: {
+          p_day_of_month?: number
+          p_day_of_week?: number
+          p_errand_id: string
+          p_hour?: number
+          p_label: string
+          p_rhythm: string
+        }
+        Returns: {
+          created_at: string
+          customer_id: string
+          day_of_month: number | null
+          day_of_week: number | null
+          hour_of_day: number
+          id: string
+          is_active: boolean
+          label: string
+          last_run_at: string | null
+          next_run_at: string
+          rhythm: Database["public"]["Enums"]["schedule_rhythm"]
+          runs_count: number
+          template_id: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "errand_schedules"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      errand_schedule_set_active: {
+        Args: { p_active: boolean; p_schedule_id: string }
+        Returns: {
+          created_at: string
+          customer_id: string
+          day_of_month: number | null
+          day_of_week: number | null
+          hour_of_day: number
+          id: string
+          is_active: boolean
+          label: string
+          last_run_at: string | null
+          next_run_at: string
+          rhythm: Database["public"]["Enums"]["schedule_rhythm"]
+          runs_count: number
+          template_id: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "errand_schedules"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      errand_schedules_run_due: {
+        Args: { p_limit?: number }
+        Returns: {
+          errand_id: string
+          erreur: string
+          schedule_id: string
+        }[]
+      }
+      errand_set_substitution_policy: {
+        Args: { p_errand_id: string; p_policy: string; p_tolerance?: number }
+        Returns: {
+          accepted_at: string | null
+          actual_distance_km: number | null
+          actual_minutes: number | null
+          advance_amount: number
+          advance_confirmed_at: string | null
+          advance_declared_amount: number
+          advance_declared_at: string | null
+          advance_proof_url: string | null
+          balance_due: number
+          budget_approved_amount: number | null
+          budget_approved_at: string | null
+          budget_estimate: number
+          budget_overrun_pending: boolean
+          category: Database["public"]["Enums"]["errand_category"]
+          city: string
+          commission_amount: number
+          commission_rate: number
+          commission_rule_id: string | null
+          created_at: string
+          customer_id: string | null
+          delivered_at: string | null
+          delivering_at: string | null
+          delivery_address: string
+          delivery_fee: number
+          distance_km: number
+          dropoff_mode: Database["public"]["Enums"]["dropoff_mode"]
+          estimated_minutes: number
+          extra_distance_km: number
+          fund_mode: Database["public"]["Enums"]["fund_mode"]
+          handover_attempts: number
+          handover_code: string | null
+          handover_locked_at: string | null
+          handover_verified_at: string | null
+          id: string
+          items: Json
+          items_total: number
+          lat: number | null
+          lng: number | null
+          notes: string | null
+          overrun_approved_at: string | null
+          overrun_fee: number
+          overtime_minutes: number
+          payment_method: Database["public"]["Enums"]["pay_method"]
+          payment_status: Database["public"]["Enums"]["pay_status"]
+          preferred_contact: string
+          rating: number | null
+          receipt_url: string | null
+          review: string | null
+          runner_id: string | null
+          runner_payout: number
+          scheduled_for: string | null
+          service_fee: number
+          shopping_at: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["errand_status"]
+          substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct: number
           third_party_contact: string | null
           tip_amount: number
           title: string
@@ -3321,6 +3651,8 @@ export type Database = {
               shopping_at: string | null
               started_at: string | null
               status: Database["public"]["Enums"]["errand_status"]
+              substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+              substitution_price_tolerance_pct: number
               third_party_contact: string | null
               tip_amount: number
               title: string
@@ -3396,6 +3728,8 @@ export type Database = {
               shopping_at: string | null
               started_at: string | null
               status: Database["public"]["Enums"]["errand_status"]
+              substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+              substitution_price_tolerance_pct: number
               third_party_contact: string | null
               tip_amount: number
               title: string
@@ -3545,11 +3879,19 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      schedule_next_run: {
+        Args: {
+          p_day_of_month: number
+          p_day_of_week: number
+          p_depuis?: string
+          p_hour: number
+          p_rhythm: Database["public"]["Enums"]["schedule_rhythm"]
+        }
+        Returns: string
+      }
       wallet_release_matured_earnings: { Args: never; Returns: number }
     }
     Enums: {
-      schedule_rhythm: "weekly" | "biweekly" | "monthly"
-      substitution_policy: "never" | "ask" | "similar"
       app_role: "admin" | "moderator" | "partner" | "user"
       dropoff_mode: "runner_delivers" | "third_party" | "customer_pickup"
       errand_category:
@@ -3618,7 +3960,9 @@ export type Database = {
         | "culture"
         | "shopping"
       runner_status: "pending" | "approved" | "suspended" | "rejected"
+      schedule_rhythm: "weekly" | "biweekly" | "monthly"
       settlement_mode: "direct" | "escrow"
+      substitution_policy: "never" | "ask" | "similar"
       wallet_entry_kind:
         | "earning"
         | "commission"
@@ -3824,7 +4168,9 @@ export const Constants = {
         "shopping",
       ],
       runner_status: ["pending", "approved", "suspended", "rejected"],
+      schedule_rhythm: ["weekly", "biweekly", "monthly"],
       settlement_mode: ["direct", "escrow"],
+      substitution_policy: ["never", "ask", "similar"],
       wallet_entry_kind: [
         "earning",
         "commission",
