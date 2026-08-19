@@ -140,3 +140,24 @@ pour de bon.
 
 **En attente.** Application de la migration en production, et dépôt des deux
 secrets dans le coffre pour armer l'envoi des notifications.
+
+## 2026-08-19, la collecte de colis devient une catégorie, sans nouveau moteur
+
+**Décision.** La valeur `parcel` est ajoutée à l'énumération `errand_category`.
+Rien d'autre ne change : le tarif, la remise, la preuve, le litige traitent
+déjà ce cas sans distinction, et le mode « je paie tout à la livraison » cite
+explicitement le retrait de colis depuis l'origine.
+
+**Raison.** Le besoin existait sans porte d'entrée : il fallait choisir
+« Autre » et l'expliquer en texte libre, ce qui produit des demandes mal
+qualifiées et un tarif estimé sur un panier qui n'existe pas.
+
+**Ordre imposé.** L'entrée du catalogue ne peut pas être ajoutée à l'écran
+avant que la base accepte la valeur : le contrôle d'alignement des catalogues
+échouerait, et à défaut de ce contrôle la demande échouerait au moment de
+publier, après que le client a tout saisi. La migration s'applique d'abord,
+les types se régénèrent, l'écran suit.
+
+**En attente.** Application de la migration `20260819090000` en production,
+puis régénération de `src/integrations/supabase/types.ts` et ajout de
+l'entrée « Colis » au catalogue.

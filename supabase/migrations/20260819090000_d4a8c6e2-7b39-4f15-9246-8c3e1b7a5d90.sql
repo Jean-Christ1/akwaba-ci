@@ -1,0 +1,23 @@
+-- ---------------------------------------------------------------------------
+-- La collecte et le dépôt de colis.
+--
+-- Le service sait déjà faire ce déplacement : le mode de financement « je paie
+-- tout à la livraison » cite explicitement le retrait de colis, et les modes de
+-- remise couvrent la remise à un tiers comme le retrait par le client. Il
+-- manque seulement la porte d'entrée : aucune catégorie ne nomme ce besoin,
+-- donc personne ne peut le demander autrement qu'en choisissant « Autre » et en
+-- l'expliquant en texte libre.
+--
+-- Une catégorie qui ne dit pas son nom se traduit par des demandes mal
+-- qualifiées : le shopper découvre à la lecture qu'il ne s'agit pas d'un achat,
+-- et le tarif a été estimé sur un panier qui n'existe pas.
+--
+-- Cette migration ajoute la valeur à l'énumération. Elle n'ajoute rien
+-- d'autre : le reste du moteur, tarif, remise, preuve, litige, traite déjà ce
+-- cas sans distinction.
+--
+-- Une valeur d'énumération ne se retire pas : c'est un ajout définitif, et
+-- c'est pourquoi il est isolé dans sa propre migration.
+-- ---------------------------------------------------------------------------
+
+ALTER TYPE public.errand_category ADD VALUE IF NOT EXISTS 'parcel' AFTER 'electronics';
