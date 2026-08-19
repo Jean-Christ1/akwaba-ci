@@ -103,8 +103,13 @@ export function formatFcfa(value: number | null | undefined) {
 export interface InvoiceInput {
   itemsTotal: number;
   serviceFee: number;
+  /** Supplément de dépassement retenu par le serveur. Il fait partie du service. */
+  overrunFee?: number;
   deliveryFee: number;
+  /** Pourboire, intégralement pour le shopper, jamais commissionné. */
+  tipAmount?: number;
   commissionRate?: number;
+  commissionBase?: "service_fee" | "service_and_delivery";
 }
 
 /**
@@ -118,16 +123,29 @@ export interface InvoiceInput {
 export function computeInvoice({
   itemsTotal,
   serviceFee,
+  overrunFee = 0,
   deliveryFee,
+  tipAmount = 0,
   commissionRate = COMMISSION_RATE,
+  commissionBase = "service_fee",
 }: InvoiceInput) {
   const items = Math.max(0, Number(itemsTotal) || 0);
-  const service = Math.max(0, Number(serviceFee) || 0);
   const delivery = Math.max(0, Number(deliveryFee) || 0);
-  const commission = Math.round(service * commissionRate);
-  const total = items + service + delivery;
-  const runnerPayout = service - commission;
-  return { items, service, delivery, commission, total, runnerPayout, commissionRate };
+  const tip = Math.max(0, Number(tipAmount) || 0);
+  // Le dépassement est retenu par le serveur comme un supplément de service,
+  // pas comme une ligne à part : l'omettre faisait annoncer au client un total
+  // inférieur à celui que la base retenait, et lui présentait une facture qui
+  // ne tombait pas juste.
+  const overrun = Math.max(0, Number(overrunFee) || 0);
+  const service = Math.max(0, Number(serviceFee) || 0) + overrun;
+  const assiette = service + (commissionBase === "service_and_delivery" ? delivery : 0);
+  // Le serveur arrondit au centime, pas au franc.
+  const commission = Math.round(assiette * commissionRate * 100) / 100;
+  const total = items + service + delivery + tip;
+  // Le transport revient au shopper comme le service, et le pourboire lui
+  // revient en entier.
+  const runnerPayout = service + delivery - commission + tip;
+  return { items, service, overrun, delivery, tip, commission, total, runnerPayout, commissionRate };
 }
 
 export function statusTone(status: ErrandStatus) {

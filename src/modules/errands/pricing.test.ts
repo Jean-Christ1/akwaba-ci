@@ -86,8 +86,10 @@ describe("quoteErrand", () => {
 describe("computeInvoice", () => {
   it("commissionne le seul frais de service, comme le moteur serveur", () => {
     const facture = computeInvoice({ itemsTotal: 25000, serviceFee: 2000, deliveryFee: 1000 });
-    expect(facture.commission).toBe(Math.round(2000 * COMMISSION_RATE));
-    expect(facture.runnerPayout).toBe(2000 - facture.commission);
+    expect(facture.commission).toBe(Math.round(2000 * COMMISSION_RATE * 100) / 100);
+    // Le transport revient au shopper au même titre que le service : le
+    // serveur le lui rend, l'écran doit dire la même chose.
+    expect(facture.runnerPayout).toBe(2000 + 1000 - facture.commission);
   });
 
   it("n'ampute jamais l'argent des achats", () => {
@@ -119,7 +121,7 @@ describe("cohérence entre le devis et la facture", () => {
       serviceFee: quote.serviceFee,
       deliveryFee: 0,
     });
-    expect(facture.commission).toBe(Math.round(quote.serviceFee * COMMISSION_RATE));
+    expect(facture.commission).toBe(Math.round(quote.serviceFee * COMMISSION_RATE * 100) / 100);
     expect(Math.abs(facture.runnerPayout - quote.runnerPayout)).toBeLessThanOrEqual(50);
   });
 });
@@ -155,5 +157,101 @@ describe("settle", () => {
 describe("seuil de retrait", () => {
   it("fixe un minimum de retrait strictement positif", () => {
     expect(MIN_PAYOUT).toBeGreaterThan(0);
+  });
+});
+
+describe("le devis n'arrondit qu'une fois, comme le serveur", () => {
+  // Le serveur somme les composantes exactes puis arrondit au pas de
+  // cinquante francs. Arrondir chaque composante avant la somme donnait un
+  // montant différent de celui enregistré, sur un cas sur quatre.
+  it("garde les composantes exactes et n'arrondit que le total", () => {
+    // « Peu importe » : base 700, 120 FCFA/km. 2,6 km font 312, que le pas de
+    // cinquante ramenait à 300 avant la somme.
+    const quote = quoteErrand({
+      ...baseQuote,
+      vehicle: "any",
+      volume: "small",
+      urgency: "standard",
+      dropoff: "runner_delivers",
+      distanceKm: 2.6,
+      estimatedMinutes: 32,
+      itemsCount: 0,
+    });
+
+    expect(quote.distanceFee).toBeCloseTo(312, 6);
+    expect(quote.timeFee).toBeCloseTo(20, 6);
+    // 700 + 312 + 20 = 1032, arrondi une seule fois : 1050.
+    expect(quote.serviceFee).toBe(1050);
+  });
+
+  it("suit le barème en vigueur plutôt que les constantes du moteur", () => {
+    // Un exploitant qui publie un nouveau barème change le prix appliqué par
+    // le serveur. L'écran doit suivre, sinon il annonce un prix périmé.
+    const quote = quoteErrand({
+      ...baseQuote,
+      distanceKm: 0,
+      estimatedMinutes: 0,
+      itemsCount: 0,
+      minServiceFee: 3000,
+      commissionRate: 0.2,
+    });
+
+    expect(quote.serviceFee).toBe(3000);
+    expect(quote.commission).toBe(600);
+    expect(quote.runnerPayout).toBe(2400);
+  });
+});
+
+describe("la facture affichée vaut celle que le serveur enregistre", () => {
+  // errand_save_invoice retient v_service = service_fee + overrun_fee,
+  // v_total = items + v_service + livraison + pourboire, et
+  // runner_payout = v_service + livraison - commission + pourboire.
+  it("compte le dépassement dans le service et dans le total", () => {
+    const f = computeInvoice({
+      itemsTotal: 14000,
+      serviceFee: 2500,
+      overrunFee: 450,
+      deliveryFee: 0,
+      commissionRate: 0.15,
+    });
+
+    expect(f.overrun).toBe(450);
+    expect(f.service).toBe(2950);
+    expect(f.total).toBe(16950);
+  });
+
+  it("ajoute le pourboire au total et le rend entier au shopper", () => {
+    const sans = computeInvoice({ itemsTotal: 0, serviceFee: 2000, deliveryFee: 0, commissionRate: 0.15 });
+    const avec = computeInvoice({
+      itemsTotal: 0,
+      serviceFee: 2000,
+      deliveryFee: 0,
+      tipAmount: 500,
+      commissionRate: 0.15,
+    });
+
+    expect(avec.total - sans.total).toBe(500);
+    // Le pourboire n'est jamais commissionné.
+    expect(avec.commission).toBe(sans.commission);
+    expect(avec.runnerPayout - sans.runnerPayout).toBe(500);
+  });
+
+  it("rend la livraison au shopper, comme le serveur", () => {
+    const f = computeInvoice({ itemsTotal: 0, serviceFee: 2000, deliveryFee: 800, commissionRate: 0.15 });
+
+    expect(f.commission).toBe(300);
+    expect(f.runnerPayout).toBe(2500);
+  });
+
+  it("élargit l'assiette quand le barème le prévoit", () => {
+    const f = computeInvoice({
+      itemsTotal: 0,
+      serviceFee: 2000,
+      deliveryFee: 1000,
+      commissionRate: 0.15,
+      commissionBase: "service_and_delivery",
+    });
+
+    expect(f.commission).toBe(450);
   });
 });
