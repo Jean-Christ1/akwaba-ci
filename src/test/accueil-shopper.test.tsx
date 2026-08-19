@@ -82,7 +82,7 @@ describe("accueil : le Shopper est le service principal", () => {
   );
 
   it(
-    "expose les trois accès au service et des cas d'usage réels",
+    "expose les deux portes du service, sans le mode d'emploi",
     { timeout: 30000 },
     async () => {
       await afficherAccueil();
@@ -91,14 +91,18 @@ describe("accueil : le Shopper est le service principal", () => {
         "href",
         "/courses/nouvelle"
       );
-      expect(screen.getByRole("link", { name: "Comment ça marche" })).toHaveAttribute(
-        "href",
-        "/courses/comment-ca-marche"
-      );
       expect(screen.getByRole("link", { name: "Devenir shopper" })).toHaveAttribute(
         "href",
         "/courses/devenir-shopper"
       );
+
+      // Le mode d'emploi reste en ligne, atteignable par le pied de page et le
+      // hub des services, mais l'accueil ne le met plus en avant : il retardait
+      // l'action au lieu de la servir.
+      expect(
+        screen.queryByRole("link", { name: "Comment ça marche" }),
+        "l'accueil ne doit plus proposer le mode d'emploi"
+      ).toBeNull();
     }
   );
 
