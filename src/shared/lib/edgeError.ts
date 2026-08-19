@@ -22,11 +22,24 @@ const MAX_MESSAGE_LENGTH = 300;
  * dépasse la phrase : le laisser passer reviendrait à afficher la trace du
  * serveur au visiteur, ce que la correction cherche précisément à éviter.
  */
+/**
+ * Les libellés que les fonctions de bordure écrivent encore en anglais sur
+ * les cas d'autorisation. Les transmettre tels quels laisserait un visiteur
+ * francophone devant « Unauthorized », sans indication d'action.
+ */
+const TRADUCTIONS: Record<string, string> = {
+  Unauthorized: "Votre session a expiré. Reconnectez-vous, puis réessayez.",
+  Forbidden: "Votre compte n'a pas les droits nécessaires pour cette action.",
+  "Not found": "La ressource demandée est introuvable.",
+};
+
 function readableSentence(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const text = value.trim();
-  if (!text || text.length > MAX_MESSAGE_LENGTH || text.includes("\n")) return null;
-  return text;
+  if (!text || text.length > MAX_MESSAGE_LENGTH || text.includes(String.fromCharCode(10))) {
+    return null;
+  }
+  return TRADUCTIONS[text] ?? text;
 }
 
 /**
