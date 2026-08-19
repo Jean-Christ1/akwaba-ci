@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Bike, ShoppingBasket } from "lucide-react";
 
+import { useCommissionRule } from "@/modules/errands/application/useCommissionRule";
 import { formatFcfa } from "@/modules/errands/domain";
-import { MIN_PAYOUT } from "@/modules/errands/pricing";
 
 /**
  * Les deux portes d'entrée du service Shopper.
@@ -27,13 +27,18 @@ const PREUVES_CLIENT = [
   "Code de remise à 4 chiffres : vous seul clôturez la course",
 ];
 
-const PREUVES_SHOPPER = [
+/** Le seuil de retrait dépend du barème en vigueur, il est donc calculé au
+    rendu et non figé dans une constante de module. */
+const preuvesShopper = (seuilRetrait: number) => [
   "Candidature en ligne, identité vérifiée par Akwaba",
   "Vous choisissez vos missions, votre prix et votre délai",
-  `Retrait dès ${formatFcfa(MIN_PAYOUT)} vers Wave, Orange Money, MTN MoMo ou Moov`,
+  `Retrait dès ${formatFcfa(seuilRetrait)} vers Wave, Orange Money, MTN MoMo ou Moov`,
 ];
 
 export function ServiceDoors() {
+  const { rule } = useCommissionRule();
+  const preuvesDuShopper = preuvesShopper(rule.minPayout);
+
   return (
     <section aria-labelledby="akw-portes-titre" className="mt-8">
       <h2 id="akw-portes-titre" className="font-display text-xl font-semibold text-foreground">
@@ -90,7 +95,7 @@ export function ServiceDoors() {
             votre quartier arrivent dans votre espace, vous répondez à celles qui vous vont.
           </p>
           <ul className="mt-5 space-y-2 text-sm text-secondary-foreground">
-            {PREUVES_SHOPPER.map((preuve) => (
+            {preuvesDuShopper.map((preuve) => (
               <li key={preuve} className="flex gap-2">
                 <span aria-hidden="true">·</span>
                 <span className="text-pretty">{preuve}</span>

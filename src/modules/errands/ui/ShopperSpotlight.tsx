@@ -82,11 +82,13 @@ export function ShopperSpotlight() {
             La porte principale garde la couleur de marque, pleine et surélevée.
             La seconde prend la teinte accent, donc une autre famille de
             couleur : la hiérarchie se lit au premier regard sans que devenir
-            shopper ressemble à un lien de bas de bloc. */}
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            shopper ressemble à un lien de bas de bloc. Même hauteur pour les
+            deux, celle du bouton du héros, sinon la même action prendrait
+            deux tailles sur un même écran. */}
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
           <Link
             to="/courses/nouvelle"
-            className="group inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-primary px-7 text-sm font-semibold text-primary-foreground shadow-elevation-2 transition-transform duration-200 hover:-translate-y-0.5"
+            className="group inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-elevation-2 transition-transform duration-200 hover:-translate-y-0.5"
           >
             Demander une course
             <ArrowRight
@@ -96,16 +98,11 @@ export function ShopperSpotlight() {
           </Link>
           <Link
             to="/courses/devenir-shopper"
-            className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full border border-accent/40 bg-accent-soft px-7 text-sm font-semibold text-foreground shadow-elevation-1 transition-transform duration-200 hover:-translate-y-0.5"
+            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full border border-accent/40 bg-accent-soft px-6 text-sm font-semibold text-foreground shadow-elevation-1 transition-transform duration-200 hover:-translate-y-0.5"
           >
             <Bike className="h-4 w-4 text-accent" aria-hidden="true" />
             Devenir shopper
           </Link>
-          {/* Signature reprise du hub des services : elle dit en trois mots ce
-              que les deux portes ont en commun, sans répéter le titre. */}
-          <p className="text-xs font-medium text-muted-foreground sm:pl-1">
-            Simple, traçable, ivoirien.
-          </p>
         </div>
 
         {/* Réassurance : trois faits vérifiables, pas des arguments. */}
@@ -150,9 +147,9 @@ export function ShopperSpotlight() {
         </ul>
       </div>
 
-      {/* Le hub des services porte le detail : marchands, artisans, moyens de
-          paiement. L'accueil reste la porte courte, sans quoi les deux ecrans
-          racontent la meme chose et le visiteur ne sait plus lequel ouvrir. */}
+      {/* Le hub des services porte le détail : marchands, artisans, moyens de
+          paiement. L'accueil reste la porte courte, sans quoi les deux écrans
+          racontent la même chose et le visiteur ne sait plus lequel ouvrir. */}
       <div className="akw-container mt-6 text-center">
         <Link
           to="/services"
