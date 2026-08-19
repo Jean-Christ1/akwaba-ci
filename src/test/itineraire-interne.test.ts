@@ -76,8 +76,12 @@ describe("itinéraire intégré à l'application", () => {
       "src/pages/PlaceDetailPage.tsx",
       "src/pages/MapPage.tsx",
       "src/pages/ItineraryPages.tsx",
-      "src/pages/RoutePage.tsx",
     ];
+
+    // La page autonome /itineraire a été retirée : elle faisait sortir de
+    // l'écran en cours et aucun lien ne l'ouvrait. Sa réapparition ferait
+    // échouer le contrôle de route orpheline, dans santé structurelle.
+    expect(fs.existsSync(path.join(RACINE, "src/pages/RoutePage.tsx"))).toBe(false);
     for (const ecran of ecrans) {
       const code = lire(ecran);
       expect(code, `${ecran} doit ouvrir l'itinéraire dans l'application`).toMatch(

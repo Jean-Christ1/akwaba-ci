@@ -100,6 +100,39 @@ describe("santé structurelle", () => {
     expect([...casses], "un lien mort ressemble à une fonctionnalité absente").toEqual([]);
   });
 
+  it("aucune route déclarée n'est laissée sans porte d'entrée", () => {
+    const app = lire("src/App.tsx");
+    const routes = [...app.matchAll(new RegExp('path="([^"]+)"', "g"))].map((m) => m[1]);
+
+    // Routes atteintes autrement que par un lien de l'interface : adresse
+    // saisie, courriel, redirection après connexion, ou lien profond porté
+    // par un paramètre. Toute entrée ajoutée ici doit être justifiée.
+    const ENTREES = [
+      "/",
+      "*",
+      "/auth",
+      "/onboarding",
+      "/reset-password",
+      "/admin/bootstrap",
+    ];
+
+    const liens = FICHIERS.filter((f) => !estTest(f) && f !== "src/App.tsx")
+      .map((f) => lire(f))
+      .join(String.fromCharCode(10));
+
+    const orphelines = routes.filter((r) => {
+      if (ENTREES.includes(r)) return false;
+      // Une route à paramètre se construit, elle ne s'écrit pas telle quelle :
+      // on cherche son préfixe fixe.
+      const prefixe = r.split("/:")[0];
+      return !liens.includes('"' + prefixe) && !liens.includes("`" + prefixe);
+    });
+
+    // Une route que rien n'ouvre est une page que personne ne verra : elle
+    // sera livrée, chargée, maintenue, et jamais atteinte.
+    expect(orphelines, "routes sans aucun lien entrant").toEqual([]);
+  });
+
   it("chaque appel serveur correspond à une fonction déclarée", () => {
     const types = lire("src/integrations/supabase/types.ts");
     const appels = new Set<string>();

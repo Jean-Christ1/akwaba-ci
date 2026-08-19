@@ -32,7 +32,6 @@ const AuthPage = lazy(() => import("./pages/AuthPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const PartnerSignupPage = lazy(() => import("./pages/PartnerSignupPage"));
 const ServicesHubPage = lazy(() => import("./pages/services/ServicesHubPage"));
-const RoutePage = lazy(() => import("./pages/RoutePage"));
 
 const MyErrandsPage = lazy(() => import("./pages/courses/MyErrandsPage"));
 const NewErrandPage = lazy(() => import("./pages/courses/NewErrandPage"));
@@ -100,7 +99,6 @@ const App = () => (
                 <Route path="/courses/comment-ca-marche" element={<HowItWorksPage />} />
                 <Route path="/courses/programmees" element={<SchedulesPage />} />
                 <Route path="/courses/portefeuille" element={<WalletPage />} />
-                <Route path="/itineraire" element={<RoutePage />} />
                 <Route path="/courses/devenir-shopper" element={<RunnerSignupPage />} />
                 <Route path="/courses/shopper" element={<RunnerDashboardPage />} />
                 <Route path="/courses/:id" element={<ErrandDetailPage />} />
