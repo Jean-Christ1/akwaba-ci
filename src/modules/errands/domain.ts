@@ -150,3 +150,17 @@ export function waLink(phone?: string | null, text?: string) {
   const clean = phone.replace(/[^0-9]/g, "");
   return `https://wa.me/${clean}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
 }
+
+/**
+ * Catégorie demandée par une URL, ramenée au catalogue.
+ *
+ * Le catalogue du hub, la fiche d'un lieu et n'importe quel lien partagé
+ * ouvrent le formulaire avec une catégorie déjà choisie. Rien ne garantit que
+ * cette valeur existe encore : un favori gardé après un renommage, une faute
+ * de frappe, un lien tronqué. Convertie sans contrôle, elle traverse le
+ * formulaire puis heurte l'énumération Postgres, et la demande échoue après
+ * que le client a tout saisi.
+ */
+export function resoudreCategorie(valeur: string | null | undefined): ErrandCategory {
+  return CATEGORIES.find((c) => c.value === valeur)?.value ?? "grocery";
+}
