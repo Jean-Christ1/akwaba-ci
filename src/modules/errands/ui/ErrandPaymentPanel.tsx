@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { PAY_METHODS } from "@/modules/errands/domain";
 import { AdvancePanel } from "@/modules/errands/ui/AdvancePanel";
+import { AdvanceReceiptCard } from "@/modules/errands/ui/AdvanceReceiptCard";
 import { ProofUpload } from "@/modules/errands/ui/ProofUpload";
 import type { ErrandDetail } from "@/modules/errands/application/useErrandDetail";
 
 interface ErrandPaymentPanelProps {
   errand: ErrandDetail;
+  isRunner: boolean;
   isCustomer: boolean;
   onChanged: () => void;
 }
@@ -24,7 +26,12 @@ interface ErrandPaymentPanelProps {
  * fermée : régler d'abord et découvrir l'écart ensuite reviendrait à valider un
  * montant qu'on n'a pas accepté.
  */
-export function ErrandPaymentPanel({ errand, isCustomer, onChanged }: ErrandPaymentPanelProps) {
+export function ErrandPaymentPanel({
+  errand,
+  isCustomer,
+  isRunner,
+  onChanged,
+}: ErrandPaymentPanelProps) {
   const [busy, setBusy] = useState(false);
 
   const confirmer = async () => {
@@ -52,20 +59,41 @@ export function ErrandPaymentPanel({ errand, isCustomer, onChanged }: ErrandPaym
       {isCustomer && errand.fund_mode === "customer_advance" && !regle && (
         <div className="mt-3 space-y-3">
           <AdvancePanel
+            declaredAmount={Number(errand.advance_declared_amount) || 0}
+            confirmedAmount={Number(errand.advance_amount) || 0}
+            declaredAt={errand.advance_declared_at}
+            confirmedAt={errand.advance_confirmed_at}
             errandId={errand.id}
             budgetEstimate={Number(errand.budget_estimate) || 0}
-            advanceAmount={Number(errand.advance_amount) || 0}
-            advanceConfirmed={
-              Boolean(errand.advance_proof_url) || Number(errand.advance_amount) > 0
-            }
             onDeclared={onChanged}
           />
           <ProofUpload
             errandId={errand.id}
             kind="advance"
             existingPath={errand.advance_proof_url}
-            amount={Number(errand.advance_amount) || Number(errand.budget_estimate) || 0}
+            amount={
+              Number(errand.advance_declared_amount) ||
+              Number(errand.advance_amount) ||
+              Number(errand.budget_estimate) ||
+              0
+            }
             onUploaded={onChanged}
+          />
+        </div>
+      )}
+
+      {/* Le shopper reconnaît ce qu'il a effectivement reçu. Sans cette
+          confirmation, le montant reconnu reste à zéro et la facture du
+          client ne déduit rien de ce qu'il a déjà versé. */}
+      {isRunner && errand.fund_mode === "customer_advance" && !regle && (
+        <div className="mt-3">
+          <AdvanceReceiptCard
+            errandId={errand.id}
+            declaredAmount={Number(errand.advance_declared_amount) || 0}
+            declaredAt={errand.advance_declared_at}
+            confirmedAmount={Number(errand.advance_amount) || 0}
+            confirmedAt={errand.advance_confirmed_at}
+            onConfirmed={onChanged}
           />
         </div>
       )}

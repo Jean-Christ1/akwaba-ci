@@ -250,6 +250,40 @@ try {
     }
   )
 
+  // --- L'avance du client : declaree, puis reconnue ------------------------
+  // Une declaration du client ne prouve rien : seul celui qui recoit sait ce
+  // qui est arrive sur son compte. Les deux montants doivent donc rester
+  // distincts jusqu'a la confirmation, sinon la facture deduit une somme que
+  // personne n'a vue, ou ne deduit rien de ce qui a ete verse.
+  await pas("Le client declare l'avance envoyee", async () => {
+    await devenir(CLIENT)
+    await c.query('SELECT public.errand_declare_advance($1, $2)', [errandId, 12000])
+    await redevenirProprietaire()
+    const r = await c.query(
+      'SELECT advance_declared_amount, advance_amount FROM public.errands WHERE id = $1',
+      [errandId]
+    )
+    const d = Number(r.rows[0].advance_declared_amount)
+    const a = Number(r.rows[0].advance_amount)
+    if (d !== 12000) throw new Error(`montant declare attendu 12000, obtenu ${d}`)
+    if (a !== 0) throw new Error(`rien ne doit etre reconnu avant confirmation, obtenu ${a}`)
+    return 'declare 12000, reconnu 0'
+  })
+
+  await pas('Le shopper confirme la reception', async () => {
+    await devenir(SHOPPER)
+    await c.query('SELECT public.errand_confirm_advance($1, $2)', [errandId, 12000])
+    await redevenirProprietaire()
+    const r = await c.query(
+      'SELECT advance_amount, advance_confirmed_at FROM public.errands WHERE id = $1',
+      [errandId]
+    )
+    const a = Number(r.rows[0].advance_amount)
+    if (a !== 12000) throw new Error(`montant reconnu attendu 12000, obtenu ${a}`)
+    if (!r.rows[0].advance_confirmed_at) throw new Error('date de confirmation absente')
+    return 'reconnu 12000'
+  })
+
   await pas('Le shopper commence les courses', async () => {
     await devenir(SHOPPER)
     await c.query('SELECT public.errand_advance_status($1, $2)', [errandId, 'shopping'])
@@ -313,6 +347,22 @@ try {
     await c.query('SELECT public.errand_save_invoice($1, $2, $3, $4, $5)', [
       errandId, 14000, 0, 0, 'https://exemple.invalid/recu.jpg',
     ])
+  })
+
+  await pas("La facture deduit l'avance reconnue", async () => {
+    await redevenirProprietaire()
+    const r = await c.query(
+      'SELECT total_amount, advance_amount, balance_due FROM public.errands WHERE id = $1',
+      [errandId]
+    )
+    const total = Number(r.rows[0].total_amount)
+    const avance = Number(r.rows[0].advance_amount)
+    const reste = Number(r.rows[0].balance_due)
+    if (avance !== 12000) throw new Error(`avance reconnue perdue : ${avance}`)
+    if (reste !== total - avance) {
+      throw new Error(`reste a regler ${reste}, attendu ${total - avance} (total ${total})`)
+    }
+    return `total ${total}, avance ${avance}, reste ${reste}`
   })
 
   await refus('Un mauvais code de remise est refusé', () =>

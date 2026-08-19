@@ -18,8 +18,12 @@ interface CompteReception {
 interface AdvancePanelProps {
   errandId: string;
   budgetEstimate: number;
-  advanceAmount: number;
-  advanceConfirmed: boolean;
+  /** Montant que le client dit avoir envoyé. Il l'écrit lui-même. */
+  declaredAmount: number;
+  /** Montant que le shopper reconnaît avoir reçu. Seul celui-ci fait foi. */
+  confirmedAmount: number;
+  declaredAt: string | null;
+  confirmedAt: string | null;
   onDeclared: () => void;
 }
 
@@ -30,16 +34,24 @@ interface AdvancePanelProps {
  * au shopper avant son départ. Encore faut-il savoir sur quel compte : cette
  * information n'était affichée nulle part, ce qui obligeait à la réclamer par
  * la messagerie et rendait la promesse produit intenable.
+ *
+ * Deux montants coexistent et ne doivent jamais être confondus : celui que le
+ * client déclare avoir envoyé, et celui que le shopper reconnaît avoir reçu.
+ * Seul le second entre dans la facture. Les confondre faisait annoncer au
+ * client « vous avez déclaré un envoi de 0 FCFA » dès qu'il déposait sa preuve,
+ * puis lui redemandait sur la facture une somme déjà versée.
  */
 export function AdvancePanel({
   errandId,
   budgetEstimate,
-  advanceAmount,
-  advanceConfirmed,
+  declaredAmount,
+  confirmedAmount,
+  declaredAt,
+  confirmedAt,
   onDeclared,
 }: AdvancePanelProps) {
   const [compte, setCompte] = useState<CompteReception | null>(null);
-  const [montant, setMontant] = useState(String(budgetEstimate || ""));
+  const [montant, setMontant] = useState(String(declaredAmount || budgetEstimate || ""));
   const [busy, setBusy] = useState(false);
 
   const charger = useCallback(async () => {
@@ -75,7 +87,7 @@ export function AdvancePanel({
     setBusy(false);
 
     if (error) return toast.error(error.message);
-    toast.success("Avance enregistrée.");
+    toast.success("Envoi déclaré. Le shopper doit maintenant le confirmer.");
     onDeclared();
   };
 
@@ -89,12 +101,27 @@ export function AdvancePanel({
         <h2 className="font-display text-base font-semibold">Budget d'achat</h2>
       </div>
 
-      {advanceConfirmed ? (
+      {confirmedAt ? (
         <p className="mt-2 text-sm">
-          Vous avez déclaré un envoi de{" "}
-          <span className="font-semibold">{formatFcfa(advanceAmount)}</span>. La régularisation se
-          fera au franc près sur présentation du reçu.
+          Le shopper a confirmé avoir reçu{" "}
+          <span className="font-semibold">{formatFcfa(confirmedAmount)}</span>. C'est ce montant qui
+          est déduit de votre facture ; la régularisation se fera au franc près sur présentation du
+          reçu.
         </p>
+      ) : declaredAt ? (
+        <div className="mt-2 space-y-2">
+          <p className="text-sm">
+            Vous avez déclaré un envoi de{" "}
+            <span className="font-semibold">{formatFcfa(declaredAmount)}</span>.
+          </p>
+          {/* Tant que le shopper n'a pas confirmé, rien n'est acquis. Le dire
+              évite au client de croire l'affaire réglée, puis de s'étonner que
+              sa facture ne déduise rien. */}
+          <p className="rounded-xl border border-dashed border-border p-3 text-xs text-muted-foreground">
+            En attente de confirmation par le shopper. Tant qu'il n'a pas reconnu la réception, ce
+            montant n'est pas déduit de votre facture.
+          </p>
+        </div>
       ) : (
         <>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -112,7 +139,7 @@ export function AdvancePanel({
               <Button
                 size="sm"
                 variant="outline"
-                className="mt-2"
+                className="mt-2 min-h-[44px]"
                 onClick={() => copier(compte.account_number)}
               >
                 <Copy className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
@@ -139,7 +166,7 @@ export function AdvancePanel({
             />
           </div>
 
-          <Button className="mt-2 w-full" size="sm" disabled={busy} onClick={declarer}>
+          <Button className="mt-2 min-h-[44px] w-full" size="sm" disabled={busy} onClick={declarer}>
             J'ai envoyé l'argent
           </Button>
         </>
