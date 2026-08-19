@@ -64,7 +64,6 @@ const ROUTES = [
   { chemin: "/courses/portefeuille", nom: "Portefeuille" },
   { chemin: "/courses/programmees", nom: "Courses programmées" },
   { chemin: "/courses/devenir-shopper", nom: "Devenir shopper" },
-  { chemin: "/itineraire", nom: "Itinéraire" },
   { chemin: "/auth", nom: "Connexion" },
   { chemin: "/conditions", nom: "Conditions générales" },
   { chemin: "/confidentialite", nom: "Confidentialité" },

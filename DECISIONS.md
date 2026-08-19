@@ -107,3 +107,36 @@ paiement réussi serait la faute la plus grave du produit.
 
 **En attente.** Choix de l'agrégateur, modalités de séquestre, politique de
 remboursement et de litige.
+
+## 2026-08-19, l'itinéraire s'affiche en place, il n'ouvre plus de page
+
+**Décision.** Le calcul d'itinéraire reste entier, dans `RoutePanel`, ouvert
+en vue intégrée par `RouteDialog` depuis la fiche d'un lieu, la carte et les
+parcours. La page autonome `/itineraire` est retirée. Les applications
+externes, Google Maps et Apple Plans, restent proposées en secours, jamais en
+premier.
+
+**Raison.** La page existait, fonctionnait, et aucun lien de l'application ne
+la désignait : elle était livrée, chargée et maintenue sans jamais être vue.
+Le propriétaire a demandé une vue qui ne fasse pas sortir de l'écran en
+cours ; garder les deux formes aurait laissé un doublon de plus.
+
+**Conséquence.** Un contrôle de santé structurelle refuse désormais toute
+route qu'aucun lien n'ouvre.
+
+## 2026-08-19, les tâches périodiques sont déclenchées par la base
+
+**Décision.** L'ordonnanceur des courses programmées est appelé par `pg_cron`,
+directement sur la fonction PostgreSQL, sans passer par une fonction de
+bordure. La file de notifications, elle, passe par la fonction de bordure, qui
+détient les clés des fournisseurs, et n'est planifiée que lorsque l'adresse du
+projet et le secret partagé sont présents dans le coffre.
+
+**Raison.** Les deux mécanismes étaient complets et n'étaient appelés par
+personne. Un détour par HTTP pour une logique déjà transactionnelle en base
+n'ajouterait qu'un secret à gérer et un point de panne. Inscrire une adresse
+de projet ou un secret dans une migration les mettrait dans l'historique Git
+pour de bon.
+
+**En attente.** Application de la migration en production, et dépôt des deux
+secrets dans le coffre pour armer l'envoi des notifications.
