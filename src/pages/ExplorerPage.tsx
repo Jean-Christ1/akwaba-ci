@@ -26,7 +26,11 @@ export default function ExplorerPage() {
   const { cities: CITIES } = useCatalogCities();
   usePageTitle("Explorer les adresses", "Hôtels, restaurants, maquis et lieux à découvrir en Côte d'Ivoire.");
   const [params, setParams] = useSearchParams();
-  const initialType = (params.get("type") as PlaceType) ?? "all";
+  // Un type inconnu ne doit pas vider silencieusement la liste : il retombe
+  // sur « Tout », qui est ce que le visiteur attend d'un lien cassé.
+  const typeDemande = params.get("type");
+  const initialType: PlaceType | "all" =
+    TYPES.find((t) => t.value === typeDemande)?.value ?? "all";
   const initialCity = params.get("city") ?? "all";
 
   const [type, setType] = useState<PlaceType | "all">(initialType);

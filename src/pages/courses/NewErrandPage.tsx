@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Plus, Trash2, Loader2, Info, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import {
   CATEGORIES,
+  resoudreCategorie,
   PAY_METHODS,
   formatFcfa,
   type ErrandCategory,
@@ -59,11 +60,15 @@ export default function NewErrandPage() {
   // l'adresse de l'établissement comme point de remise, ce qui évite au
   // voyageur de la ressaisir alors qu'il y est déjà.
   const depuisLieu = params.get("depuis");
-  const initialCategory = (params.get("category") as ErrandCategory) ?? "grocery";
+  // Une catégorie inconnue retombe sur la valeur par défaut plutôt que de
+  // remonter telle quelle jusqu'à l'énumération serveur.
+  const initialCategory = resoudreCategorie(params.get("category"));
+
+  const villeInitiale = params.get("ville") ?? "Abidjan";
 
   const [category, setCategory] = useState<ErrandCategory>(initialCategory);
   const [title, setTitle] = useState("");
-  const [city, setCity] = useState(params.get("ville") ?? "Abidjan");
+  const [city, setCity] = useState(villeInitiale);
   const [zone, setZone] = useState("");
   const [address, setAddress] = useState(params.get("adresse") ?? "");
   const [items, setItems] = useState<ErrandItem[]>([{ label: "", qty: "1" }]);
@@ -103,6 +108,16 @@ export default function NewErrandPage() {
     () => villes.filter((v) => v.errandsEnabled),
     [villes]
   );
+  // Une ville venue de l'URL, ou fermée aux courses depuis, laisserait la
+  // liste sans sélection lisible et la demande partirait sur une ville que
+  // personne ne dessert. Dès que le réseau réel est connu, on retombe sur la
+  // première ville ouverte.
+  useEffect(() => {
+    if (villesCourses.length === 0) return;
+    const connue = villesCourses.some((v) => v.name === city || v.slug === city);
+    if (!connue) setCity(villesCourses[0].name);
+  }, [villesCourses, city]);
+
   const quartiersDeLaVille = useMemo(() => {
     const ville = villes.find((v) => v.name === city || v.slug === city);
     return ville ? zonesOfCity(quartiers, ville.slug) : [];
