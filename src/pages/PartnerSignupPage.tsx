@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { edgeErrorMessage } from "@/shared/lib/edgeError";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,13 @@ const TYPES = [
 ];
 
 const PRICES = ["€", "€€", "€€€", "€€€€"];
+
+// Bornes appliquées par register-partner (supabase/functions/register-partner/
+// validate.ts, requiredText(p.description, 10, 4000)). Les répéter ici évite
+// l'aller-retour le plus fréquent : une description de huit caractères partait
+// au serveur et revenait en 400.
+const DESCRIPTION_MIN = 10;
+const DESCRIPTION_MAX = 4000;
 
 type FormState = {
   // account
@@ -83,6 +91,14 @@ export default function PartnerSignupPage() {
   };
 
   const submit = async () => {
+    const description = form.description.trim();
+    if (description.length < DESCRIPTION_MIN || description.length > DESCRIPTION_MAX) {
+      toast.error(`Description invalide (${DESCRIPTION_MIN} à ${DESCRIPTION_MAX} caractères).`);
+      // Ramener le formulaire sur l'étape qui porte le champ : le partenaire
+      // était averti au dernier écran, loin de la saisie à corriger.
+      setStep(2);
+      return;
+    }
     setLoading(true);
     try {
       // 1. ensure account
@@ -120,7 +136,11 @@ export default function PartnerSignupPage() {
           },
         },
       });
-      if (error) throw error;
+      // La fonction register-partner écrit le motif exact du refus dans le corps de sa
+      // réponse. Relancer l'erreur telle quelle affichait « Edge Function
+      // returned a non-2xx status code », le même libellé quelle que soit la
+      // cause : l'utilisateur ne savait pas quoi corriger.
+      if (error) throw new Error(await edgeErrorMessage(error));
       const payload = data as { error?: string } | null;
       if (payload?.error) throw new Error(payload.error);
       await refreshRoles();
@@ -191,7 +211,7 @@ export default function PartnerSignupPage() {
             <h2 className="font-display text-lg">Identité</h2>
             <Field label="Nom de l'établissement *"><Input value={form.name} onChange={(e) => set("name", e.target.value)} required /></Field>
             <Field label="Accroche (1 phrase)"><Input value={form.tagline} onChange={(e) => set("tagline", e.target.value)} /></Field>
-            <Field label="Description complète *"><Textarea rows={4} value={form.description} onChange={(e) => set("description", e.target.value)} required /></Field>
+            <Field label="Description complète *"><Textarea rows={4} value={form.description} onChange={(e) => set("description", e.target.value)} required minLength={DESCRIPTION_MIN} maxLength={DESCRIPTION_MAX} /></Field>
             <Field label="Histoire / À propos"><Textarea rows={3} value={form.story} onChange={(e) => set("story", e.target.value)} /></Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Standing (1-5)">

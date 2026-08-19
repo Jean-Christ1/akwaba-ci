@@ -45,6 +45,7 @@ const SchedulesPage = lazy(() => import("./pages/courses/SchedulesPage"));
 const AdminPage = lazy(() => import("./pages/admin/AdminPage"));
 const PlaceEditorPage = lazy(() => import("./pages/admin/PlaceEditorPage"));
 const BootstrapAdminPage = lazy(() => import("./pages/admin/BootstrapAdminPage"));
+const ErrandsPage = lazy(() => import("./pages/admin/ErrandsPage"));
 const ShoppersPage = lazy(() => import("./pages/admin/ShoppersPage"));
 const PayoutsPage = lazy(() => import("./pages/admin/PayoutsPage"));
 const DisputesPage = lazy(() => import("./pages/admin/DisputesPage"));
@@ -116,6 +117,12 @@ const App = () => (
                 </Route>
 
                 <Route element={<RequireRole role="moderator" />}>
+                  {/* Le back-office menait vers ce suivi alors qu'aucune route
+                      ne le déclarait : le clic tombait sur la page introuvable,
+                      et les alertes d'exploitation, seul écran qui dise s'il y a
+                      quelque chose à faire maintenant, restaient
+                      inatteignables. */}
+                  <Route path="/admin/courses" element={<ErrandsPage />} />
                   <Route path="/admin/shoppers" element={<ShoppersPage />} />
                   <Route path="/admin/litiges" element={<DisputesPage />} />
                   <Route path="/admin/pilotage" element={<OperationsPage />} />

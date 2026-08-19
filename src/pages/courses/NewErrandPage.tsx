@@ -51,6 +51,72 @@ import { usePageTitle } from "@/shared/hooks/usePageTitle";
 import { useCommissionRule } from "@/modules/errands/application/useCommissionRule";
 import { useServiceAreas, zonesOfCity } from "@/modules/places/application/useServiceAreas";
 
+/** Consignes possibles lorsqu'un article manque en rayon. */
+export type SubstitutionPolicy = "never" | "ask" | "similar";
+
+/**
+ * Les libellés des consignes sont écrits une seule fois : l'avertissement cite
+ * la consigne choisie, et il doit citer exactement ce que le client a lu dans
+ * la liste, faute de quoi il décrirait un choix que personne n'a fait.
+ */
+export const LIBELLES_CONSIGNE: Record<SubstitutionPolicy, string> = {
+  ask: "Me demander avant de remplacer",
+  similar: "Prendre un équivalent, à prix voisin",
+  never: "Ne rien remplacer, laisser de côté",
+};
+
+/**
+ * Quartier à conserver après un changement de ville.
+ *
+ * Le quartier restait dans l'état quand la ville changeait : une demande
+ * partait en ville Bouaké avec le quartier Cocody Centre, absent du sélecteur
+ * mais transmis tel quel dans p_zone. La course s'affichait « Cocody Centre,
+ * Bouaké » et aucun shopper filtrant par quartier ne la voyait jamais.
+ *
+ * Le référentiel des quartiers vient de la base, il manque donc au premier
+ * rendu : tant qu'il n'est pas chargé, on ne vide rien, sinon le quartier à
+ * peine choisi disparaîtrait dans le cas normal.
+ */
+export function quartierApresChangementDeVille(
+  quartier: string,
+  quartiersDeLaVille: string[],
+  referentielCharge: boolean
+): string {
+  if (!quartier) return "";
+  if (!referentielCharge) return quartier;
+  return quartiersDeLaVille.includes(quartier) ? quartier : "";
+}
+
+/**
+ * Avertissement à donner lorsque la consigne de remplacement n'a pas pu être
+ * posée après la création de la course.
+ *
+ * Le second appel serveur partait sans que son résultat soit regardé. Sur une
+ * coupure réseau, courante depuis un téléphone, la course gardait la consigne
+ * par défaut de la colonne, 'ask' (migration 20260815210000), pendant que le
+ * client lisait un message de succès. L'écart n'apparaissait qu'au moment où
+ * le shopper proposait un remplacement.
+ *
+ * La course, elle, existe : le message le dit d'abord, pour ne pas laisser
+ * croire à un échec de publication.
+ */
+export function avertissementConsigne(
+  policy: SubstitutionPolicy,
+  echec: boolean
+): string | null {
+  if (!echec) return null;
+  // La course porte déjà cette consigne par défaut : avertir ici alarmerait le
+  // client pour un écart qui n'existe pas.
+  if (policy === "ask") return null;
+  return (
+    "Demande publiée. En revanche, votre consigne « " +
+    LIBELLES_CONSIGNE[policy] +
+    " » n'a pas été enregistrée : la course reste sur « " +
+    LIBELLES_CONSIGNE.ask +
+    " ». Le shopper vous consultera donc avant tout remplacement."
+  );
+}
+
 export default function NewErrandPage() {
   usePageTitle("Demander une course", "Confiez votre course à un shopper vérifié.");
   const { user } = useAuth();
@@ -80,9 +146,9 @@ export default function NewErrandPage() {
   const [budget, setBudget] = useState("");
   const [notes, setNotes] = useState("");
   const [contact, setContact] = useState("chat");
-  // Consigne de remplacement, donnee d'avance plutot qu'en pleine course : le
-  // client est rarement disponible au moment ou le shopper est devant le rayon.
-  const [substitution, setSubstitution] = useState<"never" | "ask" | "similar">("ask");
+  // Consigne de remplacement, donnée d'avance plutôt qu'en pleine course : le
+  // client est rarement disponible au moment où le shopper est devant le rayon.
+  const [substitution, setSubstitution] = useState<SubstitutionPolicy>("ask");
   const [scheduled, setScheduled] = useState("");
   const [payment, setPayment] = useState<PayMethod>("wave");
   const [saving, setSaving] = useState(false);
@@ -108,7 +174,7 @@ export default function NewErrandPage() {
 
   // Villes réellement ouvertes aux courses : proposer une ville sans réseau de
   // shoppers reviendrait à promettre un service que personne ne peut assurer.
-  const { cities: villes, zones: quartiers } = useServiceAreas();
+  const { cities: villes, zones: quartiers, loading: chargementZones } = useServiceAreas();
   const villesCourses = useMemo(
     () => villes.filter((v) => v.errandsEnabled),
     [villes]
@@ -127,6 +193,14 @@ export default function NewErrandPage() {
     const ville = villes.find((v) => v.name === city || v.slug === city);
     return ville ? zonesOfCity(quartiers, ville.slug) : [];
   }, [villes, quartiers, city]);
+
+  // Le quartier suit la ville : sans cela, il survivait au changement de ville
+  // et partait dans p_zone alors que le sélecteur, lui, n'affichait plus rien.
+  useEffect(() => {
+    setZone((actuel) =>
+      quartierApresChangementDeVille(actuel, quartiersDeLaVille, !chargementZones)
+    );
+  }, [quartiersDeLaVille, chargementZones]);
 
   const cleanItems = useMemo(() => items.filter((i) => i.label.trim().length > 0), [items]);
 
@@ -236,15 +310,20 @@ export default function NewErrandPage() {
       p_lng: coords?.lng ?? undefined,
     });
     setSaving(false);
-    // La consigne est posee juste apres la creation : errand_create garde sa
-    // signature, ce qui evite de casser tout appel existant.
+    // La consigne est posée juste après la création : errand_create garde sa
+    // signature, ce qui évite de casser tout appel existant.
+    let consigneEchouee = false;
     if (!error && data) {
       const creee = data as { id?: string } | null;
       if (creee?.id) {
-        await supabase.rpc("errand_set_substitution_policy", {
+        // Le résultat de ce second appel n'était pas lu : une coupure réseau
+        // laissait la course sur la consigne par défaut sans que rien ne le
+        // signale au client.
+        const { error: erreurConsigne } = await supabase.rpc("errand_set_substitution_policy", {
           p_errand_id: creee.id,
           p_policy: substitution,
         });
+        consigneEchouee = Boolean(erreurConsigne);
       }
     }
 
@@ -252,7 +331,11 @@ export default function NewErrandPage() {
       toast.error(error.message);
       return;
     }
-    toast.success("Demande publiée - les shoppers vont vous répondre.");
+    const avertissement = avertissementConsigne(substitution, consigneEchouee);
+    // La course existe dans tous les cas : c'est un avertissement, jamais une
+    // erreur de publication.
+    if (avertissement) toast.warning(avertissement);
+    else toast.success("Demande publiée - les shoppers vont vous répondre.");
     navigate(`/courses/${data.id}`);
   };
 
@@ -536,13 +619,15 @@ export default function NewErrandPage() {
                 <Label>Si un article manque</Label>
                 <Select
                   value={substitution}
-                  onValueChange={(v) => setSubstitution(v as typeof substitution)}
+                  onValueChange={(v) => setSubstitution(v as SubstitutionPolicy)}
                 >
                   <SelectTrigger className="min-h-[44px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ask">Me demander avant de remplacer</SelectItem>
-                    <SelectItem value="similar">Prendre un équivalent, à prix voisin</SelectItem>
-                    <SelectItem value="never">Ne rien remplacer, laisser de côté</SelectItem>
+                    {/* Les libellés viennent du catalogue : l'avertissement les
+                        reprend mot pour mot, deux copies finiraient par différer. */}
+                    <SelectItem value="ask">{LIBELLES_CONSIGNE.ask}</SelectItem>
+                    <SelectItem value="similar">{LIBELLES_CONSIGNE.similar}</SelectItem>
+                    <SelectItem value="never">{LIBELLES_CONSIGNE.never}</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="mt-1 text-[11px] text-muted-foreground">

@@ -22,10 +22,12 @@ import { ErrandInvoice } from "@/modules/errands/ui/ErrandInvoice";
 import { ErrandItemList } from "@/modules/errands/ui/ErrandItemList";
 import { ErrandOffers } from "@/modules/errands/ui/ErrandOffers";
 import { ErrandPaymentPanel } from "@/modules/errands/ui/ErrandPaymentPanel";
+import { ErrandScheduleCard } from "@/modules/errands/ui/ErrandScheduleCard";
 import { ErrandTimeline } from "@/modules/errands/ui/ErrandTimeline";
 import { HandoverCodeCard } from "@/modules/errands/ui/HandoverCodeCard";
 import { MissionProgress } from "@/modules/errands/ui/MissionProgress";
 import { RunnerContactCard } from "@/modules/errands/ui/RunnerContactCard";
+import { TipCard } from "@/modules/errands/ui/TipCard";
 import {
   formatFcfa,
   STATUS_LABEL,
@@ -41,6 +43,49 @@ const NEXT_STATUS: Partial<Record<ErrandStatus, { next: ErrandStatus; label: str
 };
 
 const EN_MISSION: ErrandStatus[] = ["assigned", "shopping", "delivering"];
+
+export type CancelDecision = { proceed: false } | { proceed: true; reason: string };
+
+/**
+ * Ce que répond la fenêtre de saisie du motif d'annulation.
+ *
+ * window.prompt rend null quand l'utilisateur ferme la fenêtre ou appuie sur
+ * Échap, ce qui n'est pas une chaîne vide : c'est un refus. Les deux étaient
+ * confondus par un `?? ""`, et l'appel à errand_cancel suivait sans condition.
+ * La course était donc annulée alors que l'utilisateur venait de renoncer, et
+ * une annulation ne se reprend pas.
+ */
+export function cancelDecision(prompted: string | null): CancelDecision {
+  if (prompted === null) return { proceed: false };
+  return { proceed: true, reason: prompted };
+}
+
+/**
+ * Les cas où le serveur refuse déjà une annulation : course terminée, déjà
+ * annulée, livrée (il renvoie vers le litige), ou dont le règlement est fait.
+ * L'écran n'excluait ni la livraison ni le paiement : le bouton était proposé
+ * sur une course livrée ou réglée, et le clic ne pouvait que retourner une
+ * erreur. Le litige reste retiré de la liste, comme avant : une course déjà
+ * contestée se tranche par le litige, pas par une annulation.
+ */
+const ANNULATION_REFUSEE: ErrandStatus[] = ["completed", "cancelled", "disputed", "delivered"];
+
+/**
+ * Le serveur refuse en outre l'annulation par le client dès que le shopper a
+ * engagé les achats : l'annuler d'un clic le laisserait débiteur de sa
+ * marchandise, sans recours, puisque le litige est refusé sur une course
+ * annulée. Le shopper enregistre sa facture pendant « en courses » ou « en
+ * livraison », donc ce cas se produit avant la livraison, dans le cours normal
+ * d'une mission. Laisser le bouton actif y garantit une erreur.
+ */
+export function canCancelErrand(
+  status: ErrandStatus,
+  paymentStatus: string,
+  achats: { itemsTotal: number; receiptUrl: string | null } = { itemsTotal: 0, receiptUrl: null }
+): boolean {
+  if (ANNULATION_REFUSEE.includes(status) || paymentStatus === "paid") return false;
+  return achats.itemsTotal <= 0 && !achats.receiptUrl;
+}
 
 export default function ErrandDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -137,11 +182,13 @@ export default function ErrandDetailPage() {
 
   const annuler = async () => {
     if (!errand) return;
-    const motif = window.prompt("Motif de l'annulation (facultatif)") ?? "";
+    const decision = cancelDecision(window.prompt("Motif de l'annulation (facultatif)"));
+    // Fermer la fenêtre, c'est renoncer : on ne va pas plus loin.
+    if (!decision.proceed) return;
     setBusy(true);
     const { error } = await supabase.rpc("errand_cancel", {
       p_errand_id: errand.id,
-      p_reason: motif,
+      p_reason: decision.reason,
     });
     setBusy(false);
     if (error) return toast.error(error.message);
@@ -205,6 +252,15 @@ export default function ErrandDetailPage() {
   const shopperAssigne = errand.runner_id ? runners[errand.runner_id] : undefined;
   const lienVisio = `https://meet.jit.si/akwaba-course-${id}`;
   const suiviVisible = missionEnCours || errand.status === "delivered";
+  const annulationPossible = canCancelErrand(errand.status, errand.payment_status, {
+    itemsTotal: Number(errand.items_total) || 0,
+    receiptUrl: errand.receipt_url,
+  });
+  // Le pourboire s'inscrit tant que la course n'est pas réglée : après le
+  // paiement, la fonction serveur le refuse. La remise faite est le moment où
+  // le client sait ce qu'il doit à son shopper, juste avant de confirmer.
+  const pourboirePossible =
+    isCustomer && errand.status === "delivered" && errand.payment_status !== "paid";
 
   return (
     <div className="akw-container max-w-5xl py-6">
@@ -337,13 +393,17 @@ export default function ErrandDetailPage() {
             </div>
           )}
 
-          {/* Annulation et litige : les états cancelled et disputed sont désormais atteignables. */}
+          {/* Annulation et litige : les états cancelled et disputed sont désormais atteignables.
+              Le litige reste ouvert sur une course livrée ou réglée, puisque c'est vers lui que le
+              serveur renvoie ; seule l'annulation disparaît, faute d'être encore acceptée. */}
           {(isCustomer || isRunner) &&
             !["completed", "cancelled", "disputed"].includes(errand.status) && (
-              <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" size="sm" disabled={busy} onClick={annuler}>
-                  Annuler
-                </Button>
+              <div className={`grid gap-2 ${annulationPossible ? "grid-cols-2" : "grid-cols-1"}`}>
+                {annulationPossible && (
+                  <Button variant="outline" size="sm" disabled={busy} onClick={annuler}>
+                    Annuler
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" disabled={busy} onClick={ouvrirLitige}>
                   Signaler un litige
                 </Button>
@@ -403,6 +463,16 @@ export default function ErrandDetailPage() {
                 isRunner={isRunner}
                 onSaved={recharger}
               />
+              {/* Le pourboire se décide après la facture et avant la confirmation
+                  du paiement : c'est le seul moment où le serveur l'accepte. */}
+              {pourboirePossible && (
+                <TipCard
+                  errandId={errand.id}
+                  currentTip={Number(errand.tip_amount) || 0}
+                  paymentStatus={errand.payment_status}
+                  onAdded={recharger}
+                />
+              )}
               <ErrandPaymentPanel
                 errand={errand}
                 isCustomer={isCustomer}
@@ -411,6 +481,10 @@ export default function ErrandDetailPage() {
               />
             </>
           )}
+
+          {/* La programmation n'appartient qu'au client : la fonction serveur
+              refuse toute course dont le demandeur n'est pas le propriétaire. */}
+          {isCustomer && <ErrandScheduleCard errandId={errand.id} errandTitle={errand.title} />}
         </aside>
       </div>
     </div>

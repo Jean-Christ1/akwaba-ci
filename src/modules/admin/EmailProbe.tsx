@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { edgeErrorMessage } from "@/shared/lib/edgeError";
 
 interface Resultat {
   status?: string;
@@ -37,7 +38,11 @@ export function EmailProbe() {
       const { data, error } = await supabase.functions.invoke("test-email", {
         body: { recipient: adresse.trim() },
       });
-      if (error) throw error;
+      // La fonction test-email écrit le motif exact du refus dans le corps de sa
+      // réponse. Relancer l'erreur telle quelle affichait « Edge Function
+      // returned a non-2xx status code », le même libellé quelle que soit la
+      // cause : l'utilisateur ne savait pas quoi corriger.
+      if (error) throw new Error(await edgeErrorMessage(error));
       setResultat(data);
       const reponse = data as Resultat | null;
       const statut = reponse?.status;

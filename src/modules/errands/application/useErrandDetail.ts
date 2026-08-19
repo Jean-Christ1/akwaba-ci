@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import type { ErrandStatus } from "@/modules/errands/domain";
+
+/** Ligne du marché ouvert, telle que la vue la publie réellement. */
+type LigneMarcheOuvert = Database["public"]["Views"]["open_errands_feed"]["Row"];
 
 export interface ErrandDetail {
   id: string;
@@ -82,8 +86,10 @@ export interface RunnerCard {
 }
 
 /**
- * Colonnes lisibles par toute personne autorisée à ouvrir la course, y compris
- * un shopper qui consulte le marché avant de se positionner.
+ * Colonnes lisibles dans la table errands, donc par le client, le shopper
+ * assigné et le personnel. Un shopper qui découvre une course ouverte n'en
+ * fait pas partie : la politique de lecture ne le mentionne plus depuis qu'elle
+ * a été resserrée sur les seules parties, et c'est le marché ouvert qui le sert.
  *
  * La liste est explicite pour deux raisons. D'une part, la lecture de la table
  * est accordée colonne par colonne afin de protéger le code de remise, donc une
@@ -109,13 +115,73 @@ const COLONNES_PUBLIQUES =
 /**
  * Colonnes réservées aux parties de la course.
  *
- * La politique de lecture du serveur laisse un shopper validé consulter une
- * course ouverte : demander ces deux colonnes dans la requête commune les
- * enverrait à son navigateur avant toute attribution. Elles font donc l'objet
- * d'une seconde requête, émise seulement quand le lecteur est le client ou le
- * shopper assigné.
+ * Le personnel lit lui aussi la table : les demander dans la requête commune
+ * enverrait l'adresse du client à un modérateur qui ne fait que consulter. Elles
+ * font donc l'objet d'une seconde requête, émise seulement quand le lecteur est
+ * le client ou le shopper assigné.
  */
 const COLONNES_PARTIES = "delivery_address,notes";
+
+/**
+ * Course reconstituée depuis le marché ouvert.
+ *
+ * Ce chemin ne sert qu'à un lecteur qui n'est ni le client, ni le shopper
+ * assigné, ni le personnel : s'il l'était, la lecture directe de errands aurait
+ * abouti. Le marché ne publie donc que ce qu'un shopper doit voir avant de se
+ * positionner. Les champs qu'il ne publie pas prennent ici la valeur d'une
+ * course encore ouverte, celle que porte la table au repos, et aucun d'eux n'est
+ * affiché en dehors des encarts réservés aux parties (facture, règlement,
+ * dépassement de budget, notation), qui restent fermés à ce lecteur.
+ */
+export function courseDepuisMarcheOuvert(ligne: LigneMarcheOuvert): ErrandDetail {
+  return {
+    id: ligne.id ?? "",
+    // Le marché tait l'identité du client, et la vue ne retient que les courses
+    // sans shopper : ces deux absences sont voulues, pas des valeurs perdues.
+    customer_id: "",
+    runner_id: null,
+    title: ligne.title ?? "",
+    category: ligne.category ?? "",
+    city: ligne.city ?? "",
+    zone: ligne.zone,
+    delivery_address: null,
+    notes: null,
+    items: ligne.items ?? [],
+    budget_estimate: Number(ligne.budget_estimate ?? 0),
+    preferred_contact: "",
+    scheduled_for: ligne.scheduled_for,
+    // La vue ne rend que des courses ouvertes et sans affectation.
+    status: "open",
+    items_total: 0,
+    service_fee: Number(ligne.service_fee ?? 0),
+    delivery_fee: Number(ligne.delivery_fee ?? 0),
+    commission_rate: 0,
+    commission_amount: 0,
+    total_amount: Number(ligne.total_amount ?? 0),
+    payment_method: "",
+    payment_status: "",
+    fund_mode: ligne.fund_mode ?? "",
+    advance_proof_url: null,
+    advance_amount: 0,
+    advance_declared_amount: 0,
+    advance_declared_at: null,
+    advance_confirmed_at: null,
+    receipt_url: null,
+    rating: null,
+    review: null,
+    tip_amount: 0,
+    distance_km: Number(ligne.distance_km ?? 0),
+    estimated_minutes: Number(ligne.estimated_minutes ?? 0),
+    actual_distance_km: null,
+    overtime_minutes: 0,
+    extra_distance_km: 0,
+    overrun_fee: 0,
+    budget_overrun_pending: false,
+    budget_approved_at: null,
+    started_at: null,
+    created_at: ligne.created_at ?? "",
+  };
+}
 
 interface EtatErrandDetail {
   errand: ErrandDetail | null;
@@ -208,26 +274,49 @@ export function useErrandDetail(
       return;
     }
     setMessageErreur(null);
-    if (!e) {
-      setErrand(null);
-      setLoading(false);
-      return;
-    }
 
-    const estPartie = !!userId && (e.customer_id === userId || e.runner_id === userId);
-    let adresse: string | null = null;
-    let notes: string | null = null;
-    if (estPartie) {
-      const { data: prive } = await supabase
-        .from("errands")
-        .select(COLONNES_PARTIES)
+    let detail: ErrandDetail | null = null;
+
+    if (e) {
+      const estPartie = !!userId && (e.customer_id === userId || e.runner_id === userId);
+      let adresse: string | null = null;
+      let notes: string | null = null;
+      if (estPartie) {
+        const { data: prive } = await supabase
+          .from("errands")
+          .select(COLONNES_PARTIES)
+          .eq("id", id)
+          .maybeSingle();
+        adresse = prive?.delivery_address ?? null;
+        notes = prive?.notes ?? null;
+      }
+      detail = { ...e, delivery_address: adresse, notes } as ErrandDetail;
+    } else {
+      // Zéro ligne n'est pas une absence : la table n'est lisible que par les
+      // parties et le personnel, donc une course encore ouverte ne rend rien au
+      // shopper qui la découvre, et sans erreur. Conclure ici à l'absence
+      // affichait « Course introuvable » sur chaque mission que le shopper
+      // ouvrait depuis son tableau de bord. La vue du marché, elle, la publie.
+      const { data: marche, error: erreurMarche } = await supabase
+        .from("open_errands_feed")
+        .select("*")
         .eq("id", id)
         .maybeSingle();
-      adresse = prive?.delivery_address ?? null;
-      notes = prive?.notes ?? null;
+
+      if (erreurMarche) {
+        setMessageErreur(erreurMarche.message);
+        setLoading(false);
+        return;
+      }
+      if (!marche) {
+        setErrand(null);
+        setLoading(false);
+        return;
+      }
+      detail = courseDepuisMarcheOuvert(marche);
     }
 
-    setErrand({ ...e, delivery_address: adresse, notes } as ErrandDetail);
+    setErrand(detail);
 
     const [{ data: o }, { data: m }] = await Promise.all([
       supabase.from("errand_offers").select("*").eq("errand_id", id).order("created_at"),
@@ -241,7 +330,7 @@ export function useErrandDetail(
     setOffers(offresRecues);
     setMessages((m ?? []) as ErrandMessage[]);
 
-    await chargerRunners(offresRecues, e.runner_id);
+    await chargerRunners(offresRecues, detail.runner_id);
     setLoading(false);
   }, [id, userId, chargerRunners]);
 

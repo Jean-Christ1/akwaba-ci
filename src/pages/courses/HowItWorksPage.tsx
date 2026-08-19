@@ -3,7 +3,6 @@ import { ArrowRight, Banknote, Receipt, ShieldCheck, Wallet, Truck, Clock } from
 import {
   COMMISSION_RATE,
   MIN_SERVICE_FEE,
-  MIN_PAYOUT,
   RUNNER_ADVANCE_CAP,
   VEHICLE_OPTIONS,
   VOLUME_OPTIONS,
@@ -11,6 +10,7 @@ import {
   FREE_MINUTES,
   PER_MINUTE,
 } from "@/modules/errands/pricing";
+import { useCommissionRule } from "@/modules/errands/application/useCommissionRule";
 import { formatFcfa } from "@/modules/errands/domain";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
@@ -49,6 +49,11 @@ const STEPS = [
 
 export default function HowItWorksPage() {
   usePageTitle("Comment ça marche", "Le fonctionnement du service Akwaba Shopper.");
+  // Le mode de règlement décide de ce qui est vrai du paiement du shopper. Le
+  // lire ici évite que cette page promette un portefeuille crédité pendant que
+  // l'écran du portefeuille annonce le contraire au même shopper.
+  const { rule } = useCommissionRule();
+  const reglementDirect = rule.settlement === "direct";
   return (
     <div className="akw-container py-6 lg:py-8">
       <header className="rounded-3xl bg-editorial px-6 py-8 text-background sm:px-10">
@@ -159,11 +164,27 @@ export default function HowItWorksPage() {
           <Receipt className="h-5 w-5 text-primary" />
           <h2 className="mt-2 font-display text-lg font-semibold">Comment le shopper est payé</h2>
           <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
-            <li>1. À la clôture de la course, sa part des frais de service (+ pourboire) est créditée sur son <strong className="text-foreground">portefeuille Akwaba</strong>.</li>
-            <li>2. Le solde devient disponible après 24 h (délai anti-litige).</li>
-            <li>3. Il demande un retrait dès {formatFcfa(MIN_PAYOUT)} vers son compte Wave / OM / MoMo / Moov.</li>
-            <li>4. Virements traités chaque jour ouvré ; référence de transfert visible dans l'historique.</li>
-            <li>5. L'argent des achats ne transite jamais par le portefeuille : il est réglé directement entre client et shopper.</li>
+            {reglementDirect ? (
+              <>
+                {/* Le barème en vigueur règle en direct : la plateforme ne
+                    détient aucun gain. Décrire ici un portefeuille crédité, un
+                    délai de maturation et un retrait contredirait mot pour mot
+                    ce que l'écran du portefeuille annonce au même shopper. */}
+                <li>1. Le client règle le shopper directement, à la remise ou par mobile money.</li>
+                <li>2. La plateforme ne détient aucun de ces gains : rien ne transite par elle.</li>
+                <li>3. En contrepartie, la commission Akwaba reste due par le shopper, et son montant s'affiche dans son portefeuille.</li>
+                <li>4. Le pourboire lui revient en entier, sans commission.</li>
+                <li>5. L'argent des achats est réglé directement entre client et shopper, il n'est jamais commissionné.</li>
+              </>
+            ) : (
+              <>
+                <li>1. À la clôture de la course, sa part des frais de service (+ pourboire) est créditée sur son <strong className="text-foreground">portefeuille Akwaba</strong>.</li>
+                <li>2. Le solde devient disponible après {rule.holdHours} h (délai anti-litige).</li>
+                <li>3. Il demande un retrait dès {formatFcfa(rule.minPayout)} vers son compte Wave / OM / MoMo / Moov.</li>
+                <li>4. Virements traités chaque jour ouvré ; référence de transfert visible dans l'historique.</li>
+                <li>5. L'argent des achats ne transite jamais par le portefeuille : il est réglé directement entre client et shopper.</li>
+              </>
+            )}
           </ul>
         </div>
         <div className="rounded-2xl border border-border bg-muted/30 p-5">

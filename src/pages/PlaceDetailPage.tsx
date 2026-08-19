@@ -191,14 +191,18 @@ export default function PlaceDetailPage() {
 
             {/* DETAILS - Tabs compacts (densité ↑, scroll ↓) */}
             <Tabs value={tab} onValueChange={setTab} className="w-full">
-              <TabsList aria-label="Sections de la fiche" className="h-9 w-full justify-start gap-1 overflow-x-auto bg-muted/60 p-1 transition-colors">
-
-                <TabsTrigger value="about" className="h-7 px-3 text-xs">L'adresse</TabsTrigger>
-                {place.story && <TabsTrigger value="story" className="h-7 px-3 text-xs">Histoire</TabsTrigger>}
-                <TabsTrigger value="services" className="h-7 px-3 text-xs">Services</TabsTrigger>
-                <TabsTrigger value="reco" className="h-7 px-3 text-xs">Pour qui & quand</TabsTrigger>
+              {/* Les onglets étaient en h-7, soit 28 px, sur l'écran le plus
+                  consulté au pouce. La liste passe en hauteur libre, sans quoi
+                  son h-9 rognerait la cible de 44 px, et les onglets cessent de
+                  se comprimer : à 360 px de large ils débordent, c'est le
+                  défilement horizontal déjà en place qui les rend atteignables. */}
+              <TabsList aria-label="Sections de la fiche" className="h-auto w-full justify-start gap-1 overflow-x-auto bg-muted/60 p-1 transition-colors">
+                <TabsTrigger value="about" className="min-h-[44px] shrink-0 px-3 text-xs">L'adresse</TabsTrigger>
+                {place.story && <TabsTrigger value="story" className="min-h-[44px] shrink-0 px-3 text-xs">Histoire</TabsTrigger>}
+                <TabsTrigger value="services" className="min-h-[44px] shrink-0 px-3 text-xs">Services</TabsTrigger>
+                <TabsTrigger value="reco" className="min-h-[44px] shrink-0 px-3 text-xs">Pour qui & quand</TabsTrigger>
                 {place.practicalTips && place.practicalTips.length > 0 && (
-                  <TabsTrigger value="tips" className="h-7 px-3 text-xs">À savoir</TabsTrigger>
+                  <TabsTrigger value="tips" className="min-h-[44px] shrink-0 px-3 text-xs">À savoir</TabsTrigger>
                 )}
               </TabsList>
               <TabsContent value="about" className="mt-3">

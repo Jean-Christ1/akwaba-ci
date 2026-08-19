@@ -32,21 +32,25 @@ export function RunnerContactCard({ runner, errandTitle, videoUrl }: RunnerConta
       <p className="text-xs text-muted-foreground">
         {runner.vehicle} · ★ {runner.rating} · {runner.jobs_completed} missions
       </p>
+      {/* Ces trois commandes servent pendant une mission en cours, souvent en
+          marchant et d'une seule main. En size="sm" elles ne faisaient que
+          36 px de haut, et ne portent aucun libellé visible : rien ne rattrapait
+          un appui manqué. La grille à trois colonnes tient à 360 px de large. */}
       <div className="mt-3 grid grid-cols-3 gap-2">
         {runner.phone ? (
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="outline" size="sm" className="min-h-[44px] w-full">
             <a href={`tel:${runner.phone}`} aria-label={`Appeler ${runner.full_name}`}>
               <Phone className="h-4 w-4" aria-hidden="true" />
             </a>
           </Button>
         ) : (
-          <Button variant="outline" size="sm" disabled aria-label="Numéro de téléphone indisponible">
+          <Button variant="outline" size="sm" className="min-h-[44px] w-full" disabled aria-label="Numéro de téléphone indisponible">
             <Phone className="h-4 w-4" aria-hidden="true" />
           </Button>
         )}
 
         {lienWhatsapp ? (
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="outline" size="sm" className="min-h-[44px] w-full">
             <a
               href={lienWhatsapp}
               target="_blank"
@@ -57,12 +61,12 @@ export function RunnerContactCard({ runner, errandTitle, videoUrl }: RunnerConta
             </a>
           </Button>
         ) : (
-          <Button variant="outline" size="sm" disabled aria-label="WhatsApp indisponible">
+          <Button variant="outline" size="sm" className="min-h-[44px] w-full" disabled aria-label="WhatsApp indisponible">
             <MessageCircle className="h-4 w-4" aria-hidden="true" />
           </Button>
         )}
 
-        <Button asChild variant="outline" size="sm">
+        <Button asChild variant="outline" size="sm" className="min-h-[44px] w-full">
           <a
             href={videoUrl}
             target="_blank"
