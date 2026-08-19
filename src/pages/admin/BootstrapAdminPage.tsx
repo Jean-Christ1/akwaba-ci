@@ -51,7 +51,7 @@ export default function BootstrapAdminPage() {
           </div>
           <div>
             <h1 className="font-display text-xl">Promotion administrateur</h1>
-            <p className="text-xs text-muted-foreground">À usage unique — désactivé après le premier admin.</p>
+            <p className="text-xs text-muted-foreground">À usage unique : désactivé après le premier admin.</p>
           </div>
         </div>
         <form onSubmit={submit} className="space-y-4">

@@ -1,4 +1,4 @@
-// Adapter "Favoris" — implémentation locale (localStorage)
+// Adapter "Favoris" : implémentation locale (localStorage)
 // Substituable plus tard par un adapter Cloud (Supabase) sans toucher l'UI.
 
 const STORAGE_KEY = "akwaba.favorites.v1";
@@ -29,7 +29,7 @@ class LocalFavorites implements FavoritesPort {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
     } catch {
-      /* quota / private mode — silencieux */
+      /* quota / private mode : silencieux */
     }
     this.listeners.forEach((cb) => cb());
   }

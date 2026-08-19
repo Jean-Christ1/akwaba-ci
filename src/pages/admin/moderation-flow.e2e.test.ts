@@ -4,7 +4,7 @@
 // plus realtime status transitions (subscribe / failure / retry) and the
 // partner RLS shape (partner sees only own rows even with sort + pagination).
 //
-// AdminPage UI is a thin Table over these pure helpers — covering the helpers
+// AdminPage UI is a thin Table over these pure helpers, so covering the helpers
 // + a fake realtime channel gives us reliable scenario coverage without
 // bootstrapping a full browser harness.
 

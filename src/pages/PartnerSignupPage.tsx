@@ -290,7 +290,7 @@ export default function PartnerSignupPage() {
           <>
             <h2 className="font-display text-lg">Récapitulatif</h2>
             <div className="space-y-2 text-sm">
-              <p><strong>{form.name}</strong> — {TYPES.find((t) => t.value === form.type)?.label}</p>
+              <p><strong>{form.name}</strong> : {TYPES.find((t) => t.value === form.type)?.label}</p>
               <p className="text-muted-foreground">{form.city} · {form.address}</p>
               <p className="line-clamp-3">{form.description}</p>
             </div>

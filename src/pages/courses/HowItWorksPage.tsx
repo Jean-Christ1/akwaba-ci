@@ -18,7 +18,7 @@ const STEPS = [
   {
     n: 1,
     title: "Vous décrivez la course",
-    text: "Liste des articles, quartier, véhicule souhaité, volume, urgence. Vous voyez immédiatement les frais de service — pas le prix des achats, qu'on ne peut pas deviner.",
+    text: "Liste des articles, quartier, véhicule souhaité, volume, urgence. Vous voyez immédiatement les frais de service, pas le prix des achats, qu'on ne peut pas deviner.",
   },
   {
     n: 2,
@@ -91,7 +91,7 @@ export default function HowItWorksPage() {
             <li>• Base véhicule + distance + temps au-delà de {FREE_MINUTES} min ({PER_MINUTE} FCFA/min).</li>
             <li>• Supplément volume et urgence, remise si vous récupérez vous-même.</li>
             <li>• Minimum {formatFcfa(MIN_SERVICE_FEE)}.</li>
-            <li>• Commission Akwaba : {Math.round(COMMISSION_RATE * 100)} % — le reste va au shopper.</li>
+            <li>• Commission Akwaba : {Math.round(COMMISSION_RATE * 100)} %, le reste va au shopper.</li>
             <li>• Pourboire possible : 100 % pour le shopper.</li>
           </ul>
         </div>

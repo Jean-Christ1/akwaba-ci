@@ -31,7 +31,7 @@ export function useTabState(storageKey: string, defaultValue: string) {
       url.searchParams.set("tab", value);
       window.history.replaceState({}, "", url.toString());
     }
-    // Tracking hook — consumed by any analytics layer listening on window.
+    // Tracking hook, consumed by any analytics layer listening on window.
     window.dispatchEvent(
       new CustomEvent("akw:tab_change", { detail: { scope: storageKey, tab: value } }),
     );
