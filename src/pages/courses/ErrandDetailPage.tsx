@@ -403,7 +403,12 @@ export default function ErrandDetailPage() {
                 isRunner={isRunner}
                 onSaved={recharger}
               />
-              <ErrandPaymentPanel errand={errand} isCustomer={isCustomer} onChanged={recharger} />
+              <ErrandPaymentPanel
+                errand={errand}
+                isCustomer={isCustomer}
+                isRunner={isRunner}
+                onChanged={recharger}
+              />
             </>
           )}
         </aside>

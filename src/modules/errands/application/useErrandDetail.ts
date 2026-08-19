@@ -30,7 +30,12 @@ export interface ErrandDetail {
   payment_status: string;
   fund_mode: string;
   advance_proof_url: string | null;
+  /** Ce que le shopper reconnaît avoir reçu. Seul montant déduit de la facture. */
   advance_amount: number;
+  /** Ce que le client déclare avoir envoyé. Une déclaration, pas une preuve. */
+  advance_declared_amount: number;
+  advance_declared_at: string | null;
+  advance_confirmed_at: string | null;
   receipt_url: string | null;
   rating: number | null;
   review: string | null;
@@ -91,7 +96,7 @@ const COLONNES_IDENTITE =
 const COLONNES_MONTANTS =
   "items_total,service_fee,delivery_fee,commission_rate,commission_amount,total_amount,tip_amount" as const;
 const COLONNES_PAIEMENT =
-  "payment_method,payment_status,fund_mode,advance_amount,advance_proof_url,receipt_url,rating,review" as const;
+  "payment_method,payment_status,fund_mode,advance_amount,advance_declared_amount,advance_declared_at,advance_confirmed_at,advance_proof_url,receipt_url,rating,review" as const;
 const COLONNES_MISSION =
   "distance_km,estimated_minutes,actual_distance_km,overtime_minutes,extra_distance_km,overrun_fee,budget_overrun_pending,budget_approved_at,started_at" as const;
 
