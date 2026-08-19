@@ -18,6 +18,7 @@
  * Aucun identifiant n'est inscrit dans ce fichier : ils viennent de
  * l'environnement, et n'apparaissent jamais dans la sortie.
  */
+import fs from 'node:fs'
 import pg from 'pg'
 
 const requis = ['SUPABASE_DB_HOST', 'SUPABASE_DB_USER', 'SUPABASE_DB_PASSWORD']
@@ -103,6 +104,16 @@ const redevenirProprietaire = () => c.query('RESET ROLE')
 await c.query('BEGIN')
 
 try {
+  // Les migrations en attente sont appliquees dans la transaction : la recette
+  // doit eprouver le code tel qu'il sera, pas tel qu'il etait. Tout est annule
+  // a la fin, la base ressort intacte.
+  {
+    const dejaLa = new Set((await c.query('select version from supabase_migrations.schema_migrations')).rows.map((r) => r.version))
+    const enAttente = fs.readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql') && !dejaLa.has(f.split('_')[0])).sort()
+    for (const f of enAttente) await c.query(fs.readFileSync('supabase/migrations/' + f, 'utf8'))
+    if (enAttente.length) console.log('(' + enAttente.length + ' migration(s) en attente appliquee(s) dans la transaction)')
+  }
+
   // Deux comptes SANS AUCUN PRIVILEGE, crees pour la duree de la transaction.
   // Reutiliser un compte existant fausserait tout : le seul compte de la base
   // porte le role administrateur, que les gardes laissent passer par
