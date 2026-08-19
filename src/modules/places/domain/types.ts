@@ -1,4 +1,4 @@
-// Domaine métier — types stables (port indépendant des providers)
+// Domaine métier : types stables (port indépendant des providers)
 export type PlaceType =
   | "lodging"
   | "restaurant"
@@ -20,7 +20,7 @@ export interface Coordinates {
 
 export interface OpeningHours {
   open: boolean;
-  today?: string; // "12:00 – 23:30"
+  today?: string; // "12:00 à 23:30"
   note?: string;
 }
 

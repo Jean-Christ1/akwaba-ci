@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
     } catch {
-      // ignore — fallback to local refresh
+      // ignore: fall back to local refresh
     }
     if (user) await loadRoles(user.id);
   };

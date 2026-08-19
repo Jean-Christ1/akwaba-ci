@@ -68,7 +68,7 @@ export default function ExplorerPage() {
 
   return (
     <div className="bg-background">
-      {/* En-tête recherche — compact, dense */}
+      {/* En-tête recherche : compact, dense */}
       <section className="sticky top-0 z-20 border-b border-border/60 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="akw-container py-3 sm:py-4 space-y-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -92,7 +92,7 @@ export default function ExplorerPage() {
               )}
             </div>
 
-            {/* Sélecteur ville — desktop seulement */}
+            {/* Sélecteur ville : desktop seulement */}
             <select
               value={city}
               onChange={(e) => {
@@ -109,7 +109,7 @@ export default function ExplorerPage() {
               ))}
             </select>
 
-            {/* Bouton filtres — mobile : ouvre Sheet */}
+            {/* Bouton filtres, sur mobile : ouvre Sheet */}
             <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
               <SheetTrigger asChild>
                 <button
@@ -203,7 +203,7 @@ export default function ExplorerPage() {
             </Sheet>
           </div>
 
-          {/* Chips catégories — desktop seulement (mobile via sheet) */}
+          {/* Chips catégories : desktop seulement (mobile via sheet) */}
           <div className="scrollbar-none hidden gap-2 overflow-x-auto sm:flex">
             {TYPES.map((t) => (
               <button

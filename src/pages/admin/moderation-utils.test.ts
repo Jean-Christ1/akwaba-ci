@@ -111,7 +111,7 @@ describe("buildModerationCsv", () => {
     expect(lines[1].endsWith(",sent")).toBe(true);
   });
   it("leaves event columns empty when no event for the place (RLS-hidden case)", () => {
-    // p2 row has no event — last 4 columns must be empty (trailing commas)
+    // p2 row has no event: last 4 columns must be empty (trailing commas)
     expect(lines[2].endsWith(",,,,")).toBe(true);
   });
 });
@@ -123,7 +123,7 @@ describe("RLS partner export shape", () => {
     const partnerPlaces: PlaceRow[] = [mkPlace({ id: "own", owner_id: "me" })];
     const eventsForeignFiltered: Record<string, ModerationEvent | undefined> = {
       own: { id: "e", place_id: "own", action: "approved", note: "ok", created_at: "2026-05-04T00:00:00Z" },
-      // foreign place "stranger" intentionally absent — RLS hides it server-side
+      // foreign place "stranger" intentionally absent: RLS hides it server-side
     };
     const csv = buildModerationCsv(partnerPlaces, eventsForeignFiltered);
     expect(csv).toContain("own");

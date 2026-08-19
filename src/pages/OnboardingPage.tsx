@@ -11,7 +11,7 @@ const STEPS = [
     icon: Sparkles,
     eyebrow: "Bienvenue",
     title: "La Côte d'Ivoire, sélectionnée pour vous",
-    body: "Une équipe locale visite, vérifie et choisit chaque adresse. Pas un annuaire — une sélection.",
+    body: "Une équipe locale visite, vérifie et choisit chaque adresse. Pas un annuaire, une sélection.",
   },
   {
     icon: Map,
