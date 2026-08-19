@@ -8,55 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 
-export type ScheduleRhythm = "weekly" | "biweekly" | "monthly";
-
-/**
- * Les jours de la semaine, dans l'ordre attendu par la base : dimanche vaut 0,
- * comme EXTRACT(DOW). Le vocabulaire est celui de la page des courses
- * programmées, qui décrit les mêmes rythmes. Deux formulations différentes
- * pour un même rythme feraient douter le client d'avoir programmé ce qu'il
- * croit ; la liste est recopiée plutôt que partagée parce que les deux écrans
- * ne partagent aujourd'hui aucun module commun.
- */
-const JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
-
-const RYTHMES: { value: ScheduleRhythm; label: string }[] = [
-  { value: "weekly", label: "Chaque semaine" },
-  { value: "biweekly", label: "Une semaine sur deux" },
-  { value: "monthly", label: "Chaque mois" },
-];
-
-/**
- * Le jour du mois s'arrête à 28, exactement comme la contrainte de la table :
- * un rendez-vous fixé au 31 sauterait les mois courts sans que personne ne
- * comprenne pourquoi sa course n'est pas partie.
- */
-const JOURS_DU_MOIS = Array.from({ length: 28 }, (_, i) => i + 1);
-
-const HEURES = Array.from({ length: 24 }, (_, i) => i);
-
-/** Bornes du libellé, reprises de la contrainte errand_schedules_label_len. */
-export const LIBELLE_MIN = 2;
-export const LIBELLE_MAX = 80;
-
-/**
- * Formulation en français naturel du rythme choisi, identique à celle de la
- * page des courses programmées : le client doit y relire la phrase qu'il a
- * validée ici.
- */
-export function decrireRythme(
-  rythme: ScheduleRhythm,
-  jourSemaine: number,
-  jourMois: number,
-  heure: number
-): string {
-  const heureLue = `${String(heure).padStart(2, "0")} h`;
-  if (rythme === "monthly") return `Le ${jourMois} de chaque mois, vers ${heureLue}`;
-  const jour = JOURS[jourSemaine] ?? JOURS[0];
-  return rythme === "weekly"
-    ? `Chaque ${jour}, vers ${heureLue}`
-    : `Un ${jour} sur deux, vers ${heureLue}`;
-}
+import {
+  HEURES,
+  JOURS,
+  JOURS_DU_MOIS,
+  LIBELLE_MAX,
+  LIBELLE_MIN,
+  RYTHMES,
+  decrireRythme,
+  type ScheduleRhythm,
+} from "@/modules/errands/programmation";
 
 interface ProgrammationExistante {
   id: string;
@@ -233,7 +194,7 @@ export function ErrandScheduleCard({ errandId, errandTitle, onCreated }: ErrandS
               id="programmation-libelle"
               value={libelle}
               maxLength={LIBELLE_MAX}
-              className="mt-1"
+              className="mt-1 min-h-[44px]"
               onChange={(e) => setLibelle(e.target.value)}
             />
           </div>

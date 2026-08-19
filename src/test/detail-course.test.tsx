@@ -1,11 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import {
-  cancelDecision,
-  canCancelErrand,
-} from "@/pages/courses/ErrandDetailPage";
-import { ErrandScheduleCard, decrireRythme } from "@/modules/errands/ui/ErrandScheduleCard";
+import { canCancelErrand, cancelDecision } from "@/modules/errands/annulation";
+import { ErrandScheduleCard } from "@/modules/errands/ui/ErrandScheduleCard";
+import { decrireRythme } from "@/modules/errands/programmation";
 import { TipCard } from "@/modules/errands/ui/TipCard";
 
 /**

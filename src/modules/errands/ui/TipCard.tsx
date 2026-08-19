@@ -84,9 +84,9 @@ export function TipCard({ errandId, currentTip, paymentStatus, onAdded }: TipCar
         </Label>
         <Input
           id="pourboire"
+          className="mt-1 min-h-[44px]"
           inputMode="numeric"
           value={montant}
-          className="mt-1"
           onChange={(e) => setMontant(e.target.value.replace(/[^0-9]/g, ""))}
         />
       </div>

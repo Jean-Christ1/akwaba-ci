@@ -63,8 +63,8 @@ export default function MapPage() {
       el.title = nomAccessible;
       el.className =
         "akw-map-marker flex items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-110";
-      el.style.width = "32px";
-      el.style.height = "32px";
+      el.style.width = "44px";
+      el.style.height = "44px";
       // L'épingle est décorative : elle ne doit pas ajouter un second nom qui
       // concurrence celui du lieu.
       el.innerHTML = `<svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;

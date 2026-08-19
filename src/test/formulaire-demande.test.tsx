@@ -9,7 +9,7 @@ import {
   LIBELLES_CONSIGNE,
   avertissementConsigne,
   quartierApresChangementDeVille,
-} from "@/pages/courses/NewErrandPage";
+} from "@/modules/errands/consigne";
 
 /**
  * Formulaire de demande de course : deux pannes silencieuses.

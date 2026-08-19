@@ -7,11 +7,8 @@ import { describe, expect, it } from "vitest";
 
 import { formatFcfa } from "@/modules/errands/domain";
 import { courseDepuisMarcheOuvert } from "@/modules/errands/application/useErrandDetail";
-import {
-  accesShopper,
-  CarteMission,
-  messageOffreInvalide,
-} from "@/pages/courses/RunnerDashboardPage";
+import { accesShopper, messageOffreInvalide } from "@/modules/errands/marche";
+import { CarteMission } from "@/pages/courses/RunnerDashboardPage";
 
 /**
  * Le marché du shopper : quatre défauts constatés sur l'écran des missions.
