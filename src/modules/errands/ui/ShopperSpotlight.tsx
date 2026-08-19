@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, KeyRound, ReceiptText, ShieldCheck } from "lucide-react";
+import { ArrowRight, Bike, KeyRound, ReceiptText, ShieldCheck } from "lucide-react";
 
 import { CATEGORIES, type ErrandCategory } from "@/modules/errands/domain";
 
@@ -74,28 +74,38 @@ export function ShopperSpotlight() {
           depuis votre téléphone.
         </p>
 
-        {/* Appels à l'action : le principal reste seul de sa couleur pour que
-            l'œil n'ait aucune hésitation sur l'étape suivante. */}
-        <div className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
+        {/* Les deux portes du service, et elles seules. Le mode d'emploi n'est
+            plus proposé ici : qui veut comprendre avant d'agir le trouve dans
+            le pied de page et dans le hub, alors qu'affiché ici il retardait
+            l'action au lieu de la servir.
+
+            La porte principale garde la couleur de marque, pleine et surélevée.
+            La seconde prend la teinte accent, donc une autre famille de
+            couleur : la hiérarchie se lit au premier regard sans que devenir
+            shopper ressemble à un lien de bas de bloc. */}
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <Link
             to="/courses/nouvelle"
-            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-elevation-1 transition-transform hover:-translate-y-0.5"
+            className="group inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-primary px-7 text-sm font-semibold text-primary-foreground shadow-elevation-2 transition-transform duration-200 hover:-translate-y-0.5"
           >
             Demander une course
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
-          <Link
-            to="/courses/comment-ca-marche"
-            className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-border bg-background px-6 text-sm font-semibold text-foreground transition-colors hover:border-primary/40"
-          >
-            Comment ça marche
+            <ArrowRight
+              className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5"
+              aria-hidden="true"
+            />
           </Link>
           <Link
             to="/courses/devenir-shopper"
-            className="inline-flex min-h-[44px] items-center justify-center px-1 text-sm font-medium text-primary underline-offset-4 hover:underline sm:px-2"
+            className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full border border-accent/40 bg-accent-soft px-7 text-sm font-semibold text-foreground shadow-elevation-1 transition-transform duration-200 hover:-translate-y-0.5"
           >
+            <Bike className="h-4 w-4 text-accent" aria-hidden="true" />
             Devenir shopper
           </Link>
+          {/* Signature reprise du hub des services : elle dit en trois mots ce
+              que les deux portes ont en commun, sans répéter le titre. */}
+          <p className="text-xs font-medium text-muted-foreground sm:pl-1">
+            Simple, traçable, ivoirien.
+          </p>
         </div>
 
         {/* Réassurance : trois faits vérifiables, pas des arguments. */}
