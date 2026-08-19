@@ -92,6 +92,13 @@ export interface QuoteInput {
   estimatedMinutes: number;
   dropoff: DropoffMode;
   itemsCount?: number;
+  /**
+   * Barème en vigueur, lu dans `commission_rules`. Les constantes ne sont
+   * que le repli : un exploitant qui publie un nouveau barème changerait le
+   * prix appliqué par le serveur sans changer celui annoncé à l'écran.
+   */
+  minServiceFee?: number;
+  commissionRate?: number;
 }
 
 export interface Quote {
@@ -110,28 +117,34 @@ export interface Quote {
 const round50 = (n: number) => Math.round(n / 50) * 50;
 
 export function quoteErrand(input: QuoteInput): Quote {
+  const minServiceFee = input.minServiceFee ?? MIN_SERVICE_FEE;
+  const commissionRate = input.commissionRate ?? COMMISSION_RATE;
   const v = VEHICLE_OPTIONS.find((o) => o.value === input.vehicle) ?? VEHICLE_OPTIONS[0];
   const vol = VOLUME_OPTIONS.find((o) => o.value === input.volume) ?? VOLUME_OPTIONS[0];
   const urg = URGENCY_OPTIONS.find((o) => o.value === input.urgency) ?? URGENCY_OPTIONS[1];
 
   const base = v.base;
-  const distanceFee = round50(Math.max(0, input.distanceKm) * v.perKm);
+  // Aucun arrondi sur les composantes : le serveur somme les valeurs exactes
+  // et n'arrondit qu'une fois. Arrondir ici puis à nouveau sur le total
+  // faisait diverger le devis annoncé du montant enregistré, d'un pas de
+  // cinquante francs, dans un cas sur quatre.
+  const distanceFee = Math.max(0, input.distanceKm) * v.perKm;
   const extraMinutes = Math.max(0, (input.estimatedMinutes || 0) - FREE_MINUTES);
-  const timeFee = round50(extraMinutes * PER_MINUTE);
+  const timeFee = extraMinutes * PER_MINUTE;
   const volumeFee = vol.fee;
   const urgencyFee = urg.fee;
   // Longue liste = plus de temps en rayon
-  const itemsFee = round50(Math.max(0, (input.itemsCount ?? 0) - 10) * 50);
+  const itemsFee = Math.max(0, (input.itemsCount ?? 0) - 10) * 50;
   const dropoffAdjustment =
     input.dropoff === "customer_pickup" ? -500 : input.dropoff === "third_party" ? -300 : 0;
 
   const raw = base + distanceFee + timeFee + volumeFee + urgencyFee + itemsFee + dropoffAdjustment;
-  const serviceFee = Math.max(MIN_SERVICE_FEE, round50(raw));
+  const serviceFee = Math.max(minServiceFee, round50(raw));
   // La commission doit être arrondie exactement comme le serveur l'arrondit,
   // sinon le client lit un montant et la base en enregistre un autre. Le
   // serveur fait round(service * taux, 2) : on reproduit cela au centime, et
   // surtout pas l'arrondi à cinquante francs utilisé pour les frais eux-mêmes.
-  const commission = Math.round(serviceFee * COMMISSION_RATE * 100) / 100;
+  const commission = Math.round(serviceFee * commissionRate * 100) / 100;
   const runnerPayout = serviceFee - commission;
 
   return {

@@ -9,6 +9,7 @@ import {
 
 export interface CommissionRule {
   version: number;
+  base: "service_fee" | "service_and_delivery";
   rate: number;
   minServiceFee: number;
   minPayout: number;
@@ -29,6 +30,7 @@ export interface CommissionRule {
  */
 const REPLI: CommissionRule = {
   version: 0,
+  base: "service_fee",
   rate: COMMISSION_RATE,
   minServiceFee: MIN_SERVICE_FEE,
   minPayout: MIN_PAYOUT,
@@ -44,7 +46,7 @@ export function useCommissionRule(): { rule: CommissionRule; loading: boolean } 
 
     supabase
       .from("commission_rules")
-      .select("version,rate,min_service_fee,min_payout,hold_hours")
+      .select("version,rate,base,min_service_fee,min_payout,hold_hours")
       .eq("is_active", true)
       .order("version", { ascending: false })
       .limit(1)
@@ -53,6 +55,7 @@ export function useCommissionRule(): { rule: CommissionRule; loading: boolean } 
         if (annule || !data) return;
         setRule({
           version: Number(data.version),
+          base: data.base === "service_and_delivery" ? "service_and_delivery" : "service_fee",
           rate: Number(data.rate),
           minServiceFee: Number(data.min_service_fee),
           minPayout: Number(data.min_payout),

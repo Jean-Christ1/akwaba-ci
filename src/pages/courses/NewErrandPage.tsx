@@ -48,11 +48,16 @@ import {
   type VolumeSize,
 } from "@/modules/errands/pricing";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
+import { useCommissionRule } from "@/modules/errands/application/useCommissionRule";
 import { useServiceAreas, zonesOfCity } from "@/modules/places/application/useServiceAreas";
 
 export default function NewErrandPage() {
   usePageTitle("Demander une course", "Confiez votre course à un shopper vérifié.");
   const { user } = useAuth();
+  // Le serveur calcule le devis avec le barème en vigueur, pas avec les
+  // constantes du moteur : l'écran doit lire le même, sinon il annonce un
+  // prix que la base n'applique plus.
+  const { rule } = useCommissionRule();
   const navigate = useNavigate();
   const [params] = useSearchParams();
 
@@ -165,6 +170,8 @@ export default function NewErrandPage() {
   const quote = useMemo(
     () =>
       quoteErrand({
+        minServiceFee: rule.minServiceFee,
+        commissionRate: rule.rate,
         vehicle,
         volume,
         urgency,
@@ -173,7 +180,17 @@ export default function NewErrandPage() {
         dropoff,
         itemsCount: cleanItems.length,
       }),
-    [vehicle, volume, urgency, distance, minutes, dropoff, cleanItems.length]
+    [
+      vehicle,
+      volume,
+      urgency,
+      distance,
+      minutes,
+      dropoff,
+      cleanItems.length,
+      rule.minServiceFee,
+      rule.rate,
+    ]
   );
 
   const budgetNum = Number(budget) || 0;

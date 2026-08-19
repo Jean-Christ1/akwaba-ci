@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { useCommissionRule } from "@/modules/errands/application/useCommissionRule";
 import { computeInvoice, formatFcfa } from "@/modules/errands/domain";
 import { ProofUpload } from "@/modules/errands/ui/ProofUpload";
 import type { ErrandDetail } from "@/modules/errands/application/useErrandDetail";
@@ -30,6 +31,9 @@ export function ErrandInvoice({ errand, isCustomer, isRunner, onSaved }: ErrandI
   const [itemsTotal, setItemsTotal] = useState(String(errand.items_total || ""));
   const [deliveryFee, setDeliveryFee] = useState(String(errand.delivery_fee || ""));
   const [busy, setBusy] = useState(false);
+  // L'assiette de la commission dépend du barème en vigueur, pas d'une
+  // hypothèse figée dans l'écran.
+  const { rule } = useCommissionRule();
 
   // La facture peut être réécrite par le serveur, par exemple au dépôt d'un
   // reçu : la saisie suit la valeur enregistrée plutôt que de la contredire.
@@ -44,9 +48,23 @@ export function ErrandInvoice({ errand, isCustomer, isRunner, onSaved }: ErrandI
         itemsTotal: Number(itemsTotal) || 0,
         serviceFee: Number(errand.service_fee) || 0,
         deliveryFee: Number(deliveryFee) || 0,
+        // Le serveur retient le dépassement comme un supplément de service et
+        // ajoute le pourboire au total. Les omettre faisait annoncer au client
+        // moins que ce que la base lui réclamait.
+        overrunFee: Number(errand.overrun_fee) || 0,
+        tipAmount: Number(errand.tip_amount) || 0,
         commissionRate: errand.commission_rate ?? 0.1,
+        commissionBase: rule.base,
       }),
-    [itemsTotal, deliveryFee, errand.service_fee, errand.commission_rate]
+    [
+      itemsTotal,
+      deliveryFee,
+      errand.service_fee,
+      errand.overrun_fee,
+      errand.tip_amount,
+      errand.commission_rate,
+      rule.base,
+    ]
   );
 
   const avance = Number(errand.advance_amount) || 0;
@@ -143,10 +161,24 @@ export function ErrandInvoice({ errand, isCustomer, isRunner, onSaved }: ErrandI
           <dt className="text-muted-foreground">Service</dt>
           <dd>{formatFcfa(facture.service)}</dd>
         </div>
+        {/* Le dépassement de durée ou de distance est retenu par le serveur :
+            l'afficher évite au client de découvrir un écart sans explication. */}
+        {facture.overrun > 0 && (
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <dt>Dépassement de mission</dt>
+            <dd>{formatFcfa(facture.overrun)}</dd>
+          </div>
+        )}
         <div className="flex justify-between">
           <dt className="text-muted-foreground">Livraison</dt>
           <dd>{formatFcfa(facture.delivery)}</dd>
         </div>
+        {facture.tip > 0 && (
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <dt>Pourboire</dt>
+            <dd>{formatFcfa(facture.tip)}</dd>
+          </div>
+        )}
         <div className="flex justify-between border-t border-border pt-1 font-semibold">
           <dt>Total à payer</dt>
           <dd>{formatFcfa(facture.total)}</dd>
