@@ -21,6 +21,7 @@ export const CATEGORIES: { value: ErrandCategory; label: string; emoji: string; 
   { value: "admin_paperwork", label: "Démarches", emoji: "📄", hint: "Mairie, CNPS, dépôt de dossier" },
   { value: "gas", label: "Gaz / Eau", emoji: "🔥", hint: "Bouteille de gaz, packs d'eau" },
   { value: "electronics", label: "Électronique", emoji: "📱", hint: "Accessoires, réparation" },
+  { value: "parcel", label: "Colis", emoji: "📦", hint: "Retrait, dépôt, remise en main propre" },
   { value: "other", label: "Autre", emoji: "✨", hint: "Décrivez votre besoin" },
 ];
 

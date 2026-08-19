@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { logger } from "@/lib/logger";
 import { supabase } from "@/integrations/supabase/client";
+import { edgeErrorMessage } from "@/shared/lib/edgeError";
 import {
   filterPlaces,
   paginate,
@@ -110,7 +111,11 @@ export function ModerationTab({ pending, loadBusy, lastLoadedAt, onReload }: Mod
       const { data, error } = await supabase.functions.invoke("moderate-place", {
         body: { place_id: cible.place.id, action: cible.action, note: note.trim() || null },
       });
-      if (error) throw error;
+      // La fonction moderate-place écrit le motif exact du refus dans le corps de sa
+      // réponse. Relancer l'erreur telle quelle affichait « Edge Function
+      // returned a non-2xx status code », le même libellé quelle que soit la
+      // cause : l'utilisateur ne savait pas quoi corriger.
+      if (error) throw new Error(await edgeErrorMessage(error));
       const res = data as {
         error?: string;
         email?: { status?: string; recipient?: string; detail?: string };

@@ -2616,6 +2616,83 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      errand_unlock_handover: {
+        Args: { p_errand_id: string; p_reason?: string }
+        Returns: {
+          accepted_at: string | null
+          actual_distance_km: number | null
+          actual_minutes: number | null
+          advance_amount: number
+          advance_confirmed_at: string | null
+          advance_declared_amount: number
+          advance_declared_at: string | null
+          advance_proof_url: string | null
+          balance_due: number
+          budget_approved_amount: number | null
+          budget_approved_at: string | null
+          budget_estimate: number
+          budget_overrun_pending: boolean
+          category: Database["public"]["Enums"]["errand_category"]
+          city: string
+          commission_amount: number
+          commission_rate: number
+          commission_rule_id: string | null
+          created_at: string
+          customer_id: string | null
+          delivered_at: string | null
+          delivering_at: string | null
+          delivery_address: string
+          delivery_fee: number
+          distance_km: number
+          dropoff_mode: Database["public"]["Enums"]["dropoff_mode"]
+          estimated_minutes: number
+          extra_distance_km: number
+          fund_mode: Database["public"]["Enums"]["fund_mode"]
+          handover_attempts: number
+          handover_code: string | null
+          handover_locked_at: string | null
+          handover_verified_at: string | null
+          id: string
+          items: Json
+          items_total: number
+          lat: number | null
+          lng: number | null
+          notes: string | null
+          overrun_approved_at: string | null
+          overrun_fee: number
+          overtime_minutes: number
+          payment_method: Database["public"]["Enums"]["pay_method"]
+          payment_status: Database["public"]["Enums"]["pay_status"]
+          preferred_contact: string
+          rating: number | null
+          receipt_url: string | null
+          review: string | null
+          runner_id: string | null
+          runner_payout: number
+          scheduled_for: string | null
+          service_fee: number
+          shopping_at: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["errand_status"]
+          substitution_policy: Database["public"]["Enums"]["substitution_policy"]
+          substitution_price_tolerance_pct: number
+          third_party_contact: string | null
+          tip_amount: number
+          title: string
+          total_amount: number
+          updated_at: string
+          urgency: string
+          vehicle_required: string
+          volume_size: string
+          zone: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "errands"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       errand_commission_rule: {
         Args: { p_errand_id: string }
         Returns: {
@@ -3592,84 +3669,6 @@ export type Database = {
         }
         Returns: number
       }
-      errand_unlock_handover:
-        | {
-            Args: { p_errand_id: string }
-            Returns: {
-              accepted_at: string | null
-              actual_distance_km: number | null
-              actual_minutes: number | null
-              advance_amount: number
-              advance_confirmed_at: string | null
-              advance_declared_amount: number
-              advance_declared_at: string | null
-              advance_proof_url: string | null
-              balance_due: number
-              budget_approved_amount: number | null
-              budget_approved_at: string | null
-              budget_estimate: number
-              budget_overrun_pending: boolean
-              category: Database["public"]["Enums"]["errand_category"]
-              city: string
-              commission_amount: number
-              commission_rate: number
-              commission_rule_id: string | null
-              created_at: string
-              customer_id: string | null
-              delivered_at: string | null
-              delivering_at: string | null
-              delivery_address: string
-              delivery_fee: number
-              distance_km: number
-              dropoff_mode: Database["public"]["Enums"]["dropoff_mode"]
-              estimated_minutes: number
-              extra_distance_km: number
-              fund_mode: Database["public"]["Enums"]["fund_mode"]
-              handover_attempts: number
-              handover_code: string | null
-              handover_locked_at: string | null
-              handover_verified_at: string | null
-              id: string
-              items: Json
-              items_total: number
-              lat: number | null
-              lng: number | null
-              notes: string | null
-              overrun_approved_at: string | null
-              overrun_fee: number
-              overtime_minutes: number
-              payment_method: Database["public"]["Enums"]["pay_method"]
-              payment_status: Database["public"]["Enums"]["pay_status"]
-              preferred_contact: string
-              rating: number | null
-              receipt_url: string | null
-              review: string | null
-              runner_id: string | null
-              runner_payout: number
-              scheduled_for: string | null
-              service_fee: number
-              shopping_at: string | null
-              started_at: string | null
-              status: Database["public"]["Enums"]["errand_status"]
-              substitution_policy: Database["public"]["Enums"]["substitution_policy"]
-              substitution_price_tolerance_pct: number
-              third_party_contact: string | null
-              tip_amount: number
-              title: string
-              total_amount: number
-              updated_at: string
-              urgency: string
-              vehicle_required: string
-              volume_size: string
-              zone: string | null
-            }
-            SetofOptions: {
-              from: "*"
-              to: "errands"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
         | {
             Args: { p_errand_id: string; p_reason?: string }
             Returns: {
@@ -3903,6 +3902,7 @@ export type Database = {
         | "admin_paperwork"
         | "gas"
         | "electronics"
+        | "parcel"
         | "other"
       errand_item_state:
         | "requested"
@@ -4110,6 +4110,7 @@ export const Constants = {
         "admin_paperwork",
         "gas",
         "electronics",
+        "parcel",
         "other",
       ],
       errand_item_state: [

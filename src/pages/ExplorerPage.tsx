@@ -134,6 +134,11 @@ export default function ExplorerPage() {
                     <p className="akw-eyebrow mb-2">Catégorie</p>
                     <div className="flex flex-wrap gap-2">
                       {TYPES.map((t) => (
+                        // La barre de puces de bureau est masquée sous sm : ces
+                        // puces sont les seules commandes de filtrage
+                        // disponibles au téléphone, et les surcharges de densité
+                        // les ramenaient à environ 26 px de haut, sous le seuil
+                        // de 44 px que le dépôt s'impose partout ailleurs.
                         <button
                           key={t.value}
                           onClick={() => {
@@ -141,7 +146,7 @@ export default function ExplorerPage() {
                             updateParam("type", t.value);
                           }}
                           className={cn(
-                            "akw-chip !py-1 !px-3 !text-xs",
+                            "akw-chip min-h-[44px] !px-3",
                             type === t.value && "akw-chip-active",
                           )}
                         >

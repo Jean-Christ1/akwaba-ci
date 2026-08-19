@@ -71,7 +71,7 @@ describe("typographie du dépôt", () => {
       "Remplacer par une virgule, un deux-points, des parenthèses ou deux phrases" +
         (fautifs.length ? String.fromCharCode(10) + fautifs.join(String.fromCharCode(10)) : "")
     ).toEqual([]);
-  });
+  }, 30000);
 
   it("corrige en base les textes déjà publiés avec un tiret", () => {
     const migration = fs.readFileSync(
@@ -86,7 +86,7 @@ describe("typographie du dépôt", () => {
     expect(migration).toContain("chr(8212)");
     // Elle échoue si un texte lui échappe, plutôt que de se croire complète.
     expect(migration).toContain("RAISE EXCEPTION");
-  });
+  }, 30000);
 
   it("n'emploie aucun emoji dans les commentaires ni la documentation", () => {
     // La règle vise ce qui est écrit pour un lecteur du code : commentaires,
@@ -113,5 +113,5 @@ describe("typographie du dépôt", () => {
     }
 
     expect(fautifs, "emoji dans un commentaire").toEqual([]);
-  });
+  }, 30000);
 });

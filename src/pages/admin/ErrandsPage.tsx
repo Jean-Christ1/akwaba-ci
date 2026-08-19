@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, Search } from "lucide-react";
+import { AlertTriangle, Search, Unlock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+
 import { supabase } from "@/integrations/supabase/client";
 import { ErrandInspector } from "@/modules/admin/ErrandInspector";
 import { formatFcfa, STATUS_LABEL, statusTone, type ErrandStatus } from "@/modules/errands/domain";
@@ -29,6 +31,7 @@ interface Course {
   offres_en_attente: number;
   remplacements_en_attente: number;
   alerte: string | null;
+  handover_locked_at: string | null;
 }
 
 /**
@@ -52,6 +55,7 @@ export default function ErrandsPage() {
   const [recherche, setRecherche] = useState("");
   const [filtre, setFiltre] = useState<"alertes" | "encours" | "toutes">("alertes");
   const [examinee, setExaminee] = useState<string | null>(null);
+  const [deverrouillage, setDeverrouillage] = useState<string | null>(null);
 
   const charger = useCallback(async () => {
     setChargement(true);
@@ -80,6 +84,36 @@ export default function ErrandsPage() {
   useEffect(() => {
     if (staff) void charger();
   }, [staff, charger]);
+
+  /**
+   * Rouvrir une remise verrouillée par cinq codes erronés.
+   *
+   * Sans ce geste, la course ne peut plus passer en livrée, donc plus être
+   * réglée, donc le shopper n'est jamais payé, et le client reste avec une
+   * commande qu'il a reçue mais qu'aucun écran ne clôture. L'écran du client
+   * annonçait déjà qu'un modérateur la rouvrirait ; c'est la seule chose qui
+   * manquait pour que ce soit vrai.
+   */
+  const rouvrirRemise = async (id: string) => {
+    const motif = window.prompt(
+      "Pourquoi rouvrir cette remise ? Ce motif est enregistré au journal d'audit."
+    );
+    if (motif === null) return;
+    if (motif.trim().length < 5) {
+      return toast.error("Indiquez un motif d'au moins cinq caractères.");
+    }
+
+    setDeverrouillage(id);
+    const { error } = await supabase.rpc("errand_unlock_handover", {
+      p_errand_id: id,
+      p_reason: motif.trim(),
+    });
+    setDeverrouillage(null);
+
+    if (error) return toast.error(error.message);
+    toast.success("Remise rouverte. Le shopper peut de nouveau saisir le code.");
+    void charger();
+  };
 
   // La recherche filtre ce qui est déjà chargé : sur deux cents lignes elle est
   // instantanée, là où un aller-retour serveur ferait clignoter la liste à
@@ -221,14 +255,32 @@ export default function ErrandsPage() {
                       ` · ${c.remplacements_en_attente} remplacement(s) en attente`}
                   </p>
                 </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="min-h-[44px] shrink-0"
-                  onClick={() => setExaminee(c.id)}
-                >
-                  Examiner
-                </Button>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  {/* Cinq codes erronés verrouillent la remise : la course ne
+                      peut plus être livrée, donc plus être réglée, donc le
+                      shopper n'est jamais payé. L'écran du client annonce
+                      qu'un modérateur la rouvrira, et ce bouton était le seul
+                      qui manquait pour que ce soit vrai. */}
+                  {c.handover_locked_at && (
+                    <Button
+                      size="sm"
+                      className="min-h-[44px]"
+                      disabled={deverrouillage === c.id}
+                      onClick={() => void rouvrirRemise(c.id)}
+                    >
+                      <Unlock className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                      Rouvrir la remise
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="min-h-[44px]"
+                    onClick={() => setExaminee(c.id)}
+                  >
+                    Examiner
+                  </Button>
+                </div>
               </div>
             </li>
           ))}

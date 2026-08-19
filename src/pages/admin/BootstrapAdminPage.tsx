@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { edgeErrorMessage } from "@/shared/lib/edgeError";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,7 +30,11 @@ export default function BootstrapAdminPage() {
       const { data, error } = await supabase.functions.invoke("bootstrap-admin", {
         body: { user_id: userId.trim(), token: token.trim() },
       });
-      if (error) throw error;
+      // La fonction bootstrap-admin écrit le motif exact du refus dans le corps de sa
+      // réponse. Relancer l'erreur telle quelle affichait « Edge Function
+      // returned a non-2xx status code », le même libellé quelle que soit la
+      // cause : l'utilisateur ne savait pas quoi corriger.
+      if (error) throw new Error(await edgeErrorMessage(error));
       const payload = data as { error?: string } | null;
       if (payload?.error) throw new Error(payload.error);
       await refreshRoles();

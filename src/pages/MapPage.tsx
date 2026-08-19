@@ -49,11 +49,25 @@ export default function MapPage() {
 
     places.forEach((p) => {
       const el = document.createElement("button");
+      // Repère construit hors React, donc hors de toute revue de gabarit : il
+      // n'avait ni type, ni aria-label, ni titre, ni texte. Au clavier comme au
+      // lecteur d'écran, la carte se parcourait comme une suite de contrôles
+      // tous annoncés « bouton », autant qu'il y a d'adresses publiées, sans
+      // rien pour distinguer l'une de l'autre.
+      el.type = "button";
+      const repere = p.zone ?? p.address;
+      const nomAccessible = repere ? `${p.name}, ${repere}` : p.name;
+      el.setAttribute("aria-label", nomAccessible);
+      // Le pointeur n'avait pas davantage de quoi identifier un repère avant de
+      // cliquer : le titre lui donne la même information au survol.
+      el.title = nomAccessible;
       el.className =
         "akw-map-marker flex items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-110";
       el.style.width = "32px";
       el.style.height = "32px";
-      el.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
+      // L'épingle est décorative : elle ne doit pas ajouter un second nom qui
+      // concurrence celui du lieu.
+      el.innerHTML = `<svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
       el.addEventListener("click", (e) => {
         e.stopPropagation();
         setSelected(p);
@@ -84,6 +98,11 @@ export default function MapPage() {
 
   return (
     <div className="relative h-[calc(100vh-4rem)] lg:h-[calc(100vh-4rem)]">
+      {/* Seul écran public du dépôt sans titre de niveau 1 : la navigation par
+          titres, celle qu'emploie un lecteur d'écran pour se situer, n'y
+          trouvait rien à annoncer. Le titre reste masqué à l'œil, la carte
+          occupant toute la surface. */}
+      <h1 className="sr-only">Carte des adresses</h1>
       <div ref={containerRef} className="absolute inset-0" />
 
       {/* Search flottante */}
