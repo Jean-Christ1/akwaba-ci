@@ -3,7 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import ServicesHubPage from "@/pages/services/ServicesHubPage";
-import { PAY_METHODS, formatFcfa } from "@/modules/errands/domain";
+import { CATEGORIES, PAY_METHODS, formatFcfa } from "@/modules/errands/domain";
 import { COMMISSION_RATE, MIN_SERVICE_FEE } from "@/modules/errands/pricing";
 
 /**
@@ -98,6 +98,24 @@ describe("hub des services : rien de précieux ne doit disparaître", () => {
     expect(texte).toContain(`${Math.round(COMMISSION_RATE * 100)} %`);
     expect(texte).toContain(formatFcfa(MIN_SERVICE_FEE));
   });
+  it("ouvre chaque catégorie du catalogue avec son contexte déjà choisi", () => {
+    afficherHub();
+
+    // Le catalogue est la seule porte qui pré-remplit le formulaire. Perdre une
+    // catégorie ne casse rien de visible : la demande correspondante devient
+    // simplement introuvable depuis le hub, sans que personne ne le remarque.
+    for (const categorie of CATEGORIES) {
+      const lien = screen.getByRole("link", {
+        name: `Demander une course : ${categorie.label}`,
+      });
+      expect(lien, `la catégorie ${categorie.label} doit rester atteignable`).toHaveAttribute(
+        "href",
+        `/courses/nouvelle?category=${categorie.value}`
+      );
+      expect(lien).toHaveTextContent(categorie.hint);
+    }
+  });
+
 
   it("reste lisible : au plus six blocs de premier niveau", () => {
     const { container } = afficherHub();
