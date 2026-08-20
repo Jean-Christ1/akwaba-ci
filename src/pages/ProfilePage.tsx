@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { LogIn, LogOut, ShieldCheck, Inbox, Store, User as UserIcon, KeyRound, Save, ShoppingBasket, Wallet, Bike, CalendarClock } from "lucide-react";
+import { LogIn, LogOut, ShieldCheck, Inbox, Store, User as UserIcon, KeyRound, Save, ShoppingBasket, Wallet, Bike, Building2, CalendarClock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Logo } from "@/shared/ui/Logo";
 import type { Database } from "@/integrations/supabase/types";
@@ -149,6 +149,16 @@ export default function ProfilePage() {
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm truncate">Courses programmées</p>
                 <p className="text-[11px] text-muted-foreground truncate">Ce qui revient chaque semaine</p>
+              </div>
+              <span className="text-primary text-sm">→</span>
+            </Link>
+            <Link to="/organisation" className="akw-card-hover flex items-center gap-3 px-4 py-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-soft text-accent-foreground">
+                <Building2 className="h-4 w-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">Mon organisation</p>
+                <p className="text-[11px] text-muted-foreground truncate">Commander à plusieurs</p>
               </div>
               <span className="text-primary text-sm">→</span>
             </Link>

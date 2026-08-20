@@ -27,6 +27,7 @@ const ItineraryDetailPage = lazy(() =>
   import("./pages/ItineraryPages").then((m) => ({ default: m.ItineraryDetailPage }))
 );
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const OrganisationsPage = lazy(() => import("./pages/OrganisationsPage"));
 const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
@@ -94,6 +95,7 @@ const App = () => (
                 <Route path="/parcours/:slug" element={<ItineraryDetailPage />} />
                 <Route path="/favoris" element={<FavoritesPage />} />
                 <Route path="/profil" element={<ProfilePage />} />
+                <Route path="/organisation" element={<OrganisationsPage />} />
                 <Route path="/services" element={<ServicesHubPage />} />
                 <Route path="/courses" element={<MyErrandsPage />} />
                 <Route path="/courses/nouvelle" element={<NewErrandPage />} />

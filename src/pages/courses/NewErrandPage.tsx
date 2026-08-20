@@ -56,6 +56,7 @@ import {
   quartierApresChangementDeVille,
   type SubstitutionPolicy,
 } from "@/modules/errands/consigne";
+import { useOrganisations } from "@/modules/organisations/application/useOrganisations";
 
 
 export default function NewErrandPage() {
@@ -65,6 +66,11 @@ export default function NewErrandPage() {
   // constantes du moteur : l'écran doit lire le même, sinon il annonce un
   // prix que la base n'applique plus.
   const { rule } = useCommissionRule();
+
+  // Les organisations du client. Une course rattachee apparait dans le suivi
+  // de l'entreprise ; sans organisation, ce choix ne s'affiche pas du tout.
+  const { organisations } = useOrganisations(user?.id);
+  const [organisation, setOrganisation] = useState('');
   const navigate = useNavigate();
   const [params] = useSearchParams();
 
@@ -267,6 +273,22 @@ export default function NewErrandPage() {
           p_policy: substitution,
         });
         consigneEchouee = Boolean(erreurConsigne);
+
+        // Le rattachement à une organisation suit la même règle que la
+        // consigne : son échec doit se dire. Une course qui n'apparaît pas
+        // dans le suivi de l'entreprise ne se remarque pas, elle manque.
+        if (organisation && organisation !== "perso") {
+          const { error: erreurOrg } = await supabase.rpc("errand_set_organisation", {
+            p_errand_id: creee.id,
+            p_organisation_id: organisation,
+          });
+          if (erreurOrg) {
+            toast.warning(
+              "Demande publiée, mais elle n'a pas pu être rattachée à votre organisation. " +
+                "Elle reste une course personnelle."
+            );
+          }
+        }
       }
     }
 
@@ -334,6 +356,35 @@ export default function NewErrandPage() {
                 placeholder="Ex : Courses de la semaine au marché d'Adjamé"
               />
             </div>
+
+            {/* Le choix n'apparaît qu'à ceux qui appartiennent à une
+                organisation : le proposer à tout le monde ferait poser une
+                question qui n'a de sens que pour une minorité. Le règlement ne
+                change pas, seul le suivi de l'entreprise en dépend. */}
+            {organisations.length > 0 && (
+              <div className="mt-3">
+                <Label className="text-xs" htmlFor="organisation">
+                  Pour quel compte ?
+                </Label>
+                <Select value={organisation} onValueChange={setOrganisation}>
+                  <SelectTrigger id="organisation" className="mt-1 min-h-[44px]">
+                    <SelectValue placeholder="Compte personnel" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="perso">Compte personnel</SelectItem>
+                    {organisations.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>
+                        {o.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Une course rattachée apparaît dans le suivi de l'organisation. Vous la réglez
+                  comme d'habitude.
+                </p>
+              </div>
+            )}
           </section>
 
           {/* 2. Articles */}
