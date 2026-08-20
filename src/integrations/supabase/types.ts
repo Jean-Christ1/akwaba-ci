@@ -1411,6 +1411,57 @@ export type Database = {
         }
         Relationships: []
       }
+      organisation_members: {
+        Row: {
+          joined_at: string
+          organisation_id: string
+          role: Database["public"]["Enums"]["org_member_role"]
+          user_id: string
+        }
+        Insert: {
+          joined_at?: string
+          organisation_id: string
+          role?: Database["public"]["Enums"]["org_member_role"]
+          user_id: string
+        }
+        Update: {
+          joined_at?: string
+          organisation_id?: string
+          role?: Database["public"]["Enums"]["org_member_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      organisations: {
+        Row: {
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       service_cities: {
         Row: {
           created_at: string
@@ -2693,6 +2744,58 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      errand_set_organisation: {
+        Args: { p_errand_id: string; p_organisation_id: string | null }
+        Returns: unknown
+      }
+      is_org_member: {
+        Args: { p_org: string; p_user?: string }
+        Returns: boolean
+      }
+      org_role: {
+        Args: { p_org: string; p_user?: string }
+        Returns: Database["public"]["Enums"]["org_member_role"]
+      }
+      organisation_create: {
+        Args: { p_contact_email?: string; p_contact_phone?: string; p_name: string }
+        Returns: unknown
+      }
+      organisation_errands: {
+        Args: { p_limit?: number; p_org: string }
+        Returns: {
+          category: Database["public"]["Enums"]["errand_category"]
+          city: string
+          created_at: string
+          demandeur: string
+          id: string
+          payment_status: Database["public"]["Enums"]["pay_status"]
+          service_fee: number
+          status: Database["public"]["Enums"]["errand_status"]
+          title: string
+          total_amount: number
+          zone: string | null
+        }[]
+      }
+      organisation_join: {
+        Args: { p_code: string }
+        Returns: unknown
+      }
+      organisation_join_code: {
+        Args: { p_org: string }
+        Returns: string
+      }
+      organisation_remove_member: {
+        Args: { p_org: string; p_user: string }
+        Returns: undefined
+      }
+      organisation_rotate_join_code: {
+        Args: { p_org: string }
+        Returns: string
+      }
+      organisation_set_member_role: {
+        Args: { p_org: string; p_role: Database["public"]["Enums"]["org_member_role"]; p_user: string }
+        Returns: undefined
+      }
       errand_commission_rule: {
         Args: { p_errand_id: string }
         Returns: {
@@ -3939,6 +4042,7 @@ export type Database = {
         | "bank"
       notification_channel: "email"
       notification_state: "pending" | "sent" | "failed" | "skipped"
+      org_member_role: "owner" | "manager" | "member"
       offer_status: "pending" | "accepted" | "rejected" | "withdrawn"
       pay_method:
         | "cash"
@@ -4146,6 +4250,7 @@ export const Constants = {
       momo_provider: ["wave", "orange_money", "mtn_momo", "moov_money", "bank"],
       notification_channel: ["email"],
       notification_state: ["pending", "sent", "failed", "skipped"],
+      org_member_role: ["owner", "manager", "member"],
       offer_status: ["pending", "accepted", "rejected", "withdrawn"],
       pay_method: [
         "cash",
