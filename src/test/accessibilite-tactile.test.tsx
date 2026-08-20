@@ -113,9 +113,14 @@ describe("onglets de la fiche lieu", () => {
 
   it("la barre d'onglets ne rogne pas la hauteur des cibles", () => {
     const barre = fiche.match(/<TabsList[^>]*>/)?.[0] ?? "";
-    // Une hauteur fixe de 36 px sur la barre annulerait le gain sur les
-    // onglets. Le débordement horizontal reste la réponse aux 360 px de large.
-    expect(barre).not.toMatch(/\bh-9\b/);
+    // La classe de base du composant partagé vaut h-10, soit 40 px. Exiger
+    // seulement l'absence de h-9 ne gardait donc rien : retirer h-auto de la
+    // page suffisait à rogner de nouveau les onglets portés à 44 px, et le
+    // débordement vertical revenait, sans qu'aucun contrôle ne rougisse.
+    expect(barre, "la hauteur de base doit être neutralisée").toMatch(
+      /\bh-auto\b|\bmin-h-\[44px\]\b/
+    );
+    expect(barre).not.toMatch(/\bh-9\b|\bh-10\b/);
     expect(barre).toContain("overflow-x-auto");
   });
 });

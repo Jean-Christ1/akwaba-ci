@@ -1,22 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
 import { useCommissionRule } from "@/modules/errands/application/useCommissionRule";
 import {
   CATEGORIES, formatFcfa, STATUS_LABEL, statusTone, type ErrandStatus,
 } from "@/modules/errands/domain";
 import { accesShopper, messageOffreInvalide } from "@/modules/errands/marche";
+import { OfferComposer } from "@/modules/errands/ui/OfferComposer";
 
 interface Mission {
   id: string;
@@ -298,38 +292,23 @@ export default function RunnerDashboardPage() {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={!!target} onOpenChange={(o) => !o && setTarget(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Proposer une offre</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label>Votre prix de service (FCFA)</Label>
-              <Input value={price} inputMode="numeric"
-                onChange={(e) => setPrice(e.target.value.replace(/[^0-9]/g, ""))} placeholder="3000" />
-              {offreInvalide && (
-                <p className={`mt-1 text-xs ${price.trim() ? "text-destructive" : "text-muted-foreground"}`}>
-                  {offreInvalide}
-                </p>
-              )}
-            </div>
-            <div>
-              <Label>Délai estimé (minutes)</Label>
-              <Input value={eta} inputMode="numeric"
-                onChange={(e) => setEta(e.target.value.replace(/[^0-9]/g, ""))} />
-            </div>
-            <div>
-              <Label>Message</Label>
-              <Textarea value={msg} onChange={(e) => setMsg(e.target.value)} rows={3}
-                placeholder="Je suis à Cocody, je peux partir tout de suite." />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={sendOffer} disabled={sending || !!offreInvalide}>
-              {sending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Envoyer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Le composeur vit dans son propre composant : la garde de prix ne
+          s'éprouvait sinon qu'en cherchant une chaîne dans ce fichier, et une
+          garde qui ne peut pas échouer ne garde rien. */}
+      <OfferComposer
+        ouvert={!!target}
+        onFermer={() => setTarget(null)}
+        prix={price}
+        setPrix={setPrice}
+        delai={eta}
+        setDelai={setEta}
+        message={msg}
+        setMessage={setMsg}
+        plancher={rule.minServiceFee}
+        baremeEnCours={baremeEnCours}
+        envoiEnCours={sending}
+        onEnvoyer={() => void sendOffer()}
+      />
     </div>
   );
 }
