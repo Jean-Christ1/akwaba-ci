@@ -2104,6 +2104,7 @@ export type Database = {
           p_overtime_grace: number
           p_overtime_per_min: number
           p_rate: number
+          p_settlement?: Database["public"]["Enums"]["settlement_mode"]
         }
         Returns: {
           base: string

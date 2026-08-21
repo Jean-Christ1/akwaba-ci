@@ -14,6 +14,8 @@ import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
 interface Bareme {
   version: number;
+  settlement: string;
+  base: string;
   rate: number;
   min_service_fee: number;
   min_payout: number;
@@ -69,7 +71,7 @@ export default function SettingsPage() {
       supabase
         .from("commission_rules")
         .select(
-          "version,rate,min_service_fee,min_payout,hold_hours,overtime_grace_minutes,overtime_per_minute,distance_grace_km,distance_per_km,overrun_cap_ratio,budget_tolerance_pct,budget_tolerance_min"
+          "version,rate,settlement,base,min_service_fee,min_payout,hold_hours,overtime_grace_minutes,overtime_per_minute,distance_grace_km,distance_per_km,overrun_cap_ratio,budget_tolerance_pct,budget_tolerance_min"
         )
         .eq("is_active", true)
         .order("version", { ascending: false })
@@ -203,6 +205,32 @@ export default function SettingsPage() {
             </span>
           )}
         </div>
+
+        {/* Le mode de règlement décide qui détient l'argent, et le portefeuille
+            du shopper comme la page « Comment ça marche » en dépendent. Il
+            n'était affiché nulle part : un exploitant ne pouvait pas savoir ce
+            que sa plateforme applique. Il est montré, pas modifiable ici :
+            passer au séquestre suppose un prestataire de paiement, qui n'est
+            pas choisi, et offrir l'interrupteur promettrait ce qui n'existe
+            pas. La publication d'un barème le conserve désormais. */}
+        {bareme && (
+          <div className="mt-3 rounded-xl border border-border bg-muted/30 p-3 text-sm">
+            <p className="font-medium">
+              Règlement :{" "}
+              {bareme.settlement === "direct"
+                ? "direct, le client paie le shopper lui-même"
+                : "séquestre, la plateforme détient les fonds jusqu'à la clôture"}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Assiette de la commission :{" "}
+              {bareme.base === "service_and_delivery"
+                ? "frais de service et livraison"
+                : "frais de service seuls"}
+              . Ces deux réglages sont repris à chaque publication de barème ; les changer
+              suppose une décision d'entreprise, pas un simple champ.
+            </p>
+          </div>
+        )}
 
         {brouillon && (
           <>
