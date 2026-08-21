@@ -51,10 +51,12 @@ export default function DisputesPage() {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [fetching, setFetching] = useState(true);
+  const [geles, setGeles] = useState<Map<string, number>>(new Map());
   const [courseExaminee, setCourseExaminee] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setFetching(true);
+    const { data: gels } = await supabase.rpc("dispute_frozen_amounts");
     const { data, error } = await supabase
       .from("errands")
       .select(
@@ -62,6 +64,14 @@ export default function DisputesPage() {
       )
       .eq("status", "disputed")
       .order("created_at", { ascending: false });
+
+    // Le gain théorique et ce qui est réellement retenu sont deux choses :
+    // l'écran additionnait le premier en l'appelant « gelé », alors qu'une
+    // course contestée avant tout règlement ne retient rien du tout.
+    const parCourse = new Map<string, number>(
+      (gels ?? []).map((g) => [g.errand_id, Number(g.gele) || 0])
+    );
+    setGeles(parCourse);
 
     if (error) {
       toast.error("Impossible de charger les litiges.");
@@ -118,8 +128,8 @@ export default function DisputesPage() {
   };
 
   const montantGele = useMemo(
-    () => litiges.reduce((somme, l) => somme + Number(l.runner_payout || 0), 0),
-    [litiges]
+    () => [...geles.values()].reduce((somme, v) => somme + v, 0),
+    [geles]
   );
 
   if (loading) return null;
@@ -140,7 +150,8 @@ export default function DisputesPage() {
       <p className="akw-eyebrow">Back-office</p>
       <h1 className="font-display text-2xl font-semibold">Litiges</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Tant qu'un litige n'est pas tranché, les gains du shopper restent gelés. Examinez la
+        Un litige ouvert après règlement retient les gains du shopper ; ouvert avant, il n'y a
+        rien à retenir et la colonne le dit. Examinez la
         chronologie avant de décider.
       </p>
 
@@ -150,7 +161,7 @@ export default function DisputesPage() {
           <p className="mt-1 font-display text-xl font-semibold">{litiges.length}</p>
         </div>
         <div className="rounded-2xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground">Gains gelés</p>
+          <p className="text-xs text-muted-foreground">Gains réellement gelés</p>
           <p className="mt-1 font-display text-xl font-semibold">{formatFcfa(montantGele)}</p>
         </div>
       </div>
@@ -193,8 +204,12 @@ export default function DisputesPage() {
                   <dd>{formatFcfa(litige.service_fee)}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-muted-foreground">Gain shopper gelé</dt>
-                  <dd>{formatFcfa(litige.runner_payout)}</dd>
+                  <dt className="text-xs text-muted-foreground">Retenu sur le shopper</dt>
+                  <dd>
+                    {(geles.get(litige.id) ?? 0) > 0
+                      ? formatFcfa(geles.get(litige.id) ?? 0)
+                      : "rien de retenu"}
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">Reçu</dt>
