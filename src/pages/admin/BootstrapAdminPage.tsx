@@ -70,7 +70,7 @@ export default function BootstrapAdminPage() {
           <div className="space-y-2">
             <Label>Token de bootstrap</Label>
             <Input type="password" value={token} onChange={(e) => setToken(e.target.value)} required />
-            <p className="text-xs text-muted-foreground">Le secret BOOTSTRAP_ADMIN_TOKEN configuré dans Lovable Cloud.</p>
+            <p className="text-xs text-muted-foreground">Le secret BOOTSTRAP_ADMIN_TOKEN configuré sur les fonctions de bordure Supabase.</p>
           </div>
           <Button type="submit" disabled={loading} className="w-full">
             {loading ? "Création…" : "Devenir administrateur"}
