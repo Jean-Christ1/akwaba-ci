@@ -55,7 +55,7 @@ export const CITIES: City[] = [
 export const PLACES: Place[] = [
   // ── Abidjan ─────────────────────────────────────────────────
   {
-    id: "p-001",
+    id: "11111111-0000-4000-8000-000000000001",
     slug: "lodge-cocody-lagune",
     type: "lodging",
     name: "Lodge Cocody Lagune",
@@ -93,20 +93,20 @@ export const PLACES: Place[] = [
     curatorNote: "Notre choix pour un premier séjour à Abidjan.",
   },
   {
-    id: "p-002",
+    id: "11111111-0000-4000-8000-000000000002",
     slug: "le-comptoir-plateau",
     type: "restaurant",
     name: "Le Comptoir du Plateau",
     tagline: "Cuisine ivoirienne contemporaine, salle feutrée.",
     description:
-      "Le chef revisite les classiques — kedjenou de pintade, sauce graine, attiéké de Dabou — avec une rigueur de fine dining. Carte des vins courte mais juste.",
+      "Le chef revisite les classiques, kedjenou de pintade, sauce graine, attiéké de Dabou, avec une rigueur de fine dining. Carte des vins courte mais juste.",
     city: "abidjan",
     zone: "Plateau",
     address: "Boulevard de la République, Plateau, Abidjan",
     coords: { lat: 5.32, lng: -4.018 },
     standing: 4,
     priceBand: "€€€",
-    hours: { open: true, today: "12:00 – 14:30 · 19:30 – 23:00" },
+    hours: { open: true, today: "12:00 à 14:30 · 19:30 à 23:00" },
     services: ["Réservation", "Climatisation", "Carte des vins", "Voiturier"],
     tags: ["Fine dining", "Business", "Romantique"],
     cuisines: ["Ivoirienne contemporaine", "Française"],
@@ -125,7 +125,7 @@ export const PLACES: Place[] = [
     premium: true,
   },
   {
-    id: "p-003",
+    id: "11111111-0000-4000-8000-000000000003",
     slug: "maquis-allocodrome",
     type: "maquis",
     name: "Allocodrome de Zone 4",
@@ -138,7 +138,7 @@ export const PLACES: Place[] = [
     coords: { lat: 5.298, lng: -3.998 },
     standing: 3,
     priceBand: "€€",
-    hours: { open: true, today: "18:00 – 02:00" },
+    hours: { open: true, today: "18:00 à 02:00" },
     services: ["Terrasse", "Paiement mobile", "Live music week-end"],
     tags: ["Authentique", "Soirée", "Groupe"],
     cuisines: ["Ivoirienne", "Grillades"],
@@ -155,7 +155,7 @@ export const PLACES: Place[] = [
     image: imgMaquis,
   },
   {
-    id: "p-004",
+    id: "11111111-0000-4000-8000-000000000004",
     slug: "plateau-skyline",
     type: "attraction",
     name: "Skyline du Plateau",
@@ -177,7 +177,7 @@ export const PLACES: Place[] = [
       "Coucher de soleil sur les tours.",
     ],
     bestFor: ["Photographes", "Premier jour de séjour", "Familles"],
-    bestTime: "17h30 — 18h30 (lumière dorée).",
+    bestTime: "17h30 à 18h30 (lumière dorée).",
     averageDuration: "1h",
     practicalTips: [
       "Négocier le prix de la pirogue avant de monter.",
@@ -187,7 +187,7 @@ export const PLACES: Place[] = [
   },
   // ── Grand-Bassam ────────────────────────────────────────────
   {
-    id: "p-005",
+    id: "11111111-0000-4000-8000-000000000005",
     slug: "quartier-france-bassam",
     type: "culture",
     name: "Quartier France",
@@ -202,7 +202,7 @@ export const PLACES: Place[] = [
     coords: { lat: 5.197, lng: -3.738 },
     standing: 4,
     priceBand: "€",
-    hours: { open: true, today: "Promenade libre · Musée 9h–17h" },
+    hours: { open: true, today: "Promenade libre · Musée 9h à 17h" },
     services: ["Musée", "Galeries d'art", "Guide local sur demande"],
     tags: ["UNESCO", "Histoire", "Architecture"],
     whyVisit: [
@@ -222,7 +222,7 @@ export const PLACES: Place[] = [
   },
   // ── Assinie ─────────────────────────────────────────────────
   {
-    id: "p-006",
+    id: "11111111-0000-4000-8000-000000000006",
     slug: "lodge-assinie-lagune",
     type: "lodging",
     name: "Assinie Lagune Lodge",
@@ -235,7 +235,7 @@ export const PLACES: Place[] = [
     coords: { lat: 5.135, lng: -3.282 },
     standing: 4,
     priceBand: "€€€",
-    hours: { open: true, today: "Réception 7h – 22h" },
+    hours: { open: true, today: "Réception 7h à 22h" },
     services: ["Plage privée", "Kayaks", "Restaurant", "Wi-Fi", "Transferts"],
     tags: ["Bord de mer", "Romantique", "Famille"],
     whyVisit: [
@@ -257,7 +257,7 @@ export const PLACES: Place[] = [
   },
   // ── Yamoussoukro ────────────────────────────────────────────
   {
-    id: "p-007",
+    id: "11111111-0000-4000-8000-000000000007",
     slug: "basilique-notre-dame-paix",
     type: "culture",
     name: "Basilique Notre-Dame de la Paix",
@@ -270,7 +270,7 @@ export const PLACES: Place[] = [
     coords: { lat: 6.8104, lng: -5.2966 },
     standing: 5,
     priceBand: "€",
-    hours: { open: true, today: "8h – 18h · Visites guidées 9h, 11h, 15h" },
+    hours: { open: true, today: "8h à 18h · Visites guidées 9h, 11h, 15h" },
     services: ["Visite guidée", "Boutique", "Parking"],
     tags: ["Iconique", "Architecture", "Spirituel"],
     whyVisit: [
@@ -302,10 +302,10 @@ export const ITINERARIES: Itinerary[] = [
     persona: "Premier séjour premium",
     image: imgPlateau,
     steps: [
-      { position: 1, placeId: "p-001", suggestedTime: "Jour 1 · 16h", notes: "Check-in et sundowner au bord de la piscine." },
-      { position: 2, placeId: "p-004", suggestedTime: "Jour 1 · 17h30", transportHint: "10 min en taxi privé.", notes: "Coucher de soleil sur le Plateau." },
-      { position: 3, placeId: "p-002", suggestedTime: "Jour 1 · 20h", transportHint: "15 min en VTC.", notes: "Dîner gastronomique." },
-      { position: 4, placeId: "p-003", suggestedTime: "Jour 2 · 19h30", notes: "Soirée locale en mode détendu." },
+      { position: 1, placeId: "11111111-0000-4000-8000-000000000001", suggestedTime: "Jour 1 · 16h", notes: "Check-in et sundowner au bord de la piscine." },
+      { position: 2, placeId: "11111111-0000-4000-8000-000000000004", suggestedTime: "Jour 1 · 17h30", transportHint: "10 min en taxi privé.", notes: "Coucher de soleil sur le Plateau." },
+      { position: 3, placeId: "11111111-0000-4000-8000-000000000002", suggestedTime: "Jour 1 · 20h", transportHint: "15 min en VTC.", notes: "Dîner gastronomique." },
+      { position: 4, placeId: "11111111-0000-4000-8000-000000000003", suggestedTime: "Jour 2 · 19h30", notes: "Soirée locale en mode détendu." },
     ],
   },
   {
@@ -319,7 +319,7 @@ export const ITINERARIES: Itinerary[] = [
     persona: "Couple ou famille",
     image: imgAssinie,
     steps: [
-      { position: 1, placeId: "p-006", suggestedTime: "Vendredi · 17h", transportHint: "Transfert privé recommandé.", notes: "Arrivée et apéritif face à la lagune." },
+      { position: 1, placeId: "11111111-0000-4000-8000-000000000006", suggestedTime: "Vendredi · 17h", transportHint: "Transfert privé recommandé.", notes: "Arrivée et apéritif face à la lagune." },
     ],
   },
   {
@@ -333,7 +333,7 @@ export const ITINERARIES: Itinerary[] = [
     persona: "Culture & famille",
     image: imgBassam,
     steps: [
-      { position: 1, placeId: "p-005", suggestedTime: "10h", notes: "Visite guidée du Quartier France." },
+      { position: 1, placeId: "11111111-0000-4000-8000-000000000005", suggestedTime: "10h", notes: "Visite guidée du Quartier France." },
     ],
   },
   {
@@ -347,7 +347,7 @@ export const ITINERARIES: Itinerary[] = [
     persona: "Voyageur curieux",
     image: imgYakro,
     steps: [
-      { position: 1, placeId: "p-007", suggestedTime: "9h", notes: "Visite guidée de la basilique." },
+      { position: 1, placeId: "11111111-0000-4000-8000-000000000007", suggestedTime: "9h", notes: "Visite guidée de la basilique." },
     ],
   },
 ];

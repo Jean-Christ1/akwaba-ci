@@ -1,14 +1,13 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
+# Le catalogue et les pages éditoriales sont ouverts à l'indexation.
+# Les espaces personnels et le back-office ne le sont pas : ils n'ont aucun
+# intérêt pour un moteur et exposeraient des URL de gestion.
 
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /profil
+Disallow: /favoris
+Disallow: /courses/portefeuille
+Disallow: /reset-password
+
+Sitemap: https://akwaba.ci/sitemap.xml

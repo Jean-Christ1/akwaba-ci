@@ -6,12 +6,16 @@
 @tailwind utilities;
 
 /* ------------------------------------------------------------------
-   Akwaba — Design System
+   Akwaba, Design System
    Palette: Lagune profonde + Or discret + Ivoire minéral
    ------------------------------------------------------------------ */
 
 @layer base {
   :root {
+    /* Hauteur de la barre d'onglets mobile, zone de sécurité comprise.
+       Recopier cette valeur ailleurs finit toujours par masquer un bouton. */
+    --akw-tabbar-h: calc(4rem + env(safe-area-inset-bottom));
+
     /* Surfaces */
     --background: 36 33% 97%;          /* ivoire minéral */
     --foreground: 220 25% 12%;         /* encre profonde */
@@ -22,17 +26,17 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 25% 12%;
 
-    /* Brand — Vert lagune profond */
+    /* Brand : vert lagune profond */
     --primary: 175 55% 22%;
     --primary-foreground: 36 33% 97%;
     --primary-soft: 175 35% 92%;
 
-    /* Or discret — usage ponctuel uniquement (badges premium) */
+    /* Or discret : usage ponctuel uniquement (badges premium) */
     --accent: 38 55% 52%;
     --accent-foreground: 220 25% 12%;
     --accent-soft: 38 55% 94%;
 
-    /* Sable chaud — surfaces secondaires */
+    /* Sable chaud : surfaces secondaires */
     --secondary: 34 35% 92%;
     --secondary-foreground: 220 25% 18%;
 
@@ -40,7 +44,7 @@
     --editorial: 220 45% 18%;
     --editorial-foreground: 36 33% 97%;
 
-    /* Terre chaude — culture */
+    /* Terre chaude : culture */
     --terra: 18 35% 38%;
     --terra-foreground: 36 33% 97%;
 
@@ -66,7 +70,7 @@
     --font-display: 'Fraunces', Georgia, serif;
     --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 
-    /* Élévations — 2 niveaux uniquement, ombres neutres */
+    /* Élévations : 2 niveaux uniquement, ombres neutres */
     --elevation-1: 0 1px 2px hsl(220 25% 12% / 0.04), 0 4px 16px hsl(220 25% 12% / 0.06);
     --elevation-2: 0 4px 12px hsl(220 25% 12% / 0.08), 0 16px 48px hsl(220 25% 12% / 0.12);
 

@@ -1,0 +1,9 @@
+# Repli monopage.
+#
+# L'application utilise des routes profondes (/lieu/:slug, /courses/:id). Sans
+# cette règle, ouvrir directement un lien partagé, ce qui est le mode de
+# diffusion dominant par messagerie en Côte d'Ivoire, renverrait une erreur du
+# serveur au lieu de l'application.
+#
+# Format reconnu par Netlify et Cloudflare Pages.
+/*    /index.html   200

@@ -1,0 +1,169 @@
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Plus, PackageSearch, RotateCcw } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { formatFcfa, STATUS_LABEL, statusTone, type ErrandStatus } from "@/modules/errands/domain";
+import { usePageTitle } from "@/shared/hooks/usePageTitle";
+
+interface Row {
+  id: string;
+  title: string;
+  city: string;
+  zone: string | null;
+  status: ErrandStatus;
+  budget_estimate: number;
+  total_amount: number;
+  created_at: string;
+}
+
+export default function MyErrandsPage() {
+  const navigate = useNavigate();
+  const [refaisant, setRefaisant] = useState<string | null>(null);
+
+  /**
+   * Refaire une course reprend la demande, jamais le calcul : le devis est
+   * refait au barème du jour, un nouveau code de remise est tiré, et aucun
+   * shopper n'est repris. Les courses du quotidien se répètent, et
+   * reconstituer la même liste article par article suffit à décourager la
+   * deuxième commande.
+   */
+  const refaire = async (id: string, titre: string) => {
+    setRefaisant(id);
+    const { data, error } = await supabase.rpc("errand_duplicate", { p_errand_id: id });
+    setRefaisant(null);
+
+    if (error) return toast.error(error.message);
+    const creee = data as { id?: string } | null;
+    if (!creee?.id) return toast.error("La course n'a pas pu être recréée.");
+
+    toast.success(`« ${titre} » republiée, les shoppers peuvent proposer leur prix.`);
+    navigate(`/courses/${creee.id}`);
+  };
+
+  usePageTitle("Mes courses", "Suivez vos courses en cours et passées.");
+  const { user, loading } = useAuth();
+  const [rows, setRows] = useState<Row[]>([]);
+  const [busy, setBusy] = useState(true);
+  // Un refus de lecture n'est pas une liste vide. Les confondre annonce au
+  // client qu'il n'a aucune course alors que ses courses existent bel et bien.
+  const [messageErreur, setMessageErreur] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setBusy(false);
+      return;
+    }
+    let active = true;
+    const load = async () => {
+      const { data, error } = await supabase
+        .from("errands")
+        .select("id,title,city,zone,status,budget_estimate,total_amount,created_at")
+        .eq("customer_id", user.id)
+        .order("created_at", { ascending: false });
+      if (!active) return;
+      if (error) {
+        setMessageErreur(error.message);
+        setBusy(false);
+        return;
+      }
+      setMessageErreur(null);
+      setRows((data ?? []) as Row[]);
+      setBusy(false);
+    };
+    load();
+
+    const channel = supabase
+      .channel("my-errands")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "errands", filter: `customer_id=eq.${user.id}` },
+        () => load()
+      )
+      .subscribe();
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  if (loading) return null;
+
+  return (
+    <div className="akw-container max-w-4xl py-6">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="akw-eyebrow">Akwaba Courses</p>
+          <h1 className="font-display text-2xl font-semibold">Mes courses</h1>
+        </div>
+        <Button asChild size="sm">
+          <Link to="/courses/nouvelle"><Plus className="mr-1 h-4 w-4" /> Nouvelle</Link>
+        </Button>
+      </div>
+
+      {!user && (
+        <div className="mt-6 rounded-2xl border border-border bg-card p-6 text-center text-sm">
+          Connectez-vous pour suivre vos demandes.{" "}
+          <Link className="font-medium text-primary" to="/auth?redirect=/courses">Se connecter</Link>
+        </div>
+      )}
+
+      {user && !busy && messageErreur && (
+        <div className="mt-6 rounded-2xl border border-destructive/40 bg-destructive/5 p-6 text-center text-sm">
+          <p className="font-medium text-destructive">Vos courses n'ont pas pu être chargées.</p>
+          <p className="mt-1 text-muted-foreground">{messageErreur}</p>
+        </div>
+      )}
+
+      {user && !busy && !messageErreur && rows.length === 0 && (
+        <div className="mt-6 rounded-2xl border border-dashed border-border p-10 text-center">
+          <PackageSearch className="mx-auto h-8 w-8 text-muted-foreground" />
+          <p className="mt-2 text-sm text-muted-foreground">Aucune course pour le moment.</p>
+          <Button asChild className="mt-3" size="sm"><Link to="/courses/nouvelle">Commander une course</Link></Button>
+        </div>
+      )}
+
+      <ul className="mt-4 space-y-2">
+        {rows.map((r) => (
+          <li key={r.id}>
+            <Link
+              to={`/courses/${r.id}`}
+              className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 transition-colors hover:border-primary/40"
+            >
+              <div className="min-w-0">
+                <p className="truncate font-medium">{r.title}</p>
+                <p className="text-xs text-muted-foreground">
+                  {r.zone ? `${r.zone}, ` : ""}{r.city} · {new Date(r.created_at).toLocaleDateString("fr-FR")}
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${statusTone(r.status)}`}>
+                  {STATUS_LABEL[r.status]}
+                </span>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {formatFcfa(r.total_amount || r.budget_estimate)}
+                </p>
+              </div>
+            </Link>
+
+            {/* Hors du lien : imbriquer un bouton dans une ancre rend la carte
+                imprévisible au toucher comme au clavier. */}
+            {(r.status === "completed" || r.status === "cancelled") && (
+              <button
+                type="button"
+                className="mt-1 inline-flex min-h-[44px] items-center gap-1.5 rounded-full px-3 text-xs font-medium text-primary transition-colors hover:bg-primary-soft disabled:opacity-60"
+                disabled={refaisant === r.id}
+                onClick={() => void refaire(r.id, r.title)}
+              >
+                <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+                {refaisant === r.id ? "Republication…" : "Refaire cette course"}
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

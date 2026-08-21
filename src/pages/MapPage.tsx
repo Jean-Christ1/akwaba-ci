@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from "react";
+import type { StyleSpecification } from "maplibre-gl";
 import maplibregl, { Map as MLMap, Marker } from "maplibre-gl";
 import { Link } from "react-router-dom";
-import { Locate, X, MapPin } from "lucide-react";
-import { PLACES } from "@/modules/places/infrastructure/data";
+import { Locate, X, MapPin, Navigation } from "lucide-react";
+import { RouteDialog } from "@/shared/ui/RouteDialog";
+import { usePlaces } from "@/modules/places/application/usePlaces";
 import type { Place } from "@/modules/places/domain/types";
 import { PlaceCard } from "@/modules/places/ui/PlaceCard";
+import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
-// Adapter MapLibre — substituable (Mapbox, Google) sans toucher la page
-const MAP_STYLE =
-  "https://api.maptiler.com/maps/streets-v2/style.json?key=get_your_own_OpIi9ZULNHzrESv6T2vL";
-// Fallback open style si la clé MapTiler n'est pas dispo
+// Adapter MapLibre, substituable (Mapbox, MapTiler, Google) sans toucher la page.
+// Fond de carte ouvert, sans clé : aucune dépendance à un service tiers payant.
 const FALLBACK_STYLE = {
   version: 8,
   sources: {
@@ -21,15 +22,19 @@ const FALLBACK_STYLE = {
     },
   },
   layers: [{ id: "osm", type: "raster", source: "osm" }],
-} as any;
+} as unknown as StyleSpecification;
 
 export default function MapPage() {
+  usePageTitle("Carte des adresses", "Situez les meilleures adresses sur la carte.");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MLMap | null>(null);
   const [selected, setSelected] = useState<Place | null>(null);
 
+  const { data: places, loading } = usePlaces();
+
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
+    if (loading) return;
 
     const map = new maplibregl.Map({
       container: containerRef.current,
@@ -42,13 +47,27 @@ export default function MapPage() {
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
-    PLACES.forEach((p) => {
+    places.forEach((p) => {
       const el = document.createElement("button");
+      // Repère construit hors React, donc hors de toute revue de gabarit : il
+      // n'avait ni type, ni aria-label, ni titre, ni texte. Au clavier comme au
+      // lecteur d'écran, la carte se parcourait comme une suite de contrôles
+      // tous annoncés « bouton », autant qu'il y a d'adresses publiées, sans
+      // rien pour distinguer l'une de l'autre.
+      el.type = "button";
+      const repere = p.zone ?? p.address;
+      const nomAccessible = repere ? `${p.name}, ${repere}` : p.name;
+      el.setAttribute("aria-label", nomAccessible);
+      // Le pointeur n'avait pas davantage de quoi identifier un repère avant de
+      // cliquer : le titre lui donne la même information au survol.
+      el.title = nomAccessible;
       el.className =
         "akw-map-marker flex items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-110";
-      el.style.width = "32px";
-      el.style.height = "32px";
-      el.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
+      el.style.width = "44px";
+      el.style.height = "44px";
+      // L'épingle est décorative : elle ne doit pas ajouter un second nom qui
+      // concurrence celui du lieu.
+      el.innerHTML = `<svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
       el.addEventListener("click", (e) => {
         e.stopPropagation();
         setSelected(p);
@@ -61,7 +80,7 @@ export default function MapPage() {
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [places, loading]);
 
   const locate = () => {
     if (!navigator.geolocation || !mapRef.current) return;
@@ -79,6 +98,11 @@ export default function MapPage() {
 
   return (
     <div className="relative h-[calc(100vh-4rem)] lg:h-[calc(100vh-4rem)]">
+      {/* Seul écran public du dépôt sans titre de niveau 1 : la navigation par
+          titres, celle qu'emploie un lecteur d'écran pour se situer, n'y
+          trouvait rien à annoncer. Le titre reste masqué à l'œil, la carte
+          occupant toute la surface. */}
+      <h1 className="sr-only">Carte des adresses</h1>
       <div ref={containerRef} className="absolute inset-0" />
 
       {/* Search flottante */}
@@ -102,7 +126,7 @@ export default function MapPage() {
 
       {/* Bottom sheet sélection */}
       {selected && (
-        <div className="absolute inset-x-0 bottom-16 lg:bottom-0 z-20 animate-slide-up px-3 pb-3 lg:px-6 lg:pb-6">
+        <div className="absolute inset-x-0 bottom-[var(--akw-tabbar-h)] lg:bottom-0 z-20 animate-slide-up px-3 pb-3 lg:px-6 lg:pb-6">
           <div className="akw-card relative mx-auto max-w-2xl p-3">
             <button
               onClick={() => setSelected(null)}
@@ -112,12 +136,30 @@ export default function MapPage() {
               <X className="h-4 w-4" />
             </button>
             <PlaceCard place={selected} variant="compact" />
-            <Link
-              to={`/lieu/${selected.slug}`}
-              className="mt-2 flex w-full items-center justify-center rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
-            >
-              Voir la fiche complète
-            </Link>
+            {/* Depuis la carte, le geste attendu est d'y aller : l'itinéraire
+                se calcule ici même, sans bascule vers une autre application. */}
+            <div className="mt-2 flex gap-2">
+              <Link
+                to={`/lieu/${selected.slug}`}
+                className="flex flex-1 items-center justify-center rounded-full border border-border bg-background px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-muted"
+              >
+                Voir la fiche
+              </Link>
+              <RouteDialog
+                lat={selected.coords.lat}
+                lng={selected.coords.lng}
+                name={selected.name}
+                address={selected.address}
+              >
+                <button
+                  type="button"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
+                >
+                  <Navigation className="h-4 w-4" aria-hidden="true" />
+                  Itinéraire
+                </button>
+              </RouteDialog>
+            </div>
           </div>
         </div>
       )}

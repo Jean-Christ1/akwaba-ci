@@ -1,0 +1,10 @@
+{
+  "commentaire": "Tolérances temporaires de l'audit des dépendances d'exécution. Chaque entrée porte l'identifiant GHSA de l'avis, le motif de la tolérance et sa date d'expiration au format AAAA-MM-JJ. Une tolérance expirée fait échouer l'audit : rien ne peut être toléré en silence ni indéfiniment.",
+  "exemple_de_forme": {
+    "avis": "GHSA-0000-0000-0000",
+    "paquet": "nom-du-paquet",
+    "motif": "Raison factuelle de la tolérance et travail de remédiation engagé.",
+    "expire_le": "AAAA-MM-JJ"
+  },
+  "tolerances": []
+}

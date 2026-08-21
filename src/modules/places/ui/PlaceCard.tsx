@@ -1,8 +1,10 @@
+import { memo } from "react";
 import { Link } from "react-router-dom";
 import { Heart, MapPin, Star } from "lucide-react";
 import type { Place } from "@/modules/places/domain/types";
 import { useFavorites } from "@/modules/favorites/application/useFavorites";
 import { cn } from "@/lib/utils";
+import { PlaceImage } from "@/shared/ui/PlaceImage";
 
 const TYPE_LABEL: Record<Place["type"], string> = {
   lodging: "Hébergement",
@@ -21,7 +23,7 @@ interface PlaceCardProps {
   className?: string;
 }
 
-export function PlaceCard({ place, variant = "default", className }: PlaceCardProps) {
+function PlaceCardBase({ place, variant = "default", className }: PlaceCardProps) {
   const { has, toggle } = useFavorites();
   const fav = has(place.id);
 
@@ -31,10 +33,9 @@ export function PlaceCard({ place, variant = "default", className }: PlaceCardPr
         to={`/lieu/${place.slug}`}
         className={cn("akw-card-hover group flex gap-3 p-3", className)}
       >
-        <img
+        <PlaceImage
           src={place.image}
           alt={place.name}
-          loading="lazy"
           className="h-20 w-20 flex-shrink-0 rounded-lg object-cover"
         />
         <div className="min-w-0 flex-1">
@@ -56,10 +57,9 @@ export function PlaceCard({ place, variant = "default", className }: PlaceCardPr
   return (
     <Link to={`/lieu/${place.slug}`} className={cn("akw-card-hover group block", className)}>
       <div className="relative aspect-[4/3] overflow-hidden">
-        <img
+        <PlaceImage
           src={place.image}
           alt={place.name}
-          loading="lazy"
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />
         <div className="absolute inset-x-0 top-0 flex items-start justify-between p-3">
@@ -106,3 +106,5 @@ export function PlaceCard({ place, variant = "default", className }: PlaceCardPr
     </Link>
   );
 }
+
+export const PlaceCard = memo(PlaceCardBase);

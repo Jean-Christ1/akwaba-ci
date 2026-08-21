@@ -1,0 +1,64 @@
+{
+  "name": "Akwaba, vos courses en Côte d'Ivoire",
+  "short_name": "Akwaba",
+  "description": "Confiez vos courses à un shopper vérifié : marché, pharmacie, supermarché, démarches. Et découvrez les meilleures adresses du pays.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf8f3",
+  "theme_color": "#195752",
+  "categories": [
+    "travel",
+    "lifestyle",
+    "shopping"
+  ],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Demander une course",
+      "short_name": "Nouvelle course",
+      "description": "Confier une course à un shopper vérifié",
+      "url": "/courses/nouvelle"
+    },
+    {
+      "name": "Explorer les adresses",
+      "short_name": "Explorer",
+      "description": "Parcourir la sélection de lieux",
+      "url": "/explorer"
+    },
+    {
+      "name": "Mes courses",
+      "short_name": "Mes courses",
+      "description": "Suivre mes courses en cours",
+      "url": "/courses"
+    }
+  ]
+}

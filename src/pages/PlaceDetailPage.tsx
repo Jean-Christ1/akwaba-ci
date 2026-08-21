@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -11,21 +12,69 @@ import {
   Mail,
   Globe,
 } from "lucide-react";
-import { getPlaceBySlug, PLACES } from "@/modules/places/infrastructure/data";
+import { usePlace, usePlaces } from "@/modules/places/application/usePlaces";
 import { PlaceCard } from "@/modules/places/ui/PlaceCard";
 import { useFavorites } from "@/modules/favorites/application/useFavorites";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { LeadRequestForm } from "@/modules/leads/ui/LeadRequestForm";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { CalendarCheck, ShoppingBasket } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { useTabState } from "@/shared/hooks/useTabState";
+import { PlaceImage } from "@/shared/ui/PlaceImage";
+import { RouteDialog } from "@/shared/ui/RouteDialog";
 
 export default function PlaceDetailPage() {
   const { slug } = useParams();
-  const place = slug ? getPlaceBySlug(slug) : undefined;
+  const { data: place, loading } = usePlace(slug);
+
+  // Données structurées de la fiche : ce sont elles qui permettent à un moteur
+  // d'afficher l'adresse, la note et le type d'établissement dans ses résultats.
+  useEffect(() => {
+    if (!place) return;
+    const balise = document.createElement("script");
+    balise.type = "application/ld+json";
+    balise.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type":
+        place.type === "lodging"
+          ? "LodgingBusiness"
+          : place.type === "restaurant" || place.type === "maquis"
+            ? "Restaurant"
+            : "TouristAttraction",
+      name: place.name,
+      description: place.tagline || place.description,
+      image: place.image ? `https://akwaba.ci${place.image}` : undefined,
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: place.address,
+        addressLocality: place.zone ?? place.city,
+        addressCountry: "CI",
+      },
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: place.coords.lat,
+        longitude: place.coords.lng,
+      },
+      telephone: place.phone,
+      url: `https://akwaba.ci/lieu/${place.slug}`,
+    });
+    document.head.appendChild(balise);
+    return () => {
+      document.head.removeChild(balise);
+    };
+  }, [place]);
+  const { data: allPlaces } = usePlaces();
   const { has, toggle } = useFavorites();
+  const [tab, setTab] = useTabState(`place:${slug ?? "unknown"}`, "about");
+
+  if (loading) {
+    return (
+      <div className="akw-container py-24 text-center text-sm text-muted-foreground">
+        Chargement de l'adresse...
+      </div>
+    );
+  }
 
   if (!place) {
     return (
@@ -40,21 +89,20 @@ export default function PlaceDetailPage() {
   }
 
   const fav = has(place.id);
-  const nearby = PLACES.filter((p) => p.id !== place.id && p.city === place.city).slice(0, 4);
-  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${place.coords.lat},${place.coords.lng}`;
+  const nearby = allPlaces.filter((p) => p.id !== place.id && p.city === place.city).slice(0, 4);
   const waUrl = place.whatsapp ? `https://wa.me/${place.whatsapp.replace(/[^0-9]/g, "")}` : null;
   const telUrl = place.phone ? `tel:${place.phone}` : null;
 
   return (
-    <article className="bg-background pb-32 lg:pb-16">
-      {/* HERO */}
+    <article className="bg-background pb-32 lg:pb-12">
+      {/* HERO - compact */}
       <header className="relative">
-        <div className="relative aspect-[16/10] w-full overflow-hidden lg:aspect-[21/9] lg:max-h-[640px]">
-          <img
+        <div className="relative aspect-[16/9] w-full overflow-hidden sm:aspect-[21/9] lg:aspect-[24/8] lg:max-h-[420px]">
+          <PlaceImage
             src={place.image}
             alt={place.name}
             className="h-full w-full object-cover"
-            fetchPriority="high"
+            priority
           />
           <div className="absolute inset-0 bg-gradient-to-t from-editorial/80 via-transparent to-editorial/30" />
 
@@ -86,7 +134,7 @@ export default function PlaceDetailPage() {
         </div>
       </header>
 
-      <div className="akw-container -mt-16 sm:-mt-20 lg:-mt-24 relative z-10">
+      <div className="akw-container -mt-12 sm:-mt-16 lg:-mt-20 relative z-10">
         <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
           {/* COLONNE PRINCIPALE */}
           <div className="space-y-8">
@@ -110,7 +158,7 @@ export default function PlaceDetailPage() {
                 <blockquote className="mt-5 border-l-2 border-accent bg-accent-soft/40 py-3 pl-4 pr-3">
                   <p className="text-sm italic text-foreground">« {place.curatorNote} »</p>
                   <p className="mt-1 text-[11px] uppercase tracking-wider text-muted-foreground">
-                    — Note de notre équipe
+                    - Note de notre équipe
                   </p>
                 </blockquote>
               )}
@@ -141,54 +189,55 @@ export default function PlaceDetailPage() {
               </ul>
             </section>
 
-            {/* DESCRIPTION */}
-            <section>
-              <p className="akw-eyebrow mb-3">L'adresse</p>
-              <p className="akw-prose text-pretty">{place.description}</p>
-            </section>
-
-            {/* DETAILS ACCORDION */}
-            <Accordion type="multiple" defaultValue={["story"]} className="w-full">
+            {/* DETAILS - Tabs compacts (densité ↑, scroll ↓) */}
+            <Tabs value={tab} onValueChange={setTab} className="w-full">
+              {/* Les onglets étaient en h-7, soit 28 px, sur l'écran le plus
+                  consulté au pouce. La liste passe en hauteur libre, sans quoi
+                  son h-9 rognerait la cible de 44 px, et les onglets cessent de
+                  se comprimer : à 360 px de large ils débordent, c'est le
+                  défilement horizontal déjà en place qui les rend atteignables. */}
+              <TabsList aria-label="Sections de la fiche" className="h-auto w-full justify-start gap-1 overflow-x-auto bg-muted/60 p-1 transition-colors">
+                <TabsTrigger value="about" className="min-h-[44px] shrink-0 px-3 text-xs">L'adresse</TabsTrigger>
+                {place.story && <TabsTrigger value="story" className="min-h-[44px] shrink-0 px-3 text-xs">Histoire</TabsTrigger>}
+                <TabsTrigger value="services" className="min-h-[44px] shrink-0 px-3 text-xs">Services</TabsTrigger>
+                <TabsTrigger value="reco" className="min-h-[44px] shrink-0 px-3 text-xs">Pour qui & quand</TabsTrigger>
+                {place.practicalTips && place.practicalTips.length > 0 && (
+                  <TabsTrigger value="tips" className="min-h-[44px] shrink-0 px-3 text-xs">À savoir</TabsTrigger>
+                )}
+              </TabsList>
+              <TabsContent value="about" className="mt-3">
+                <p className="akw-prose text-pretty">{place.description}</p>
+              </TabsContent>
               {place.story && (
-                <AccordionItem value="story">
-                  <AccordionTrigger className="font-display text-lg">Histoire & contexte</AccordionTrigger>
-                  <AccordionContent className="akw-prose text-pretty">{place.story}</AccordionContent>
-                </AccordionItem>
+                <TabsContent value="story" className="mt-3">
+                  <p className="akw-prose text-pretty">{place.story}</p>
+                </TabsContent>
               )}
-              <AccordionItem value="services">
-                <AccordionTrigger className="font-display text-lg">Services & équipements</AccordionTrigger>
-                <AccordionContent>
-                  <div className="flex flex-wrap gap-2">
-                    {place.services.map((s) => (
-                      <span key={s} className="akw-chip">{s}</span>
-                    ))}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="recommendations">
-                <AccordionTrigger className="font-display text-lg">Pour qui & quand</AccordionTrigger>
-                <AccordionContent className="space-y-3 text-sm">
-                  <p><strong className="text-foreground">Recommandé pour : </strong>{place.bestFor.join(" · ")}</p>
-                  {place.bestTime && <p><strong className="text-foreground">Meilleur moment : </strong>{place.bestTime}</p>}
-                  {place.averageDuration && <p><strong className="text-foreground">Durée moyenne : </strong>{place.averageDuration}</p>}
-                </AccordionContent>
-              </AccordionItem>
+              <TabsContent value="services" className="mt-3">
+                <div className="flex flex-wrap gap-2">
+                  {place.services.map((s) => (
+                    <span key={s} className="akw-chip">{s}</span>
+                  ))}
+                </div>
+              </TabsContent>
+              <TabsContent value="reco" className="mt-3 space-y-2 text-sm">
+                <p><strong className="text-foreground">Recommandé pour : </strong>{place.bestFor.join(" · ")}</p>
+                {place.bestTime && <p><strong className="text-foreground">Meilleur moment : </strong>{place.bestTime}</p>}
+                {place.averageDuration && <p><strong className="text-foreground">Durée moyenne : </strong>{place.averageDuration}</p>}
+              </TabsContent>
               {place.practicalTips && place.practicalTips.length > 0 && (
-                <AccordionItem value="tips">
-                  <AccordionTrigger className="font-display text-lg">À savoir</AccordionTrigger>
-                  <AccordionContent>
-                    <ul className="space-y-2 text-sm">
-                      {place.practicalTips.map((t, i) => (
-                        <li key={i} className="flex gap-2">
-                          <span className="text-accent">·</span>
-                          {t}
-                        </li>
-                      ))}
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
+                <TabsContent value="tips" className="mt-3">
+                  <ul className="space-y-2 text-sm">
+                    {place.practicalTips.map((t, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="text-accent">·</span>
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
+                </TabsContent>
               )}
-            </Accordion>
+            </Tabs>
 
             {/* À PROXIMITÉ */}
             {nearby.length > 0 && (
@@ -206,18 +255,60 @@ export default function PlaceDetailPage() {
           {/* COLONNE CONTACT (desktop) */}
           <aside className="hidden lg:block">
             <div className="sticky top-24 space-y-3">
+              {/* Un voyageur logé ici doit pouvoir faire faire ses courses
+                  sans quitter l'application : c'est le lien entre les deux
+                  métiers de la plateforme. */}
+              {place.type === "lodging" && (
+                <div className="akw-card p-6">
+                  <p className="akw-eyebrow mb-2">Besoin de quelque chose ?</p>
+                  <p className="text-sm text-muted-foreground">
+                    Un shopper vérifié peut faire vos courses et vous les apporter ici.
+                  </p>
+                  <Link
+                    to={`/courses/nouvelle?depuis=${encodeURIComponent(place.name)}&ville=${encodeURIComponent(place.city)}&adresse=${encodeURIComponent(place.address)}`}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
+                  >
+                    <ShoppingBasket className="h-4 w-4" aria-hidden="true" />
+                    Demander une course
+                  </Link>
+                </div>
+              )}
+
               <div className="akw-card p-6">
                 <p className="akw-eyebrow mb-4">Contacter directement</p>
                 <div className="space-y-2.5">
-                  <a
-                    href={mapsUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+                  {(place.type === "lodging" || place.type === "restaurant") && (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <button className="flex w-full items-center justify-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-semibold text-accent-foreground transition-transform hover:-translate-y-0.5">
+                          <CalendarCheck className="h-4 w-4" />
+                          {place.type === "lodging" ? "Demander une réservation" : "Réserver une table"}
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                        <DialogHeader><DialogTitle className="font-display">Demande de réservation</DialogTitle></DialogHeader>
+                        <LeadRequestForm placeId={place.id} placeName={place.name} kind={place.type === "lodging" ? "lodging" : "restaurant"} />
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                  {/* L'itinéraire s'ouvre dans l'application : le visiteur garde
+                      sous les yeux la fiche, la réservation et le service de
+                      courses. Les applications de navigation externes restent
+                      proposées en secours à l'intérieur du panneau. */}
+                  <RouteDialog
+                    lat={place.coords.lat}
+                    lng={place.coords.lng}
+                    name={place.name}
+                    address={place.address}
                   >
-                    <Navigation className="h-4 w-4" />
-                    Itinéraire
-                  </a>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+                    >
+                      <Navigation className="h-4 w-4" aria-hidden="true" />
+                      Itinéraire
+                    </button>
+                  </RouteDialog>
                   {waUrl && (
                     <a
                       href={waUrl}
@@ -270,7 +361,7 @@ export default function PlaceDetailPage() {
       </div>
 
       {/* CTA STICKY MOBILE */}
-      <div className="fixed bottom-16 left-0 right-0 z-30 border-t border-border bg-background/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-lg lg:hidden">
+      <div className="fixed bottom-[var(--akw-tabbar-h)] left-0 right-0 z-30 border-t border-border bg-background/95 p-3 backdrop-blur-lg lg:hidden">
         <div className="flex gap-2">
           {waUrl && (
             <a
@@ -280,14 +371,64 @@ export default function PlaceDetailPage() {
               <Phone className="h-4 w-4" /> WhatsApp
             </a>
           )}
-          <a
-            href={mapsUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-semibold text-primary-foreground"
-          >
-            <Navigation className="h-4 w-4" /> Itinéraire
-          </a>
+          {/* La demande de réservation n'existait que sur la colonne de
+              droite, masquée en dessous de 1024 px : sur téléphone, le seul
+              geste de conversion du produit était donc inatteignable. */}
+          {(place.type === "lodging" || place.type === "restaurant") ? (
+            <Dialog>
+              <DialogTrigger asChild>
+                <button className="flex flex-1 items-center justify-center gap-2 rounded-full bg-accent py-3 text-sm font-semibold text-accent-foreground">
+                  <CalendarCheck className="h-4 w-4" aria-hidden="true" />
+                  {place.type === "lodging" ? "Réserver" : "Réserver une table"}
+                </button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>
+                    {place.type === "lodging" ? "Demander une réservation" : "Réserver une table"}
+                  </DialogTitle>
+                </DialogHeader>
+                <LeadRequestForm
+                  placeId={place.id}
+                  placeName={place.name}
+                  kind={place.type === "lodging" ? "lodging" : "restaurant"}
+                />
+              </DialogContent>
+            </Dialog>
+          ) : (
+            <RouteDialog
+              lat={place.coords.lat}
+              lng={place.coords.lng}
+              name={place.name}
+              address={place.address}
+            >
+              <button
+                type="button"
+                className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-semibold text-primary-foreground"
+              >
+                <Navigation className="h-4 w-4" aria-hidden="true" /> Itinéraire
+              </button>
+            </RouteDialog>
+          )}
+          {/* Sur téléphone, la réservation occupe déjà la place principale :
+              l'itinéraire reste accessible en bouton compact plutôt que
+              d'être renvoyé hors de l'application. */}
+          {(place.type === "lodging" || place.type === "restaurant") && (
+            <RouteDialog
+              lat={place.coords.lat}
+              lng={place.coords.lng}
+              name={place.name}
+              address={place.address}
+            >
+              <button
+                type="button"
+                aria-label={`Itinéraire vers ${place.name}`}
+                className="flex w-12 shrink-0 items-center justify-center rounded-full border border-border bg-background py-3"
+              >
+                <Navigation className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </RouteDialog>
+          )}
         </div>
       </div>
     </article>
