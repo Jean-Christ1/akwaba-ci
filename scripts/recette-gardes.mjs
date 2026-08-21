@@ -308,6 +308,58 @@ try {
     return `${un.rows[0].n} ecriture, inchangee apres rejeu`
   })
 
+  // --- La ville fermee et le mode de reglement -----------------------------
+  await refus('Une course ne part pas dans une ville fermee aux courses', async () => {
+    await devenir(CLIENT)
+    await c.query(
+      `SELECT public.errand_create(
+         'Course a Bouake', 'grocery', 'Bouaké', 'Centre',
+         'Quartier commerce, Bouaké', '[{"label":"Riz","qty":"1"}]'::jsonb,
+         5000, NULL, 'chat', NULL, 'wave', 'moto', 'small', 'standard',
+         3, 30, 'runner_delivers', NULL, 'on_delivery', NULL, NULL
+       )`
+    )
+  })
+
+  await refus('Une ville inconnue est refusee aussi', async () => {
+    await devenir(CLIENT)
+    await c.query(
+      `SELECT public.errand_create(
+         'Course ailleurs', 'grocery', 'Tombouctou', NULL,
+         'Une adresse quelconque', '[{"label":"Riz","qty":"1"}]'::jsonb,
+         5000, NULL, 'chat', NULL, 'wave', 'moto', 'small', 'standard',
+         3, 30, 'runner_delivers', NULL, 'on_delivery', NULL, NULL
+       )`
+    )
+  })
+
+  await pas('Une course part toujours dans une ville ouverte', async () => {
+    await proprietaire()
+    const id = await nouvelleCourse('Course des gardes ville')
+    if (!id) throw new Error('la course n a pas ete creee')
+    return 'Abidjan accepte'
+  })
+
+  await pas('Publier un bareme conserve le mode de reglement', async () => {
+    await proprietaire()
+    // Le mode n'etait jamais ecrit : il retombait sur le defaut de la colonne.
+    // On passe volontairement au sequestre, puis on publie sans le preciser.
+    await c.query("UPDATE public.commission_rules SET settlement = 'escrow' WHERE is_active")
+    const admin = await creerCompte('admin-gardes@example.invalid')
+    await c.query(`INSERT INTO public.user_roles (user_id, role) VALUES ($1, 'admin')`, [admin])
+    await devenir(admin)
+    await c.query(
+      'SELECT public.commission_rule_publish($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',
+      [0.15, 1000, 2000, 24, 20, 15, 2, 100, 2, 20, 2000]
+    )
+    await proprietaire()
+    const r = await c.query('SELECT settlement, base FROM public.commission_rules WHERE is_active')
+    if (r.rows[0].settlement !== 'escrow') {
+      throw new Error('mode renverse en ' + r.rows[0].settlement)
+    }
+    return 'sequestre conserve, assiette ' + r.rows[0].base
+  })
+
   console.log('\n=== RESULTAT ===')
   console.log(`  etapes reussies : ${ok.length}`)
   console.log(`  etapes en echec : ${ko.length}`)
