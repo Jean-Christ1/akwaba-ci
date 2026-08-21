@@ -20,24 +20,12 @@
  */
 import fs from 'node:fs'
 import pg from 'pg'
+import { exigerConfiguration } from './lib/connexion-base.mjs'
 
-const requis = ['SUPABASE_DB_HOST', 'SUPABASE_DB_USER', 'SUPABASE_DB_PASSWORD']
-const manquants = requis.filter((v) => !process.env[v])
-if (manquants.length) {
-  console.error("Variables d'environnement manquantes : " + manquants.join(', '))
-  console.error('Voir docs/EXPLOITATION.md pour les renseigner sans les exposer.')
-  process.exit(2)
-}
-
-const c = new pg.Client({
-  host: process.env.SUPABASE_DB_HOST,
-  port: Number(process.env.SUPABASE_DB_PORT || 5432),
-  user: process.env.SUPABASE_DB_USER,
-  password: process.env.SUPABASE_DB_PASSWORD,
-  database: process.env.SUPABASE_DB_NAME || 'postgres',
-  ssl: { rejectUnauthorized: false },
-  connectionTimeoutMillis: 20000,
-})
+// Sans identifiants, la recette s'ignore au lieu d'échouer : dans une chaîne
+// d'intégration sans secrets, un code d'erreur ferait rougir la construction
+// pour une raison qui n'a rien à voir avec le code livré.
+const c = new pg.Client(exigerConfiguration('recette du parcours'))
 await c.connect()
 
 

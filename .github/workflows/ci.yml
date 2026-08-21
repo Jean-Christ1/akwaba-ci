@@ -140,7 +140,16 @@ jobs:
         run: deno check supabase/functions/_tests/*.ts
 
       - name: Tests unitaires des fonctions
-        run: deno test --allow-none supabase/functions/moderate-place/validate_test.ts
+        # Toutes les suites sans réseau, et non plus une seule : sept
+        # d'entre elles n'étaient jamais exécutées, dont celles qui éprouvent
+        # la validation des fiches partenaires, l'échappement HTML, la
+        # comparaison en temps constant et la limitation de débit.
+        run: |
+          deno test --allow-none \
+            supabase/functions/_shared/ \
+            supabase/functions/moderate-place/validate_test.ts \
+            supabase/functions/register-partner/validate_test.ts \
+            supabase/functions/submit-lead/lead_test.ts
 
       - name: Tests d'intégration des protections
         # Ces tests prouvent contre une vraie base que l'auto-validation shopper
@@ -150,4 +159,68 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: deno test --allow-net --allow-env supabase/functions/_tests/
+        run: |
+          deno test --allow-net --allow-env \
+            supabase/functions/_tests/ \
+            supabase/functions/moderate-place/rls_integration_test.ts \
+            supabase/functions/moderate-place/rls_partner_isolation_test.ts
+
+  moteur-argent:
+    name: Recettes du moteur d'argent
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      - name: Installation de Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Installation des dépendances
+        run: npm ci --no-audit --no-fund
+
+      # Ces recettes rejouent le parcours complet d'une course, les gardes
+      # d'argent et de preuve, les comptes entreprises, et comparent le devis de
+      # l'écran à celui du serveur sur seize mille combinaisons. Elles
+      # travaillent dans une transaction annulée : la base ressort intacte.
+      #
+      # Elles n'étaient jouées par personne : trois d'entre elles lisaient les
+      # identifiants par un chemin absolu Windows, donc ne pouvaient tourner que
+      # sur un seul poste. Sans secrets, chacune s'ignore et le dit.
+      - name: Parcours complet d'une course
+        env:
+          SUPABASE_DB_HOST: ${{ secrets.SUPABASE_DB_HOST }}
+          SUPABASE_DB_PORT: ${{ secrets.SUPABASE_DB_PORT }}
+          SUPABASE_DB_USER: ${{ secrets.SUPABASE_DB_USER }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_DB_NAME: ${{ secrets.SUPABASE_DB_NAME }}
+        run: node scripts/recette-parcours.mjs
+
+      - name: Gardes d'argent et de preuve
+        env:
+          SUPABASE_DB_HOST: ${{ secrets.SUPABASE_DB_HOST }}
+          SUPABASE_DB_PORT: ${{ secrets.SUPABASE_DB_PORT }}
+          SUPABASE_DB_USER: ${{ secrets.SUPABASE_DB_USER }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_DB_NAME: ${{ secrets.SUPABASE_DB_NAME }}
+        run: node scripts/recette-gardes.mjs
+
+      - name: Comptes entreprises
+        env:
+          SUPABASE_DB_HOST: ${{ secrets.SUPABASE_DB_HOST }}
+          SUPABASE_DB_PORT: ${{ secrets.SUPABASE_DB_PORT }}
+          SUPABASE_DB_USER: ${{ secrets.SUPABASE_DB_USER }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_DB_NAME: ${{ secrets.SUPABASE_DB_NAME }}
+        run: node scripts/recette-organisations.mjs
+
+      - name: Parité du devis, écran contre serveur
+        env:
+          SUPABASE_DB_HOST: ${{ secrets.SUPABASE_DB_HOST }}
+          SUPABASE_DB_PORT: ${{ secrets.SUPABASE_DB_PORT }}
+          SUPABASE_DB_USER: ${{ secrets.SUPABASE_DB_USER }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_DB_NAME: ${{ secrets.SUPABASE_DB_NAME }}
+        run: node scripts/parite-devis.mjs

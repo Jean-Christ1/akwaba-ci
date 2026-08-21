@@ -16,20 +16,9 @@
  */
 import fs from 'node:fs'
 import pg from 'pg'
+import { exigerConfiguration } from './lib/connexion-base.mjs'
 
-const s = JSON.parse(
-  fs.readFileSync('C:/Users/kouas/Documents/deepl-test/94-akwaka/.secret/akwaba-supabase-secret.json', 'utf8')
-).supabase
-
-const c = new pg.Client({
-  host: s.database.host,
-  port: Number(s.database.port || 5432),
-  user: s.database.user,
-  password: s.db_password,
-  database: s.database.name || 'postgres',
-  ssl: { rejectUnauthorized: false },
-  connectionTimeoutMillis: 30000,
-})
+const c = new pg.Client(exigerConfiguration("recette des gardes"))
 await c.connect()
 
 let etape = 0

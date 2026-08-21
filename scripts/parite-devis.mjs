@@ -17,6 +17,7 @@
  */
 import fs from "node:fs";
 import pg from "pg";
+import { exigerConfiguration } from './lib/connexion-base.mjs'
 import * as esbuild from "esbuild";
 
 /**
@@ -30,8 +31,7 @@ const build = await esbuild.build({
 const mod = await import("data:text/javascript;base64," + Buffer.from(build.outputFiles[0].text).toString("base64"));
 const { quoteErrand } = mod;
 
-const s = JSON.parse(fs.readFileSync("C:/Users/kouas/Documents/deepl-test/94-akwaka/.secret/akwaba-supabase-secret.json", "utf8")).supabase;
-const c = new pg.Client({ host: s.database.host, port: Number(s.database.port||5432), user: s.database.user, password: s.db_password, database: s.database.name||"postgres", ssl:{rejectUnauthorized:false}, connectionTimeoutMillis:20000 });
+const c = new pg.Client(exigerConfiguration("parité du devis"))
 await c.connect();
 const regle = (await c.query("select rate, min_service_fee from public.commission_rules where is_active order by version desc limit 1")).rows[0];
 const minServiceFee = Number(regle.min_service_fee), commissionRate = Number(regle.rate);
