@@ -2267,6 +2267,17 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      dispute_frozen_amounts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          errand_id: string
+          gele: number
+        }[]
+      }
+      runner_set_status: {
+        Args: { p_reason?: string; p_runner_id: string; p_status: Database["public"]["Enums"]["runner_status"] }
+        Returns: unknown
+      }
       errand_add_tip: {
         Args: { p_amount: number; p_errand_id: string }
         Returns: {

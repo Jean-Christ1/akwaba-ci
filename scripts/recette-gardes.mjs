@@ -360,6 +360,56 @@ try {
     return 'sequestre conserve, assiette ' + r.rows[0].base
   })
 
+  // --- Le gel reel et la trace des decisions -------------------------------
+  await pas('Le montant gele est celui des ecritures, pas le gain theorique', async () => {
+    await proprietaire()
+    const litige = await nouvelleCourse('Course des gardes litige')
+    await devenir(SHOPPER)
+    await c.query('SELECT public.errand_advance_status($1, $2)', [litige, 'shopping'])
+    await devenir(CLIENT)
+    await c.query('SELECT public.errand_open_dispute($1, $2)', [litige, 'Le shopper ne repond plus depuis deux heures'])
+    await devenir(MODERATEUR)
+    const r = await c.query('SELECT gele FROM public.dispute_frozen_amounts() WHERE errand_id = $1', [litige])
+    await proprietaire()
+    const theorique = Number((await c.query('SELECT runner_payout FROM public.errands WHERE id = $1', [litige])).rows[0].runner_payout)
+    const gele = Number(r.rows[0]?.gele ?? -1)
+    if (gele !== 0) throw new Error('gel attendu a zero avant tout reglement, obtenu ' + gele)
+    if (theorique <= 0) throw new Error('le gain theorique devrait etre non nul, il vaut ' + theorique)
+    return 'gele ' + gele + ', gain theorique ' + theorique + ' : les deux sont bien distincts'
+  })
+
+  await refus('Un shopper ne change pas son propre statut', async () => {
+    await proprietaire()
+    const dossier = (await c.query('SELECT id FROM public.runner_profiles WHERE user_id = $1', [SHOPPER])).rows[0].id
+    await devenir(SHOPPER)
+    await c.query('SELECT public.runner_set_status($1, $2, $3)', [dossier, 'approved', null])
+  })
+
+  await refus('Suspendre sans motif est refuse', async () => {
+    await proprietaire()
+    const dossier = (await c.query('SELECT id FROM public.runner_profiles WHERE user_id = $1', [SHOPPER])).rows[0].id
+    await devenir(MODERATEUR)
+    await c.query('SELECT public.runner_set_status($1, $2, $3)', [dossier, 'suspended', null])
+  })
+
+  await pas('Suspendre avec motif laisse une trace nominative', async () => {
+    await proprietaire()
+    const dossier = (await c.query('SELECT id FROM public.runner_profiles WHERE user_id = $1', [SHOPPER])).rows[0].id
+    await devenir(MODERATEUR)
+    await c.query('SELECT public.runner_set_status($1, $2, $3)', [dossier, 'suspended', 'Trois remises contestees en une semaine'])
+    await proprietaire()
+    const t = await c.query(
+      "SELECT actor_id, details FROM public.audit_logs WHERE entity = 'runner_profile' AND entity_id = $1 ORDER BY created_at DESC LIMIT 1",
+      [dossier]
+    )
+    if (!t.rows.length) throw new Error('aucune trace d audit')
+    if (t.rows[0].actor_id !== MODERATEUR) throw new Error('acteur inattendu')
+    if (!String(t.rows[0].details.motif).includes('remises contestees')) throw new Error('motif absent de la trace')
+    const s = (await c.query("SELECT status FROM public.runner_profiles WHERE id = $1", [dossier])).rows[0].status
+    if (s !== 'suspended') throw new Error('statut non applique : ' + s)
+    return 'statut ' + s + ', acteur et motif inscrits'
+  })
+
   console.log('\n=== RESULTAT ===')
   console.log(`  etapes reussies : ${ok.length}`)
   console.log(`  etapes en echec : ${ko.length}`)

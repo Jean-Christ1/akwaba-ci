@@ -43,8 +43,31 @@ export default function ShoppersPage() {
 
   useEffect(() => { if (isModerator) load(); }, [isModerator, load]);
 
+  /**
+   * Le statut passe par la fonction serveur, qui inscrit la décision au
+   * journal d'audit. L'écriture directe ne laissait aucune trace : ouvrir ou
+   * fermer l'accès au travail, donc au revenu, doit dire qui l'a décidé.
+   *
+   * Suspendre ou refuser exige un motif, que le serveur réclame aussi : le
+   * demander ici évite un aller-retour pour une erreur prévisible.
+   */
   const setStatus = async (r: Runner, status: RunnerStatus) => {
-    const { error } = await supabase.from("runner_profiles").update({ status }).eq("id", r.id);
+    let motif: string | null = null;
+    if (status === "suspended" || status === "rejected") {
+      motif = window.prompt(
+        `Motif de ${status === "suspended" ? "la suspension" : "le refus"} de ${r.full_name} ?`
+      );
+      if (motif === null) return;
+      if (motif.trim().length < 5) {
+        return toast.error("Indiquez un motif d'au moins cinq caractères.");
+      }
+    }
+
+    const { error } = await supabase.rpc("runner_set_status", {
+      p_runner_id: r.id,
+      p_status: status,
+      p_reason: motif?.trim() || undefined,
+    });
     if (error) return toast.error(error.message);
     toast.success(`${r.full_name} → ${STATUS_LABEL[status]}`);
     load();
