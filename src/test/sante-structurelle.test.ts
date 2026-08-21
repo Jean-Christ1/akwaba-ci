@@ -65,10 +65,16 @@ describe("santé structurelle", () => {
     for (const f of candidats) {
       const nom = path.basename(f).replace(".tsx", "").replace(".ts", "");
 
+      // Le nom est cherché tel qu'il apparaît dans un chemin d'import, entre
+      // un séparateur et une fin de chemin. Le chercher nu laissait passer les
+      // noms courants : « Index » se retrouve dans tabIndex, zIndex et indexOf,
+      // si bien qu'une page morte nommée Index.tsx paraissait citée partout.
+      const cite = new RegExp('[/"\'`]' + nom + '["\'`/]', "g");
+
       // Le fichier se nomme lui-même dans son propre contenu : on retranche
       // ses occurrences propres avant de conclure qu'il est cité ailleurs.
-      const propres = (lire(f).match(new RegExp(nom, "g")) ?? []).length;
-      const total = (toutLeCode.match(new RegExp(nom, "g")) ?? []).length;
+      const propres = (lire(f).match(cite) ?? []).length;
+      const total = (toutLeCode.match(cite) ?? []).length;
       if (total <= propres) morts.push(f);
     }
 
