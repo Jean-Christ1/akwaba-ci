@@ -407,7 +407,80 @@ try {
     if (!String(t.rows[0].details.motif).includes('remises contestees')) throw new Error('motif absent de la trace')
     const s = (await c.query("SELECT status FROM public.runner_profiles WHERE id = $1", [dossier])).rows[0].status
     if (s !== 'suspended') throw new Error('statut non applique : ' + s)
+    // Une epreuve ne doit pas laisser le monde change pour la suivante : le
+    // dossier est remis en etat valide.
+    await c.query("UPDATE public.runner_profiles SET status = 'approved' WHERE id = $1", [dossier])
     return 'statut ' + s + ', acteur et motif inscrits'
+  })
+
+  // --- La tolerance de remplacement -----------------------------------------
+  await pas('Un equivalent nettement plus cher est soumis au client', async () => {
+    await proprietaire()
+    const course = await nouvelleCourse('Course des gardes remplacement')
+    await devenir(CLIENT)
+    await c.query('SELECT public.errand_set_substitution_policy($1, $2)', [course, 'similar'])
+    await devenir(SHOPPER)
+    await c.query('SELECT public.errand_advance_status($1, $2)', [course, 'shopping'])
+    await proprietaire()
+    const article = (await c.query(
+      'SELECT id FROM public.errand_items WHERE errand_id = $1 ORDER BY position LIMIT 1', [course]
+    )).rows[0].id
+    const budget = Number((await c.query(
+      'SELECT budget_estimate FROM public.errands WHERE id = $1', [course]
+    )).rows[0].budget_estimate)
+    // Le defaut n apparait qu avec plusieurs articles : avec un seul, la part
+    // du budget EST le budget et les deux regles se confondent. On complete le
+    // panier a cinq articles, ce qui est le cas courant.
+    for (let k = 2; k <= 5; k++) {
+      await c.query(
+        'INSERT INTO public.errand_items (errand_id, position, label, qty) VALUES ($1, $2, $3, $4)',
+        [course, k, 'Article ' + k, '1']
+      )
+    }
+    // Prix bien au-dessus de la part par article (budget / 5), mais sous le
+    // budget entier majore : exactement le cas qui passait sans un mot.
+    const prix = Math.round(budget * 0.8)
+    await devenir(SHOPPER)
+    await c.query('SELECT public.errand_item_report($1, $2, $3, $4)', [article, 'substitute', 'Riz importe', prix])
+    await proprietaire()
+    const etat = (await c.query(
+      'SELECT state, decided_at FROM public.errand_items WHERE id = $1', [article]
+    )).rows[0]
+    if (etat.state !== 'substitute') throw new Error('accepte d office : ' + etat.state)
+    if (etat.decided_at) throw new Error('date de decision posee sans decision')
+    const notif = (await c.query(
+      "SELECT count(*)::int n FROM public.notification_outbox WHERE errand_id = $1 AND event LIKE 'item_substitute%'",
+      [course]
+    )).rows[0].n
+    if (notif === 0) throw new Error('le client n a pas ete prevenu')
+    return 'budget ' + budget + ', prix propose ' + prix + ' : soumis au client, ' + notif + ' notification'
+  })
+
+  await pas('Un equivalent a prix voisin reste accepte d avance', async () => {
+    await proprietaire()
+    const course = await nouvelleCourse('Course des gardes remplacement proche')
+    await devenir(CLIENT)
+    await c.query('SELECT public.errand_set_substitution_policy($1, $2)', [course, 'similar'])
+    await devenir(SHOPPER)
+    await c.query('SELECT public.errand_advance_status($1, $2)', [course, 'shopping'])
+    await proprietaire()
+    const article = (await c.query(
+      'SELECT id FROM public.errand_items WHERE errand_id = $1 ORDER BY position LIMIT 1', [course]
+    )).rows[0].id
+    const r = await c.query(
+      'SELECT budget_estimate, (SELECT count(*) FROM public.errand_items WHERE errand_id = $1) n FROM public.errands WHERE id = $1',
+      [course]
+    )
+    const part = Number(r.rows[0].budget_estimate) / Number(r.rows[0].n)
+    const prix = Math.round(part * 1.1)
+    await devenir(SHOPPER)
+    await c.query('SELECT public.errand_item_report($1, $2, $3, $4)', [article, 'substitute', 'Riz voisin', prix])
+    await proprietaire()
+    const etat = (await c.query(
+      'SELECT state FROM public.errand_items WHERE id = $1', [article]
+    )).rows[0].state
+    if (etat !== 'accepted') throw new Error('non accepte alors que le prix est voisin : ' + etat)
+    return 'part par article ' + Math.round(part) + ', prix ' + prix + ' : accepte d avance'
   })
 
   console.log('\n=== RESULTAT ===')
