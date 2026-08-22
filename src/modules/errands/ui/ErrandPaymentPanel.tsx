@@ -45,7 +45,12 @@ export function ErrandPaymentPanel({
 
   const regle = errand.payment_status === "paid";
   const attenteAccord = errand.budget_overrun_pending;
-  const peutConfirmer = isCustomer && !regle && errand.status === "delivered";
+  // Le serveur refuse la clôture tant qu'un achat est enregistré sans son reçu.
+  // Le bouton restait actif : le client cliquait et n'obtenait qu'une erreur,
+  // sans savoir que c'est au shopper de déposer la pièce.
+  const recuManquant = Number(errand.items_total) > 0 && !errand.receipt_url;
+  const peutConfirmer =
+    isCustomer && !regle && errand.status === "delivered" && !recuManquant;
 
   return (
     <section className="rounded-2xl border border-border bg-card p-4">
@@ -103,9 +108,18 @@ export function ErrandPaymentPanel({
         {regle ? "Réglé" : "En attente"}
       </p>
 
+      {/* Retirer le bouton sans rien dire laisserait le client devant une course
+          livrée qu'il ne peut pas clore, sans savoir ce qu'il attend. */}
+      {isCustomer && !regle && errand.status === "delivered" && recuManquant && (
+        <p className="mt-3 rounded-xl border border-dashed border-border p-3 text-xs text-muted-foreground">
+          Le shopper doit d'abord déposer le reçu des achats. Vous pourrez clôturer la course dès
+          qu'il l'aura fait.
+        </p>
+      )}
+
       {peutConfirmer && (
         <>
-          <Button className="mt-3 w-full" disabled={busy || attenteAccord} onClick={confirmer}>
+          <Button className="mt-3 min-h-[44px] w-full" disabled={busy || attenteAccord} onClick={confirmer}>
             <CheckCircle2 className="mr-2 h-4 w-4" aria-hidden="true" /> Confirmer le paiement
           </Button>
           {attenteAccord && (
