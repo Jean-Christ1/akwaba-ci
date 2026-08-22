@@ -55,7 +55,30 @@ function PlaceCardBase({ place, variant = "default", className }: PlaceCardProps
   }
 
   return (
-    <Link to={`/lieu/${place.slug}`} className={cn("akw-card-hover group block", className)}>
+    /* Le bouton favori était imbriqué dans le lien de la carte. Un contrôle
+       interactif dans une ancre n'est pas du HTML valide, et le dépôt le note
+       déjà ailleurs : la carte devient imprévisible au toucher comme au
+       clavier, où le bouton se parcourt à l'intérieur du lien. Il sort donc du
+       lien et se pose au-dessus, la carte gardant son unique zone cliquable. */
+    <article className={cn("akw-card-hover group relative", className)}>
+      <button
+        type="button"
+        onClick={() => toggle(place.id)}
+        aria-label={
+          fav ? `Retirer ${place.name} des favoris` : `Ajouter ${place.name} aux favoris`
+        }
+        aria-pressed={fav}
+        className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-background/90 backdrop-blur-md transition-transform hover:scale-105"
+      >
+        <Heart
+          className={cn(
+            "h-4 w-4 transition-colors",
+            fav ? "fill-destructive text-destructive" : "text-foreground"
+          )}
+        />
+      </button>
+
+      <Link to={`/lieu/${place.slug}`} className="block">
       <div className="relative aspect-[4/3] overflow-hidden">
         <PlaceImage
           src={place.image}
@@ -64,22 +87,6 @@ function PlaceCardBase({ place, variant = "default", className }: PlaceCardProps
         />
         <div className="absolute inset-x-0 top-0 flex items-start justify-between p-3">
           {place.premium && <span className="akw-badge-premium">Sélection</span>}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              toggle(place.id);
-            }}
-            aria-label={fav ? "Retirer des favoris" : "Ajouter aux favoris"}
-            className="ml-auto flex h-9 w-9 items-center justify-center rounded-full bg-background/90 backdrop-blur-md transition-transform hover:scale-105"
-          >
-            <Heart
-              className={cn(
-                "h-4 w-4 transition-colors",
-                fav ? "fill-destructive text-destructive" : "text-foreground"
-              )}
-            />
-          </button>
         </div>
       </div>
       <div className="space-y-2 p-4">
@@ -103,7 +110,8 @@ function PlaceCardBase({ place, variant = "default", className }: PlaceCardProps
           <span className="font-medium text-foreground">{place.priceBand}</span>
         </div>
       </div>
-    </Link>
+      </Link>
+    </article>
   );
 }
 
