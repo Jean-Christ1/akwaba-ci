@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { ErrandInspector } from "@/modules/admin/ErrandInspector";
+import { OperationsHealth } from "@/modules/admin/OperationsHealth";
 import { formatFcfa, STATUS_LABEL, statusTone, type ErrandStatus } from "@/modules/errands/domain";
 
 interface Course {
@@ -156,6 +157,8 @@ export default function ErrandsPage() {
       <p className="mt-1 text-sm text-muted-foreground">
         Ce qui attend une intervention, avant ce qui se déroule normalement.
       </p>
+
+      <OperationsHealth />
 
       {parAlerte.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">
