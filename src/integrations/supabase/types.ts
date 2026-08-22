@@ -2278,6 +2278,17 @@ export type Database = {
         Args: { p_reason?: string; p_runner_id: string; p_status: Database["public"]["Enums"]["runner_status"] }
         Returns: unknown
       }
+      taches_planifiees: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          active: boolean
+          dernier_debut: string | null
+          dernier_message: string | null
+          dernier_statut: string | null
+          frequence: string
+          tache: string
+        }[]
+      }
       errand_add_tip: {
         Args: { p_amount: number; p_errand_id: string }
         Returns: {
