@@ -63,8 +63,13 @@ export function TermsPage() {
         </p>
         <p>
           Éditeur : <AComplete>raison sociale, forme juridique, capital, registre du commerce, siège</AComplete>.
-          Directeur de la publication : <AComplete>nom</AComplete>. Hébergeur :{" "}
-          <AComplete>nom et adresse de l'hébergeur</AComplete>.
+          Directeur de la publication : <AComplete>nom</AComplete>.
+        </p>
+        <p>
+          Hébergement : l'application est publiée par <strong>Cloudflare Pages</strong>
+          (Cloudflare, Inc., États-Unis) et les données sont hébergées par
+          <strong> Supabase</strong> (Supabase, Inc., États-Unis), dont l'infrastructure de
+          base de données est située dans la région déclarée pour ce projet.
         </p>
       </Section>
 
@@ -101,7 +106,12 @@ export function TermsPage() {
           justifiés par un reçu.
         </p>
         <p>
-          Modalités de règlement retenues : <AComplete>prestataire de paiement, détention des fonds, délais</AComplete>.
+          Modalités de règlement en vigueur : <strong>aucun prestataire de paiement
+          n'intervient</strong>. Le client règle directement le shopper, en espèces ou par
+          mobile money, de la main à la main. Akwaba ne détient à aucun moment les fonds des
+          courses : la plateforme facture au shopper une commission sur les seuls frais de
+          service, jamais sur le prix des achats. Le montant dû par le shopper est visible dans
+          son portefeuille.
         </p>
       </Section>
 
@@ -121,7 +131,13 @@ export function TermsPage() {
           shopper sont gelés pendant l'instruction.
         </p>
         <p>
-          Politique de remboursement détaillée : <AComplete>délais, cas couverts, modalités</AComplete>.
+          Akwaba ne détenant pas les fonds, elle ne procède pas elle-même à un remboursement.
+          Ce que le modérateur tranche est l'issue de la course : soit elle est due au shopper,
+          soit elle est annulée sans versement, soit elle est réglée en faveur du client. La
+          décision, son motif et son auteur sont inscrits au journal, et les sommes
+          éventuellement retenues sur le portefeuille du shopper suivent cette décision. Le
+          remboursement de l'argent des achats se règle entre le client et le shopper, la
+          plateforme fournissant les preuves : reçu, liste des articles, journal de la course.
         </p>
       </Section>
 
@@ -192,8 +208,19 @@ export function PrivacyPage() {
       <Section titre="Combien de temps">
         <p>
           Les données d'une course sont conservées le temps nécessaire au traitement d'un éventuel
-          litige et au respect de nos obligations comptables. Durées retenues :{" "}
-          <AComplete>durée de conservation par catégorie</AComplete>.
+          litige et au respect de nos obligations comptables.
+        </p>
+        <p>
+          Concrètement : vos données personnelles vivent tant que votre compte existe. Le jour
+          où vous le supprimez, votre profil, votre dossier de shopper, vos comptes de
+          réception, votre portefeuille, vos favoris et vos messages sont effacés
+          immédiatement. Vos courses terminées restent dans nos écritures comptables, sans votre
+          nom : elles ne portent plus que des montants et des dates.
+        </p>
+        <p>
+          Aucune purge automatique n'est en place à ce jour : nous ne supprimons rien de nous
+          mêmes avant votre demande. Nous préférons vous le dire plutôt que d'annoncer une durée
+          que nous n'appliquerions pas.
         </p>
       </Section>
 
@@ -204,7 +231,14 @@ export function PrivacyPage() {
           associées, sauf ce que la loi nous impose de conserver.
         </p>
         <p>
-          Contact : <AComplete>adresse de contact dédiée aux données personnelles</AComplete>. Vous
+          <strong>La suppression s'exerce directement</strong>, depuis l'onglet « Compte » de
+          votre profil. Elle est refusée tant qu'une course est en cours, qu'une commission
+          reste due ou qu'un retrait est en traitement : l'écran vous dit alors précisément ce
+          qui l'empêche, pour que rien ne disparaisse avec de l'argent en suspens.
+        </p>
+        <p>
+          Pour une demande d'accès, de rectification ou d'opposition, écrivez-nous par le canal
+          de support de l'application. Vous
           pouvez également saisir l'autorité ivoirienne de protection des données.
         </p>
       </Section>
