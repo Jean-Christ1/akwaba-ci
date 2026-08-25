@@ -202,3 +202,33 @@ Les deux passaient au vert en ne gardant rien.
 **Conséquence.** Le composeur d'offre a été sorti de l'écran du marché pour
 devenir éprouvable. Une extraction faite pour rendre une garde réelle, pas
 pour ranger.
+
+## 2026-08-22, une seule configuration de déploiement
+
+**Décision.** `vercel.json` est retiré. Le frontend est publié par Cloudflare
+Pages, et c'est `public/_headers` et `public/_redirects` qui font foi.
+
+**Preuves.** Le compte Vercel porte onze projets, aucun nommé akwaba, vérifié
+par le connecteur le 22 août ; l'audit du 13 août faisait le même constat.
+L'adresse `akwaba-api.vercel.app` répond 404. Le dépôt n'a jamais été lié :
+aucun `.vercel/project.json`. Ni la chaîne d'intégration, ni les scripts, ni
+`package.json` ne lisent ce fichier.
+
+**Le vrai danger n'était pas le fichier mort, mais la duplication.** Les cinq
+en-têtes de sécurité étaient déclarés aux deux endroits, dont un seul est lu.
+Quelqu'un qui durcit une règle dans le fichier inerte croit avoir changé la
+production, et rien ne bouge.
+
+**Sur le backend attendu sur Vercel.** La consigne le prévoyait « seulement si
+l'architecture réelle permet un déploiement compatible et fiable ». Il n'y a
+pas de backend déployable : toute la logique serveur vit dans PostgreSQL et
+dans huit fonctions de bordure Supabase, qui s'appuient sur les secrets de ce
+projet. La condition n'est pas remplie. Le jour où une interface applicative
+distincte existera, sa configuration reviendra avec elle, et ce sera une
+configuration d'interface, pas de frontend.
+
+**Conséquence.** Un contrôle refuse désormais toute configuration d'un autre
+hébergeur qui redéclarerait ce que Cloudflare sert.
+
+**En attente.** Le secret `akwaba-api-vercel.json` du coffre annonce une
+adresse qui n'existe pas. Il est au propriétaire de décider de son sort.
