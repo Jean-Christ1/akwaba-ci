@@ -483,6 +483,39 @@ try {
     return 'part par article ' + Math.round(part) + ', prix ' + prix + ' : accepte d avance'
   })
 
+  // --- Le droit a l effacement ----------------------------------------------
+  await refus('Un compte avec une course en cours ne s efface pas', async () => {
+    await proprietaire()
+    const encours = await nouvelleCourse('Course des gardes effacement')
+    await devenir(CLIENT)
+    await c.query('SELECT public.account_delete_self()')
+  })
+
+  await pas('Un compte solde s efface, et la trace comptable survit', async () => {
+    await proprietaire()
+    const jetable = await creerCompte('jetable-effacement@example.invalid')
+    await c.query("INSERT INTO public.profiles (id, display_name) VALUES ($1, 'Jetable') ON CONFLICT (id) DO NOTHING", [jetable])
+    // Une course terminee, dont la trace comptable doit survivre a la personne.
+    const trace = (await c.query(
+      "INSERT INTO public.errands (customer_id, title, category, city, delivery_address, items, status, payment_status, total_amount) VALUES ($1, 'Course close', 'grocery', 'Abidjan', 'Adresse', '[]'::jsonb, 'completed', 'paid', 12345) RETURNING id",
+      [jetable]
+    )).rows[0].id
+    await devenir(jetable)
+    await c.query('SELECT public.account_delete_self()')
+    await proprietaire()
+    const compte = (await c.query('SELECT count(*)::int n FROM auth.users WHERE id = $1', [jetable])).rows[0].n
+    const profil = (await c.query('SELECT count(*)::int n FROM public.profiles WHERE id = $1', [jetable])).rows[0].n
+    const course = (await c.query(
+      'SELECT customer_id, total_amount FROM public.errands WHERE id = $1', [trace]
+    )).rows[0]
+    if (compte !== 0) throw new Error('le compte subsiste')
+    if (profil !== 0) throw new Error('le profil subsiste')
+    if (!course) throw new Error('la course a disparu avec la personne')
+    if (course.customer_id !== null) throw new Error('identite conservee sur la course')
+    if (Number(course.total_amount) !== 12345) throw new Error('montant perdu')
+    return 'compte et profil effaces, course conservee a ' + course.total_amount + ' sans identite'
+  })
+
   console.log('\n=== RESULTAT ===')
   console.log(`  etapes reussies : ${ok.length}`)
   console.log(`  etapes en echec : ${ko.length}`)
