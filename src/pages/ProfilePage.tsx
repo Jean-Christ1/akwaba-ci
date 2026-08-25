@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { LogIn, LogOut, ShieldCheck, Inbox, Store, User as UserIcon, KeyRound, Save, ShoppingBasket, Wallet, Bike, Building2, CalendarClock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Logo } from "@/shared/ui/Logo";
@@ -14,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useTabState } from "@/shared/hooks/useTabState";
 import { toast } from "sonner";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
+import { DeleteAccountCard } from "@/modules/account/ui/DeleteAccountCard";
 
 type LeadRow = Database["public"]["Tables"]["leads"]["Row"] & {
   /** Jointure select("*, places(name, slug)"). */
@@ -29,6 +30,7 @@ type ModerationEventRow = Database["public"]["Tables"]["place_moderation_events"
 export default function ProfilePage() {
   usePageTitle("Mon profil", "Votre compte, vos demandes et vos fiches.");
   const { user, roles, signOut, isPartner, isModerator, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [profile, setProfile] = useState<{ display_name: string; phone: string; locale: string }>({ display_name: "", phone: "", locale: "fr" });
   const [pwd, setPwd] = useState("");
@@ -236,6 +238,13 @@ export default function ProfilePage() {
                 <div className="space-y-1.5"><Label>Nouveau mot de passe</Label><Input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} /></div>
                 <Button variant="outline" onClick={updatePassword} className="w-fit">Mettre à jour le mot de passe</Button>
               </Card>
+
+              {/* La page de confidentialité promet la suppression des données.
+                  Elle n'était exerçable nulle part, et l'adresse de contact
+                  censée recueillir la demande est encore à compléter. */}
+              <div className="mt-3">
+                <DeleteAccountCard onDeleted={() => navigate("/")} />
+              </div>
             </TabsContent>
 
             <TabsContent value="leads" className="mt-3">

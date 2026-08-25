@@ -2267,6 +2267,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      account_delete_self: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       dispute_frozen_amounts: {
         Args: Record<PropertyKey, never>
         Returns: {
