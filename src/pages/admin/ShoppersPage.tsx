@@ -19,9 +19,61 @@ interface Runner {
   bio: string | null;
   /** Clé d'objet dans le bucket privé, jamais une URL publique. */
   id_doc_url: string | null;
+  /** Selfie, dans le meme bucket prive que la piece. */
+  selfie_url: string | null;
+  date_of_birth: string | null;
+  id_document_type: string | null;
+  id_document_expires_on: string | null;
+  identity_reviewed_at: string | null;
   status: RunnerStatus;
   jobs_completed: number;
   created_at: string;
+}
+
+const TYPE_PIECE: Record<string, string> = {
+  cni: "Carte nationale d'identité",
+  passeport: "Passeport",
+  permis: "Permis de conduire",
+  attestation_identite: "Attestation d'identité",
+  carte_consulaire: "Carte consulaire",
+};
+
+/**
+ * L'age revolu, calcule comme le serveur le calcule.
+ *
+ * Un dossier depose la veille des dix-huit ans resterait valide indefiniment
+ * si l'age etait fige a la soumission : la question se repose a chaque examen.
+ */
+function ageRevolu(naissance: string | null): number | null {
+  if (!naissance) return null;
+  const d = new Date(naissance);
+  if (Number.isNaN(d.getTime())) return null;
+  const maintenant = new Date();
+  let age = maintenant.getFullYear() - d.getFullYear();
+  const mois = maintenant.getMonth() - d.getMonth();
+  if (mois < 0 || (mois === 0 && maintenant.getDate() < d.getDate())) age -= 1;
+  return age;
+}
+
+/**
+ * Ce qui manque a un dossier pour pouvoir etre valide.
+ *
+ * Le serveur refuse de toute facon, et c'est lui qui fait autorite. Afficher
+ * la liste ici evite au moderateur de decouvrir le refus apres avoir clique,
+ * et lui donne ce qu'il doit redemander au candidat.
+ */
+function manques(r: Runner): string[] {
+  const age = ageRevolu(r.date_of_birth);
+  const perimee =
+    r.id_document_expires_on !== null && new Date(r.id_document_expires_on) < new Date();
+  return [
+    r.date_of_birth ? null : "date de naissance",
+    age !== null && age < 18 ? "majorité non atteinte" : null,
+    r.id_doc_url ? null : "pièce d'identité",
+    r.id_document_type ? null : "type de pièce",
+    perimee ? "pièce périmée" : null,
+    r.selfie_url ? null : "selfie",
+  ].filter((v): v is string => v !== null);
 }
 
 const STATUS_LABEL: Record<RunnerStatus, string> = {
@@ -106,6 +158,51 @@ export default function ShoppersPage() {
             {/* Approuver une candidature revient à certifier une identité au
                 client. Sans accès à la pièce déposée, la validation ne repose
                 sur rien. */}
+            <div className="mt-3 rounded-xl border border-border bg-background p-3">
+              <p className="text-xs font-medium">Identité</p>
+              <dl className="mt-1 grid gap-x-4 gap-y-1 text-[11px] text-muted-foreground sm:grid-cols-3">
+                <div className="flex gap-1">
+                  <dt>Âge :</dt>
+                  <dd className={ageRevolu(r.date_of_birth) !== null && ageRevolu(r.date_of_birth)! < 18 ? "font-medium text-destructive" : ""}>
+                    {ageRevolu(r.date_of_birth) === null
+                      ? "non renseigné"
+                      : `${ageRevolu(r.date_of_birth)} ans`}
+                  </dd>
+                </div>
+                <div className="flex gap-1">
+                  <dt>Pièce :</dt>
+                  <dd>{r.id_document_type ? TYPE_PIECE[r.id_document_type] ?? r.id_document_type : "non renseignée"}</dd>
+                </div>
+                <div className="flex gap-1">
+                  <dt>Échéance :</dt>
+                  <dd>
+                    {r.id_document_expires_on
+                      ? new Date(r.id_document_expires_on).toLocaleDateString("fr-FR")
+                      : "non renseignée"}
+                  </dd>
+                </div>
+              </dl>
+
+              {manques(r).length > 0 && (
+                /* Le serveur refuse la validation tant que ces éléments manquent.
+                   Le dire avant le clic évite un refus incompréhensible et
+                   indique ce qu'il faut redemander au candidat. */
+                <p className="mt-2 rounded-lg bg-destructive/10 px-2 py-1 text-[11px] text-destructive">
+                  Validation impossible, il manque : {manques(r).join(", ")}.
+                </p>
+              )}
+
+              <div className="mt-2">
+                <PrivateDocumentButton
+                  bucket="identity-docs"
+                  path={r.selfie_url}
+                  label="Ouvrir le selfie"
+                  emptyLabel="Aucun selfie déposé"
+                  notice="À rapprocher de la pièce. Refermez l'onglet après consultation."
+                />
+              </div>
+            </div>
+
             <div className="mt-3 rounded-xl border border-border bg-background p-3">
               <p className="text-xs font-medium">Pièce d'identité</p>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
