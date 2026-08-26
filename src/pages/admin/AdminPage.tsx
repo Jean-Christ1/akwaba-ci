@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import {
   Inbox,
+  KeyRound,
   LayoutDashboard,
   MessageSquare,
   Plus,
@@ -46,6 +47,7 @@ const LIENS_ESPACES: { to: string; label: string; icon: LucideIcon; role: "moder
   { to: "/admin/litiges", label: "Litiges", icon: ShieldCheck, role: "moderator" },
   { to: "/admin/payouts", label: "Retraits", icon: Inbox, role: "admin" },
   { to: "/admin/parametres", label: "Paramètres", icon: Store, role: "admin" },
+  { to: "/admin/droits", label: "Droits d'accès", icon: KeyRound, role: "admin" },
 ];
 
 /**
