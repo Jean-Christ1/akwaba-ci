@@ -34,13 +34,11 @@ import {
   type PayMethod,
 } from "@/modules/errands/domain";
 import {
-  COMMISSION_RATE,
   DROPOFF_MODES,
   FUND_MODES,
   URGENCY_OPTIONS,
   VEHICLE_OPTIONS,
   VOLUME_OPTIONS,
-  quoteErrand,
   type DropoffMode,
   type FundMode,
   type Urgency,
@@ -48,7 +46,8 @@ import {
   type VolumeSize,
 } from "@/modules/errands/pricing";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
-import { useCommissionRule } from "@/modules/errands/application/useCommissionRule";
+import { usePricingGrid } from "@/modules/errands/application/usePricingGrid";
+import { devisDepuisGrille } from "@/modules/errands/grilleTarifaire";
 import { useServiceAreas, zonesOfCity } from "@/modules/places/application/useServiceAreas";
 import {
   LIBELLES_CONSIGNE,
@@ -65,7 +64,11 @@ export default function NewErrandPage() {
   // Le serveur calcule le devis avec le barème en vigueur, pas avec les
   // constantes du moteur : l'écran doit lire le même, sinon il annonce un
   // prix que la base n'applique plus.
-  const { rule } = useCommissionRule();
+  // Le devis affiché se calcule avec les tarifs publiés en base, ceux-là
+  // mêmes dont le serveur se servira. Tant qu'ils ne sont pas chargés, on
+  // n'affiche aucun prix : annoncer un chiffre qu'on ne peut pas tenir serait
+  // pire que de faire patienter.
+  const { grille, erreur: erreurBareme } = usePricingGrid();
 
   // Les organisations du client. Une course rattachee apparait dans le suivi
   // de l'entreprise ; sans organisation, ce choix ne s'affiche pas du tout.
@@ -188,30 +191,32 @@ export default function NewErrandPage() {
   );
   const valid = title.trim().length >= 3 && address.trim().length >= 3 && cleanItems.length > 0;
 
+  // Le barème module par ville, et la course enregistre la ville par son nom.
+  // La grille, elle, est indexée par identifiant : la correspondance se fait
+  // ici, faute de quoi la modulation resterait sans effet.
+  const villeSlug = useMemo(() => {
+    const trouvee = villes.find((v) => v.name === city || v.slug === city);
+    return trouvee?.slug ?? null;
+  }, [villes, city]);
+
   const quote = useMemo(
     () =>
-      quoteErrand({
-        minServiceFee: rule.minServiceFee,
-        commissionRate: rule.rate,
-        vehicle,
-        volume,
-        urgency,
-        distanceKm: Number(distance) || 0,
-        estimatedMinutes: Number(minutes) || 0,
-        dropoff,
-        itemsCount: cleanItems.length,
-      }),
-    [
-      vehicle,
-      volume,
-      urgency,
-      distance,
-      minutes,
-      dropoff,
-      cleanItems.length,
-      rule.minServiceFee,
-      rule.rate,
-    ]
+      grille
+        ? devisDepuisGrille(
+            {
+              vehicle,
+              volume,
+              urgency,
+              dropoff,
+              distanceKm: Number(distance) || 0,
+              estimatedMinutes: Number(minutes) || 0,
+              itemsCount: cleanItems.length,
+              citySlug: villeSlug,
+            },
+            grille
+          )
+        : null,
+    [grille, vehicle, volume, urgency, distance, minutes, dropoff, cleanItems.length, villeSlug]
   );
 
   const budgetNum = Number(budget) || 0;
@@ -642,13 +647,37 @@ export default function NewErrandPage() {
         <aside className="lg:sticky lg:top-20 lg:self-start">
           <div className="rounded-2xl border border-border bg-card p-4">
             <p className="akw-eyebrow text-muted-foreground">Votre devis</p>
+
+            {/* Sans barème, pas de prix. Un montant de repli écrit dans le code
+                serait une deuxième source de tarifs, qui vieillit en silence et
+                finit par annoncer au client ce que le serveur ne facturera pas. */}
+            {!quote ? (
+              <div className="mt-2 rounded-xl bg-muted/50 p-3 text-sm text-muted-foreground">
+                {erreurBareme ? (
+                  <>
+                    <p className="font-medium text-destructive">Le barème n'a pas pu être lu.</p>
+                    <p className="mt-1 text-xs">{erreurBareme}</p>
+                    <p className="mt-1 text-xs">
+                      Nous préférons ne rien afficher plutôt qu'un prix que nous ne pourrions pas
+                      tenir. Réessayez dans un instant.
+                    </p>
+                  </>
+                ) : (
+                  <p>Calcul du devis…</p>
+                )}
+              </div>
+            ) : (
+              <>
             <p className="mt-1 font-display text-3xl font-semibold">{formatFcfa(quote.serviceFee)}</p>
             <p className="text-xs text-muted-foreground">Frais de service Akwaba - connus d'avance</p>
 
             <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
               <li className="flex justify-between"><span>Base véhicule</span><span>{formatFcfa(quote.base)}</span></li>
               <li className="flex justify-between"><span>Distance</span><span>{formatFcfa(quote.distanceFee)}</span></li>
-              <li className="flex justify-between"><span>Temps au-delà de 30 min</span><span>{formatFcfa(quote.timeFee)}</span></li>
+              <li className="flex justify-between">
+                <span>Temps au-delà de {grille?.freeMinutes ?? 0} min</span>
+                <span>{formatFcfa(quote.timeFee)}</span>
+              </li>
               <li className="flex justify-between"><span>Volume</span><span>{formatFcfa(quote.volumeFee)}</span></li>
               <li className="flex justify-between"><span>Urgence</span><span>{formatFcfa(quote.urgencyFee)}</span></li>
               {quote.itemsFee > 0 && (
@@ -661,7 +690,10 @@ export default function NewErrandPage() {
 
             <div className="mt-3 rounded-xl bg-muted/50 p-3 text-xs">
               <p className="flex justify-between"><span>Part shopper</span><strong>{formatFcfa(quote.runnerPayout)}</strong></p>
-              <p className="flex justify-between text-muted-foreground"><span>Commission Akwaba ({Math.round(COMMISSION_RATE * 100)} %)</span><span>{formatFcfa(quote.commission)}</span></p>
+              <p className="flex justify-between text-muted-foreground">
+                <span>Commission Akwaba ({Math.round((grille?.commission.rate ?? 0) * 100)} %)</span>
+                <span>{formatFcfa(quote.commission)}</span>
+              </p>
             </div>
 
             <div className="mt-3 border-t border-border pt-3 text-sm">
@@ -671,6 +703,8 @@ export default function NewErrandPage() {
                 Aucun prélèvement immédiat. Vous ne réglez qu'après validation du reçu.
               </p>
             </div>
+              </>
+            )}
 
             <Button className="mt-4 w-full" onClick={submit} disabled={saving || !valid}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

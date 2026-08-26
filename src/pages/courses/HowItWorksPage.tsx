@@ -1,16 +1,13 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Banknote, Receipt, ShieldCheck, Wallet, Truck, Clock } from "lucide-react";
 import {
-  COMMISSION_RATE,
-  MIN_SERVICE_FEE,
   RUNNER_ADVANCE_CAP,
   VEHICLE_OPTIONS,
   VOLUME_OPTIONS,
   URGENCY_OPTIONS,
-  FREE_MINUTES,
-  PER_MINUTE,
 } from "@/modules/errands/pricing";
 import { useCommissionRule } from "@/modules/errands/application/useCommissionRule";
+import { usePricingGrid } from "@/modules/errands/application/usePricingGrid";
 import { formatFcfa } from "@/modules/errands/domain";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
@@ -48,6 +45,10 @@ const STEPS = [
 ];
 
 export default function HowItWorksPage() {
+  // Cette page publie la grille tarifaire. Elle doit donc lire celle qui est
+  // réellement appliquée, pas une copie figée dans le code.
+  const { grille } = usePricingGrid();
+
   usePageTitle("Comment ça marche", "Le fonctionnement du service Akwaba Shopper.");
   // Le mode de règlement décide de ce qui est vrai du paiement du shopper. Le
   // lire ici évite que cette page promette un portefeuille crédité pendant que
@@ -93,10 +94,22 @@ export default function HowItWorksPage() {
             C'est le seul montant calculé par Akwaba. Il est connu <strong>avant</strong> de commander.
           </p>
           <ul className="mt-3 space-y-2 text-sm">
-            <li>• Base véhicule + distance + temps au-delà de {FREE_MINUTES} min ({PER_MINUTE} FCFA/min).</li>
+            {/* Les chiffres viennent du barème publié. Les écrire ici les
+                figerait, et cette page annoncerait un tarif que le serveur
+                n'applique plus dès la première révision. */}
+            <li>
+              • Base véhicule + distance + temps au-delà de{" "}
+              {grille ? `${grille.freeMinutes} min (${grille.perMinute} FCFA/min)` : "…"}.
+            </li>
             <li>• Supplément volume et urgence, remise si vous récupérez vous-même.</li>
-            <li>• Minimum {formatFcfa(MIN_SERVICE_FEE)}.</li>
-            <li>• Commission Akwaba : {Math.round(COMMISSION_RATE * 100)} %, le reste va au shopper.</li>
+            <li>
+              • Minimum {grille ? formatFcfa(grille.commission.minServiceFee) : "…"}.
+            </li>
+            <li>
+              • Commission Akwaba :{" "}
+              {grille ? `${Math.round(grille.commission.rate * 100)} %` : "…"}, le reste va au
+              shopper.
+            </li>
             <li>• Pourboire possible : 100 % pour le shopper.</li>
           </ul>
         </div>
@@ -112,7 +125,11 @@ export default function HowItWorksPage() {
               {VEHICLE_OPTIONS.filter((v) => v.value !== "any").map((v) => (
                 <li key={v.value} className="flex justify-between gap-3">
                   <span>{v.emoji} {v.label}</span>
-                  <span className="text-muted-foreground">{v.base} + {v.perKm}/km</span>
+                  <span className="text-muted-foreground">
+                    {grille?.vehicles[v.value]
+                      ? `${grille.vehicles[v.value].base} + ${grille.vehicles[v.value].perKm}/km`
+                      : "…"}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -123,7 +140,9 @@ export default function HowItWorksPage() {
               {VOLUME_OPTIONS.map((v) => (
                 <li key={v.value} className="flex justify-between gap-3">
                   <span>{v.label}</span>
-                  <span className="text-muted-foreground">+{v.fee}</span>
+                  <span className="text-muted-foreground">
+                    {grille ? `+${grille.volume[v.value] ?? 0}` : "…"}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -134,7 +153,9 @@ export default function HowItWorksPage() {
               {URGENCY_OPTIONS.map((v) => (
                 <li key={v.value} className="flex justify-between gap-3">
                   <span>{v.label}</span>
-                  <span className="text-muted-foreground">+{v.fee}</span>
+                  <span className="text-muted-foreground">
+                    {grille ? `+${grille.urgency[v.value] ?? 0}` : "…"}
+                  </span>
                 </li>
               ))}
             </ul>

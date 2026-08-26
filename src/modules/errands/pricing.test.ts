@@ -5,12 +5,50 @@ import {
   COMMISSION_RATE,
   MIN_PAYOUT,
   MIN_SERVICE_FEE,
-  quoteErrand,
   settle,
-  type QuoteInput,
 } from "./pricing";
+import {
+  devisDepuisGrille,
+  type EntreeDevis,
+  type GrilleTarifaire,
+} from "./grilleTarifaire";
 
-const baseQuote: QuoteInput = {
+/**
+ * La grille de la version 1, celle que la migration insère en base.
+ *
+ * Le contrôle de parité (scripts/parite-devis.mjs) vérifie contre la vraie
+ * base que ces nombres sont bien ceux qui sont publiés. Ici, ils servent à
+ * éprouver la formule, qui est la seule chose que ce fichier peut tester sans
+ * base de données.
+ */
+const GRILLE: GrilleTarifaire = {
+  ruleId: "00000000-0000-0000-0000-000000000001",
+  version: 1,
+  label: "Barème d'essai",
+  freeMinutes: 30,
+  perMinute: 10,
+  itemsIncluded: 10,
+  perExtraItem: 50,
+  roundingStep: 50,
+  volume: { small: 0, medium: 500, large: 1500, xl: 3000 },
+  urgency: { scheduled: 0, standard: 0, express: 1000 },
+  dropoff: { runner_delivers: 0, third_party: -300, customer_pickup: -500 },
+  vehicles: {
+    any: { base: 700, perKm: 120 },
+    a_pied: { base: 500, perKm: 100 },
+    moto: { base: 700, perKm: 130 },
+    tricycle: { base: 1200, perKm: 160 },
+    voiture: { base: 1500, perKm: 200 },
+    camionnette: { base: 3000, perKm: 300 },
+  },
+  cities: {
+    abidjan: { baseMultiplier: 1, perKmMultiplier: 1, minServiceFee: null },
+    korhogo: { baseMultiplier: 1.5, perKmMultiplier: 2, minServiceFee: null },
+  },
+  commission: { rate: COMMISSION_RATE, minServiceFee: MIN_SERVICE_FEE },
+};
+
+const baseQuote: EntreeDevis = {
   vehicle: "moto",
   volume: "small",
   urgency: "standard",
@@ -19,6 +57,8 @@ const baseQuote: QuoteInput = {
   dropoff: "runner_delivers",
   itemsCount: 3,
 };
+
+const quoteErrand = (e: EntreeDevis) => devisDepuisGrille(e, GRILLE);
 
 describe("source de vérité du taux de commission", () => {
   it("n'expose qu'une seule constante partagée entre le domaine et le moteur tarifaire", () => {
@@ -184,21 +224,66 @@ describe("le devis n'arrondit qu'une fois, comme le serveur", () => {
     expect(quote.serviceFee).toBe(1050);
   });
 
-  it("suit le barème en vigueur plutôt que les constantes du moteur", () => {
+  it("suit le barème publié plutôt qu'une valeur écrite dans le code", () => {
     // Un exploitant qui publie un nouveau barème change le prix appliqué par
     // le serveur. L'écran doit suivre, sinon il annonce un prix périmé.
-    const quote = quoteErrand({
-      ...baseQuote,
-      distanceKm: 0,
-      estimatedMinutes: 0,
-      itemsCount: 0,
-      minServiceFee: 3000,
-      commissionRate: 0.2,
-    });
+    const revise: GrilleTarifaire = {
+      ...GRILLE,
+      version: 2,
+      commission: { rate: 0.2, minServiceFee: 3000 },
+    };
+
+    const quote = devisDepuisGrille(
+      { ...baseQuote, distanceKm: 0, estimatedMinutes: 0, itemsCount: 0 },
+      revise
+    );
 
     expect(quote.serviceFee).toBe(3000);
     expect(quote.commission).toBe(600);
     expect(quote.runnerPayout).toBe(2400);
+  });
+
+  it("relève le prix au kilomètre sans qu'aucune ligne de code ne change", () => {
+    // C'est l'épreuve qui compte : la même course, deux barèmes, deux prix.
+    const cher: GrilleTarifaire = {
+      ...GRILLE,
+      vehicles: { ...GRILLE.vehicles, moto: { base: 700, perKm: 260 } },
+    };
+
+    const avant = devisDepuisGrille({ ...baseQuote, estimatedMinutes: 0 }, GRILLE);
+    const apres = devisDepuisGrille({ ...baseQuote, estimatedMinutes: 0 }, cher);
+
+    expect(avant.serviceFee).toBe(1350); // 700 + 5 x 130
+    expect(apres.serviceFee).toBe(2000); // 700 + 5 x 260
+  });
+});
+
+describe("modulation par ville", () => {
+  // Une course de cinq kilomètres coûtait le même prix à Abidjan et à Korhogo,
+  // alors que le carburant, les distances utiles et le revenu local n'ont rien
+  // de commun.
+  it("applique les coefficients de la ville", () => {
+    const abidjan = devisDepuisGrille(
+      { ...baseQuote, estimatedMinutes: 0, citySlug: "abidjan" },
+      GRILLE
+    );
+    const korhogo = devisDepuisGrille(
+      { ...baseQuote, estimatedMinutes: 0, citySlug: "korhogo" },
+      GRILLE
+    );
+
+    expect(abidjan.serviceFee).toBe(1350); // 700 + 5 x 130
+    expect(korhogo.serviceFee).toBe(2350); // 700 x 1,5 + 5 x 130 x 2
+  });
+
+  it("chiffre quand même une ville absente de la grille", () => {
+    // Oublier d'inscrire une ville nouvelle ne doit pas rendre ses courses
+    // impossibles à publier : elle applique le barème tel quel.
+    const inconnue = devisDepuisGrille(
+      { ...baseQuote, estimatedMinutes: 0, citySlug: "ville-non-referencee" },
+      GRILLE
+    );
+    expect(inconnue.serviceFee).toBe(1350);
   });
 });
 
