@@ -510,6 +510,53 @@ try {
     return `${r.rowCount} notification(s), ${destinataires.size} destinataires`
   })
 
+  // --- Ce que les deux ecrans montrent reellement --------------------------
+  //
+  // Une course peut exister en base et rester invisible a celui qui l'a
+  // publiee : c'est la politique de lecture qui decide, pas l'insertion. On
+  // rejoue donc mot pour mot la requete de « Mes courses », sous l'identite du
+  // client, avec ses droits.
+  await pas('La course apparait dans « Mes courses » du client', async () => {
+    await devenir(CLIENT)
+    const r = await c.query(
+      `SELECT id, title, city, zone, status, budget_estimate, total_amount, created_at
+         FROM public.errands
+        WHERE customer_id = $1
+        ORDER BY created_at DESC`,
+      [CLIENT]
+    )
+    const mienne = r.rows.find((x) => x.id === errandId)
+    if (!mienne) throw new Error("la course publiee n'apparait pas dans la liste du client")
+    return `${r.rowCount} course(s), dont celle-ci au statut ${mienne.status}`
+  })
+
+  await pas('La course apparait chez le shopper qui en a herite', async () => {
+    await devenir(SHOPPER)
+    const r = await c.query(
+      `SELECT id, status FROM public.errands WHERE runner_id = $1`,
+      [SHOPPER]
+    )
+    if (!r.rows.some((x) => x.id === errandId)) {
+      throw new Error("la course attribuee n'apparait pas chez le shopper")
+    }
+    return `${r.rowCount} course(s) attribuee(s)`
+  })
+
+  await pas("Le statut a bien change a chaque etape, et le journal le prouve", async () => {
+    await redevenirProprietaire()
+    const r = await c.query(
+      `SELECT status::text FROM public.errand_events
+        WHERE errand_id = $1 ORDER BY created_at`,
+      [errandId]
+    )
+    const suite = r.rows.map((x) => x.status)
+    // Publier puis accepter doit faire passer de « ouverte » a « attribuee ».
+    // Si le journal ne porte pas les deux, l'acceptation n'a rien change.
+    if (!suite.includes('open')) throw new Error('aucune trace de la publication')
+    if (!suite.includes('assigned')) throw new Error("l'acceptation n'a pas change le statut")
+    return suite.join(' -> ')
+  })
+
   await devenir(CLIENT)
   await refus('Une course livrée ne peut plus être annulée', () =>
     c.query('SELECT public.errand_cancel($1, $2)', [errandId, 'je change d avis']))
