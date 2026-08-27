@@ -295,3 +295,8 @@ cloisonnement:
   extends: .recette
   script:
     - node scripts/recette-cloisonnement.mjs
+
+whatsapp:
+  extends: .recette
+  script:
+    - node scripts/recette-whatsapp.mjs
