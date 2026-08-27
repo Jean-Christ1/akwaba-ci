@@ -33,6 +33,13 @@ export interface ErrandDetail {
   payment_method: string;
   payment_status: string;
   fund_mode: string;
+  /** Le panier soumis a l'accord du client avant que le shopper ne paie. */
+  basket_total: number | null;
+  basket_proof_url: string | null;
+  basket_submitted_at: string | null;
+  basket_approved_at: string | null;
+  basket_rejected_at: string | null;
+  basket_note: string | null;
   advance_proof_url: string | null;
   /** Ce que le shopper reconnaît avoir reçu. Seul montant déduit de la facture. */
   advance_amount: number;
@@ -102,7 +109,7 @@ const COLONNES_IDENTITE =
 const COLONNES_MONTANTS =
   "items_total,service_fee,delivery_fee,commission_rate,commission_amount,total_amount,tip_amount" as const;
 const COLONNES_PAIEMENT =
-  "payment_method,payment_status,fund_mode,advance_amount,advance_declared_amount,advance_declared_at,advance_confirmed_at,advance_proof_url,receipt_url,rating,review" as const;
+  "payment_method,payment_status,fund_mode,advance_amount,advance_declared_amount,advance_declared_at,advance_confirmed_at,advance_proof_url,receipt_url,rating,review,basket_total,basket_proof_url,basket_submitted_at,basket_approved_at,basket_rejected_at,basket_note" as const;
 const COLONNES_MISSION =
   "distance_km,estimated_minutes,actual_distance_km,overtime_minutes,extra_distance_km,overrun_fee,budget_overrun_pending,budget_approved_at,started_at" as const;
 
@@ -161,6 +168,14 @@ export function courseDepuisMarcheOuvert(ligne: LigneMarcheOuvert): ErrandDetail
     payment_method: "",
     payment_status: "",
     fund_mode: ligne.fund_mode ?? "",
+    // Une course encore ouverte n'a pas de panier : personne ne l'a soumise,
+    // puisque aucun shopper n'y est assigne.
+    basket_total: null,
+    basket_proof_url: null,
+    basket_submitted_at: null,
+    basket_approved_at: null,
+    basket_rejected_at: null,
+    basket_note: null,
     advance_proof_url: null,
     advance_amount: 0,
     advance_declared_amount: 0,

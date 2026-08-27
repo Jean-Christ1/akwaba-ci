@@ -165,6 +165,23 @@ export type Database = {
         Update: { remise?: number }
         Relationships: []
       }
+      runner_trust_levels: {
+        Row: {
+          code: string
+          libelle: string
+          description: string
+          courses_minimum: number
+          note_minimum: number
+          anciennete_jours: number
+          plafond_avance: number
+          position: number
+          actif: boolean
+          created_at: string
+        }
+        Insert: { code: string; libelle: string; description: string; plafond_avance: number; position: number }
+        Update: { libelle?: string; plafond_avance?: number; actif?: boolean }
+        Relationships: []
+      }
       commission_rules: {
         Row: {
           base: string
@@ -746,6 +763,15 @@ export type Database = {
       }
       errands: {
         Row: {
+          basket_total: number | null
+          basket_proof_url: string | null
+          basket_submitted_at: string | null
+          basket_approved_at: string | null
+          basket_rejected_at: string | null
+          basket_note: string | null
+          promo_code: string | null
+          promo_discount: number
+          pricing_rule_id: string | null
           accepted_at: string | null
           actual_distance_km: number | null
           actual_minutes: number | null
@@ -2425,6 +2451,22 @@ export type Database = {
       my_permissions: {
         Args: Record<PropertyKey, never>
         Returns: string[]
+      }
+      errand_submit_basket: {
+        Args: { p_errand_id: string; p_total: number; p_proof_url?: string }
+        Returns: Database["public"]["Tables"]["errands"]["Row"]
+      }
+      errand_decide_basket: {
+        Args: { p_errand_id: string; p_accepte: boolean; p_note?: string }
+        Returns: Database["public"]["Tables"]["errands"]["Row"]
+      }
+      errand_financement_resume: {
+        Args: { p_errand_id: string }
+        Returns: Json
+      }
+      runner_advance_ceiling: {
+        Args: { p_user_id: string }
+        Returns: number
       }
       promo_evaluer: {
         Args: {

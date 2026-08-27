@@ -16,6 +16,7 @@ import {
   useMissionTracking,
   useOverrun,
 } from "@/modules/errands/application/useMissionTracking";
+import { BasketApproval } from "@/modules/errands/ui/BasketApproval";
 import { BudgetOverrunNotice } from "@/modules/errands/ui/BudgetOverrunNotice";
 import { ErrandChat } from "@/modules/errands/ui/ErrandChat";
 import { ErrandInvoice } from "@/modules/errands/ui/ErrandInvoice";
@@ -243,6 +244,27 @@ export default function ErrandDetailPage() {
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_360px]">
         <div className="space-y-4">
+          {/* Le moment de verite du service : quand le shopper avance ses
+              propres fonds, il engage son argent sur la parole d'un inconnu.
+              Faire valider le total avant l'achat engage les deux en meme
+              temps, et l'accord date sert de preuve au moderateur. */}
+          {(isCustomer || isRunner) && (
+            <BasketApproval
+              errandId={errand.id}
+              role={isRunner ? "runner" : "customer"}
+              etat={{
+                fundMode: errand.fund_mode,
+                budgetEstimate: Number(errand.budget_estimate) || 0,
+                basketTotal: errand.basket_total,
+                basketSubmittedAt: errand.basket_submitted_at,
+                basketApprovedAt: errand.basket_approved_at,
+                basketRejectedAt: errand.basket_rejected_at,
+                basketNote: errand.basket_note,
+              }}
+              onChange={recharger}
+            />
+          )}
+
           {errand.budget_overrun_pending && (isCustomer || isRunner) && (
             <BudgetOverrunNotice
               errandId={errand.id}
