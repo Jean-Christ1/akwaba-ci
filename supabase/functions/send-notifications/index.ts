@@ -21,7 +21,11 @@ const CORS = {
 
 interface Notification {
   id: string;
-  email: string;
+  /** Canal retenu au depot : whatsapp, sms, email ou in_app. */
+  canal: string;
+  /** Numero ou adresse retenu au depot, selon le canal. */
+  destination: string | null;
+  email: string | null;
   subject: string;
   body: string;
   event: string;
@@ -79,6 +83,14 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
+    // Fournisseurs des autres canaux. Aucun n'est contractualisé à ce jour :
+    // les variables sont lues plutôt que devinées, et leur absence est dite,
+    // jamais contournée par un envoi de substitution silencieux.
+    const WHATSAPP_URL = Deno.env.get("WHATSAPP_API_URL");
+    const WHATSAPP_TOKEN = Deno.env.get("WHATSAPP_API_TOKEN");
+    const SMS_URL = Deno.env.get("SMS_API_URL");
+    const SMS_TOKEN = Deno.env.get("SMS_API_TOKEN");
+
     // Sans moyen d'envoi, on ne consomme pas la file : la laisser intacte
     // permet de tout expédier le jour où la clé est renseignée, plutôt que de
     // perdre silencieusement les messages de la période sans configuration.
@@ -103,23 +115,97 @@ Deno.serve(async (req) => {
     let envoyees = 0;
     let echouees = 0;
 
-    for (const n of lot) {
-      try {
-        const envoi = await fetch("https://api.resend.com/emails", {
+    /**
+     * Porte un message par le canal retenu au depot.
+     *
+     * Chaque canal a son fournisseur, et aucun ne se substitue a un autre en
+     * silence : un message WhatsApp qu'on enverrait par courriel arriverait
+     * ailleurs que la ou la personne l'attend, et personne ne le saurait.
+     */
+    const porter = async (n: Notification): Promise<Response> => {
+      if (n.canal === "in_app") {
+        // Rien a porter : la personne le verra en ouvrant l'application. Le
+        // message est deja en base, c'est la son support.
+        return new Response(null, { status: 204 });
+      }
+
+      if (n.canal === "whatsapp") {
+        if (!WHATSAPP_URL || !WHATSAPP_TOKEN) {
+          // Aucun fournisseur configure. On ne bascule pas sur le courriel :
+          // le routage a deja tranche, et le refaire ici masquerait le manque.
+          return new Response("WHATSAPP_API_URL ou WHATSAPP_API_TOKEN absent", { status: 503 });
+        }
+        return fetch(WHATSAPP_URL, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${RESEND}`,
+            Authorization: `Bearer ${WHATSAPP_TOKEN}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: EXPEDITEUR,
-            to: [n.email],
-            subject: n.subject,
-            html: gabarit(n.subject, n.body),
+            to: n.destination,
+            type: "text",
+            text: { body: `${n.subject}
+
+${n.body}` },
           }),
         });
+      }
 
-        if (envoi.ok) {
+      if (n.canal === "sms") {
+        if (!SMS_URL || !SMS_TOKEN) {
+          return new Response("SMS_API_URL ou SMS_API_TOKEN absent", { status: 503 });
+        }
+        return fetch(SMS_URL, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${SMS_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          // Un SMS coute au caractere : le sujet suffit, le detail se lit dans
+          // l'application.
+          body: JSON.stringify({ to: n.destination, message: n.subject }),
+        });
+      }
+
+      const adresse = n.destination ?? n.email;
+      if (!adresse) return new Response("aucune adresse", { status: 422 });
+
+      return fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${RESEND}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: EXPEDITEUR,
+          to: [adresse],
+          subject: n.subject,
+          html: gabarit(n.subject, n.body),
+        }),
+      });
+    };
+
+    let reportees = 0;
+
+    for (const n of lot) {
+      try {
+        const envoi = await porter(n);
+
+        // 503 veut dire « le canal n'a pas de fournisseur ». Ce n'est pas un
+        // echec du message : on le remet en attente pour qu'il parte le jour
+        // ou le contrat existe, au lieu de le bruler en cinq tentatives.
+        if (envoi.status === 503) {
+          const detail = await envoi.text();
+          await admin.rpc("notify_mark", {
+            p_id: n.id,
+            p_state: "pending",
+            p_error: `canal ${n.canal} sans fournisseur : ${detail.slice(0, 150)}`,
+          });
+          reportees++;
+          continue;
+        }
+
+        if (envoi.ok || envoi.status === 204) {
           await admin.rpc("notify_mark", { p_id: n.id, p_state: "sent" });
           envoyees++;
         } else {
@@ -141,7 +227,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return reponse({ reclamees: lot.length, envoyees, echouees });
+    return reponse({ reclamees: lot.length, envoyees, echouees, reportees });
   } catch (e) {
     // Le message technique reste dans les journaux de la fonction : le rendre
     // au client renseignerait un attaquant sur l'infrastructure.
