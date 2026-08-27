@@ -290,3 +290,8 @@ demandes-reservation:
   extends: .recette
   script:
     - node scripts/recette-demandes-reservation.mjs
+
+cloisonnement:
+  extends: .recette
+  script:
+    - node scripts/recette-cloisonnement.mjs
