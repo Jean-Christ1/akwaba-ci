@@ -54,8 +54,8 @@ export default function ServicesHubPage() {
           Tout ce dont vous avez besoin, quelqu'un le fait pour vous.
         </h1>
         <p className="mt-3 max-w-xl text-sm text-background/85 text-pretty">
-          Courses, marché, pharmacie, démarches, artisans, livraison. Vous commandez, un shopper de
-          confiance s'en occupe, vous payez en ligne. Simple, traçable, ivoirien.
+          Le catalogue complet de ce qu'un shopper peut faire pour vous, ce que cela coûte et ce
+          qui vous protège. Simple, traçable, ivoirien.
         </p>
         {/* Le fonctionnement complet a quitté l'accueil : sa place est ici, à
             portée de celui qui cherche à comprendre, sans concurrencer les
@@ -68,8 +68,6 @@ export default function ServicesHubPage() {
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
       </header>
-
-      <ServiceDoors />
 
       <section aria-labelledby="akw-catalogue-titre" className="mt-8">
         <h2 id="akw-catalogue-titre" className="font-display text-xl font-semibold text-foreground">
@@ -96,6 +94,8 @@ export default function ServicesHubPage() {
           ))}
         </ul>
       </section>
+
+      <ServiceDoors />
 
       <ServicePriceExplainer />
 

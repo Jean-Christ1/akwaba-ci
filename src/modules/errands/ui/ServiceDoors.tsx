@@ -16,16 +16,15 @@ import { formatFcfa } from "@/modules/errands/domain";
  */
 
 /**
- * Chaque preuve listée renvoie à un mécanisme réellement implanté : le devis
- * affiché avant publication, les canaux ouverts sur la fiche de course, le code
- * de remise que seul le client révèle, la vérification d'identité avant la
- * première mission, l'offre libre du shopper et le seuil de retrait.
+ * Les preuves du client ne figurent plus ici : l'accueil les porte deja, mot
+ * pour mot, et les repeter donnait au visiteur l'impression de tourner en rond
+ * entre deux ecrans qui racontaient la meme chose.
+ *
+ * Celles du shopper restent : elles n'existent nulle part ailleurs, et un
+ * candidat a besoin de savoir ce qui l'attend avant de deposer un dossier.
+ * Chacune renvoie a un mecanisme reellement implante : la verification
+ * d'identite avant la premiere mission, l'offre libre, et le seuil de retrait.
  */
-const PREUVES_CLIENT = [
-  "Frais de service annoncés avant de commander",
-  "Suivi par chat, appel et WhatsApp jusqu'à la remise",
-  "Code de remise à 4 chiffres : vous seul clôturez la course",
-];
 
 /** Le seuil de retrait dépend du barème en vigueur, il est donc calculé au
     rendu et non figé dans une constante de module. */
@@ -42,11 +41,8 @@ export function ServiceDoors() {
   return (
     <section aria-labelledby="akw-portes-titre" className="mt-8">
       <h2 id="akw-portes-titre" className="font-display text-xl font-semibold text-foreground">
-        Les deux portes du service
+        Par où vous voulez commencer
       </h2>
-      <p className="mt-1 max-w-2xl text-sm text-muted-foreground text-pretty">
-        Vous avez besoin qu'on fasse une course pour vous, ou vous voulez en faire pour les autres.
-      </p>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {/* Porte principale : surface pleine, la seule de la page à porter la
@@ -57,17 +53,8 @@ export function ServiceDoors() {
             Demander une course
           </h3>
           <p className="mt-2 text-sm leading-relaxed text-primary-foreground/85 text-pretty">
-            Un shopper vérifié va au marché, au supermarché, à la pharmacie ou à la mairie pour
-            vous. Vous décrivez ce qu'il vous faut, il achète, vous suivez en direct.
+            Choisissez une catégorie ci-dessus, ou partez d'une page blanche.
           </p>
-          <ul className="mt-5 space-y-2 text-sm text-primary-foreground/90">
-            {PREUVES_CLIENT.map((preuve) => (
-              <li key={preuve} className="flex gap-2">
-                <span aria-hidden="true">·</span>
-                <span className="text-pretty">{preuve}</span>
-              </li>
-            ))}
-          </ul>
           <Link
             to="/courses/nouvelle"
             className="mt-6 inline-flex min-h-[48px] items-center justify-center gap-2 self-start rounded-full bg-background px-7 text-sm font-semibold text-foreground transition-transform hover:-translate-y-0.5"

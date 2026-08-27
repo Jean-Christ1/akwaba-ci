@@ -1,8 +1,6 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Bike, KeyRound, ReceiptText, ShieldCheck } from "lucide-react";
 
-import { CATEGORIES, type ErrandCategory } from "@/modules/errands/domain";
-
 /**
  * Mise en avant du service Shopper sur l'accueil.
  *
@@ -10,21 +8,6 @@ import { CATEGORIES, type ErrandCategory } from "@/modules/errands/domain";
  * le précéder à l'écran. Ce bloc est donc autonome et se place immédiatement
  * sous le héros, avant toute section éditoriale.
  */
-
-/**
- * Les catégories effectivement présentées à l'accueil, dans l'ordre de leur
- * fréquence d'usage. Elles sont désignées par leur valeur métier plutôt que
- * recopiées : le libellé et l'exemple restent définis une seule fois, dans le
- * domaine, et suivent automatiquement toute évolution du catalogue.
- */
-const CAS_D_USAGE: ErrandCategory[] = [
-  "grocery",
-  "market",
-  "pharmacy",
-  "restaurant",
-  "admin_paperwork",
-  "gas",
-];
 
 /**
  * Chaque promesse ci-dessous correspond à un mécanisme réellement implanté :
@@ -51,10 +34,6 @@ const REASSURANCES = [
 ];
 
 export function ShopperSpotlight() {
-  const cas = CAS_D_USAGE.map((valeur) => CATEGORIES.find((c) => c.value === valeur)).filter(
-    (c): c is (typeof CATEGORIES)[number] => Boolean(c)
-  );
-
   return (
     <section
       aria-labelledby="akw-shopper-titre"
@@ -121,41 +100,18 @@ export function ShopperSpotlight() {
           ))}
         </ul>
 
-        {/* Cas d'usage : chaque carte ouvre le formulaire avec sa catégorie déjà
-            choisie, que la page de demande lit dans le paramètre « category ». */}
-        <h3 className="mt-7 text-sm font-semibold text-foreground">
-          Ce que vous pouvez demander dès maintenant
-        </h3>
-        <ul className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-          {cas.map((c) => (
-            <li key={c.value}>
-              <Link
-                to={`/courses/nouvelle?category=${c.value}`}
-                aria-label={`Demander une course : ${c.label}`}
-                className="akw-card-hover flex h-full min-h-[88px] flex-col justify-center px-3.5 py-3"
-              >
-                <span className="text-lg" aria-hidden="true">
-                  {c.emoji}
-                </span>
-                <span className="mt-1 text-sm font-medium text-foreground">{c.label}</span>
-                <span className="mt-0.5 text-[11px] leading-snug text-muted-foreground line-clamp-2">
-                  {c.hint}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
       </div>
 
-      {/* Le hub des services porte le détail : marchands, artisans, moyens de
-          paiement. L'accueil reste la porte courte, sans quoi les deux écrans
-          racontent la même chose et le visiteur ne sait plus lequel ouvrir. */}
+      {/* L'accueil dit pourquoi ; le hub dit quoi, combien et comment on est
+          protege. Un lien qui promettait « tous les services » ouvrait sur ce
+          que le visiteur venait de lire : il nomme desormais ce qu'il apporte
+          de neuf, faute de quoi le clic ressemble a un retour en arriere. */}
       <div className="akw-container mt-6 text-center">
         <Link
           to="/services"
           className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-primary hover:underline"
         >
-          Tous les services Akwaba
+          Voir le catalogue complet, les tarifs et les protections
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
       </div>
