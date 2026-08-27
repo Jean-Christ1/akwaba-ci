@@ -53,7 +53,10 @@ const FILTERS: { value: PayoutStatus | "all"; label: string }[] = [
 ];
 
 export default function PayoutsPage() {
-  const { isAdmin, loading } = useAuth();
+  const { peut, loading } = useAuth();
+  // Approuver un retrait appartient au responsable financier, qui n'est
+  // pas administrateur de la plateforme.
+  const isAdmin = peut("retraits.approuver");
   const [rows, setRows] = useState<PayoutRow[]>([]);
   const [accounts, setAccounts] = useState<Record<string, AccountRow>>({});
   const [filter, setFilter] = useState<PayoutStatus | "all">("requested");

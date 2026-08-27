@@ -45,7 +45,8 @@ interface Evenement {
 export default function DisputesPage() {
   usePageTitle("Litiges", "Arbitrage des courses en litige.");
 
-  const { isModerator, loading } = useAuth();
+  const { peut, loading } = useAuth();
+  const isModerator = peut("litiges.lire");
   const [litiges, setLitiges] = useState<Litige[]>([]);
   const [evenements, setEvenements] = useState<Record<string, Evenement[]>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});

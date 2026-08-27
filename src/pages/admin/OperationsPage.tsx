@@ -55,7 +55,9 @@ const PERIODES = [7, 30, 90];
 export default function OperationsPage() {
   usePageTitle("Pilotage", "Activité, encaissements et écarts entre estimé et réalisé.");
 
-  const { isModerator, isAdmin, loading } = useAuth();
+  const { peut, loading } = useAuth();
+  const isModerator = peut("exploitation.sante");
+  const isAdmin = isModerator;
   const [jours, setJours] = useState(30);
   const [kpi, setKpi] = useState<Indicateurs | null>(null);
   const [derives, setDerives] = useState<Performance[]>([]);

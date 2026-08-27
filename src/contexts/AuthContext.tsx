@@ -9,10 +9,25 @@ interface AuthContextValue {
   user: User | null;
   session: Session | null;
   roles: AppRole[];
+  /**
+   * Les droits atomiques de la personne connectee, tels que le serveur les
+   * resout : role d'exploitation, octroi nominatif, et le role herite admin
+   * qui les porte tous.
+   */
+  droits: string[];
   loading: boolean;
   isAdmin: boolean;
   isPartner: boolean;
   isModerator: boolean;
+  /**
+   * Vrai si la personne porte ce droit.
+   *
+   * A n'utiliser que pour decider ce qu'on AFFICHE. Le serveur refuse de
+   * lui-meme ce qu'il doit refuser : masquer un bouton n'a jamais protege une
+   * table, et un ecran qui se croirait seul gardien serait contourne par un
+   * appel direct.
+   */
+  peut: (code: string) => boolean;
   signOut: () => Promise<void>;
   refreshRoles: () => Promise<void>;
 }
@@ -23,11 +38,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [droits, setDroits] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadRoles = async (uid: string) => {
-    const { data } = await supabase.from("user_roles").select("role").eq("user_id", uid);
+    const [{ data }, { data: permissions }] = await Promise.all([
+      supabase.from("user_roles").select("role").eq("user_id", uid),
+      // Le serveur resout les droits : l'ecran ne les recalcule pas a partir
+      // des roles, sinon deux regles coexisteraient et finiraient par diverger.
+      supabase.rpc("my_permissions"),
+    ]);
     setRoles((data ?? []).map((r) => r.role as AppRole));
+    setDroits(((permissions as string[]) ?? []) as string[]);
   };
 
   useEffect(() => {
@@ -38,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setTimeout(() => loadRoles(s.user.id), 0);
       } else {
         setRoles([]);
+        setDroits([]);
       }
     });
 
@@ -79,6 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         roles,
         loading,
+        droits,
+        peut: (code: string) => droits.includes(code),
         isAdmin: roles.includes("admin"),
         isPartner: roles.includes("partner") || roles.includes("admin"),
         isModerator: roles.includes("moderator") || roles.includes("admin"),

@@ -62,7 +62,10 @@ interface Ville {
 export default function SettingsPage() {
   usePageTitle("Paramètres du service", "Barème, zones couvertes et moyens de paiement.");
 
-  const { isAdmin, loading } = useAuth();
+  const { peut, loading } = useAuth();
+  // Les reglages portent les baremes et les moyens de paiement : c'est le
+  // droit de publier un bareme qui en ouvre la porte.
+  const isAdmin = peut("bareme.publier");
   const [bareme, setBareme] = useState<Bareme | null>(null);
   const [brouillon, setBrouillon] = useState<Bareme | null>(null);
   const [fournisseurs, setFournisseurs] = useState<Fournisseur[]>([]);

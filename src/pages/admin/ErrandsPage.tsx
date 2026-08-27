@@ -47,8 +47,10 @@ interface Course {
  * Cet écran les nomme et les remonte en premier.
  */
 export default function ErrandsPage() {
-  const { isAdmin, isModerator, loading } = useAuth();
-  const staff = isAdmin || isModerator;
+  const { peut, loading } = useAuth();
+  // Suivre les courses, et non « etre administrateur » : c'est le droit
+  // qui ouvre l'ecran, pas le titre de celui qui le regarde.
+  const staff = peut("courses.lire");
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [chargement, setChargement] = useState(true);
