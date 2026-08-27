@@ -84,7 +84,8 @@ const STATUS_LABEL: Record<RunnerStatus, string> = {
 };
 
 export default function ShoppersPage() {
-  const { isModerator, loading } = useAuth();
+  const { peut, loading } = useAuth();
+  const isModerator = peut("shoppers.lire");
   const [rows, setRows] = useState<Runner[]>([]);
 
   const load = useCallback(async () => {
