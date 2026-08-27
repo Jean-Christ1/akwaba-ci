@@ -132,6 +132,39 @@ export type Database = {
         Update: { slug?: string; categorie?: string; audience?: string; question?: string; reponse?: string; lien_action?: string | null; lien_libelle?: string | null; publie?: boolean; position?: number }
         Relationships: []
       }
+      promo_codes: {
+        Row: {
+          code: string
+          libelle: string
+          type: string
+          valeur: number
+          remise_max: number | null
+          frais_minimum: number
+          ville_slug: string | null
+          debut: string
+          fin: string | null
+          usages_max: number | null
+          usages_par_personne: number
+          actif: boolean
+          created_at: string
+        }
+        Insert: { code: string; libelle: string; type: string; valeur: number }
+        Update: { libelle?: string; type?: string; valeur?: number; actif?: boolean }
+        Relationships: []
+      }
+      promo_redemptions: {
+        Row: {
+          id: string
+          code: string
+          errand_id: string
+          user_id: string | null
+          remise: number
+          created_at: string
+        }
+        Insert: { code: string; errand_id: string; user_id?: string | null; remise: number }
+        Update: { remise?: number }
+        Relationships: []
+      }
       commission_rules: {
         Row: {
           base: string
@@ -2392,6 +2425,37 @@ export type Database = {
       my_permissions: {
         Args: Record<PropertyKey, never>
         Returns: string[]
+      }
+      promo_evaluer: {
+        Args: {
+          p_code: string
+          p_user_id?: string
+          p_ville: string
+          p_frais: number
+          p_commission: number
+          p_errand_id?: string
+        }
+        Returns: Json
+      }
+      promo_appliquer: {
+        Args: { p_errand_id: string; p_code: string }
+        Returns: Json
+      }
+      promo_publier: {
+        Args: {
+          p_code: string
+          p_libelle: string
+          p_type: string
+          p_valeur: number
+          p_remise_max?: number | null
+          p_frais_minimum?: number
+          p_ville_slug?: string | null
+          p_fin?: string | null
+          p_usages_max?: number | null
+          p_usages_par_personne?: number
+          p_actif?: boolean
+        }
+        Returns: Database["public"]["Tables"]["promo_codes"]["Row"]
       }
       help_article_upsert: {
         Args: {

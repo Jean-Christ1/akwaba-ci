@@ -48,6 +48,7 @@ import {
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 import { usePricingGrid } from "@/modules/errands/application/usePricingGrid";
 import { devisDepuisGrille } from "@/modules/errands/grilleTarifaire";
+import { PromoCodeField, type EvaluationPromo } from "@/modules/errands/ui/PromoCodeField";
 import { useServiceAreas, zonesOfCity } from "@/modules/places/application/useServiceAreas";
 import {
   LIBELLES_CONSIGNE,
@@ -69,6 +70,8 @@ export default function NewErrandPage() {
   // n'affiche aucun prix : annoncer un chiffre qu'on ne peut pas tenir serait
   // pire que de faire patienter.
   const { grille, erreur: erreurBareme } = usePricingGrid();
+  const [codePromo, setCodePromo] = useState("");
+  const [remisePromo, setRemisePromo] = useState<EvaluationPromo | null>(null);
 
   // Les organisations du client. Une course rattachee apparait dans le suivi
   // de l'entreprise ; sans organisation, ce choix ne s'affiche pas du tout.
@@ -278,6 +281,24 @@ export default function NewErrandPage() {
           p_policy: substitution,
         });
         consigneEchouee = Boolean(erreurConsigne);
+
+        // Le code promotionnel se pose après la création, pour la même raison
+        // que la consigne : errand_create garde sa signature. Son échec se
+        // dit, car un client qui a saisi un code et ne le voit pas appliqué
+        // pense d'abord qu'on le lui a pris.
+        if (codePromo) {
+          const { data: pose, error: erreurPromo } = await supabase.rpc("promo_appliquer", {
+            p_errand_id: creee.id,
+            p_code: codePromo,
+          });
+          const resultat = pose as unknown as EvaluationPromo | null;
+          if (erreurPromo || !resultat?.valide) {
+            toast.warning(
+              "Demande publiée, mais le code promotionnel n'a pas pu être appliqué" +
+                (resultat?.motif ? ` : ${resultat.motif}` : ".")
+            );
+          }
+        }
 
         // Le rattachement à une organisation suit la même règle que la
         // consigne : son échec doit se dire. Une course qui n'apparaît pas
@@ -688,6 +709,28 @@ export default function NewErrandPage() {
               )}
             </ul>
 
+            <div className="mt-3 border-t border-border pt-3">
+              <PromoCodeField
+                ville={city}
+                fraisService={quote.serviceFee}
+                commission={quote.commission}
+                onChange={(code, evaluation) => {
+                  setCodePromo(code);
+                  setRemisePromo(evaluation);
+                }}
+              />
+            </div>
+
+            {remisePromo?.valide && (
+              /* La remise sort de la commission d'Akwaba, jamais du gain du
+                 shopper : la ligne le dit, sans quoi un shopper qui voit le
+                 devis pourrait croire qu'elle sort de sa poche. */
+              <p className="mt-2 flex justify-between text-xs text-primary">
+                <span>Code {remisePromo.code}</span>
+                <span>- {formatFcfa(remisePromo.remise)}</span>
+              </p>
+            )}
+
             <div className="mt-3 rounded-xl bg-muted/50 p-3 text-xs">
               <p className="flex justify-between"><span>Part shopper</span><strong>{formatFcfa(quote.runnerPayout)}</strong></p>
               <p className="flex justify-between text-muted-foreground">
@@ -698,7 +741,12 @@ export default function NewErrandPage() {
 
             <div className="mt-3 border-t border-border pt-3 text-sm">
               <p className="flex justify-between"><span className="text-muted-foreground">Achats (estimation)</span><span>{formatFcfa(budgetNum)}</span></p>
-              <p className="mt-1 flex justify-between font-semibold"><span>Total prévisionnel</span><span>{formatFcfa(budgetNum + quote.serviceFee)}</span></p>
+              <p className="mt-1 flex justify-between font-semibold">
+                <span>Total prévisionnel</span>
+                <span>
+                  {formatFcfa(budgetNum + quote.serviceFee - (remisePromo?.remise ?? 0))}
+                </span>
+              </p>
               <p className="mt-1 text-[11px] text-muted-foreground">
                 Aucun prélèvement immédiat. Vous ne réglez qu'après validation du reçu.
               </p>

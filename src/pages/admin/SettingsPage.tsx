@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { PricingGridEditor } from "@/modules/admin/PricingGridEditor";
 import { HelpArticlesEditor } from "@/modules/admin/HelpArticlesEditor";
+import { PromoCodesEditor } from "@/modules/admin/PromoCodesEditor";
 import { formatFcfa } from "@/modules/errands/domain";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
@@ -268,6 +269,8 @@ export default function SettingsPage() {
 
       {/* Moyens de paiement */}
       <PricingGridEditor />
+
+      <PromoCodesEditor />
 
       <HelpArticlesEditor />
 
