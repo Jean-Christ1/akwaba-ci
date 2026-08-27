@@ -52,6 +52,7 @@ const PayoutsPage = lazy(() => import("./pages/admin/PayoutsPage"));
 const DisputesPage = lazy(() => import("./pages/admin/DisputesPage"));
 const SettingsPage = lazy(() => import("./pages/admin/SettingsPage"));
 const PermissionsPage = lazy(() => import("./pages/admin/PermissionsPage"));
+const HelpCenterPage = lazy(() => import("./pages/HelpCenterPage"));
 const OperationsPage = lazy(() => import("./pages/admin/OperationsPage"));
 const TermsPage = lazy(() =>
   import("./pages/legal/LegalPages").then((m) => ({ default: m.TermsPage }))
@@ -111,7 +112,8 @@ const App = () => (
                     secret côté fonction edge. */}
                 <Route path="/admin/bootstrap" element={<BootstrapAdminPage />} />
                 <Route path="/partner/signup" element={<PartnerSignupPage />} />
-                <Route path="/conditions" element={<TermsPage />} />
+                <Route path="/aide" element={<HelpCenterPage />} />
+                  <Route path="/conditions" element={<TermsPage />} />
                 <Route path="/confidentialite" element={<PrivacyPage />} />
 
                 <Route element={<RequireRole role="partner" />}>
