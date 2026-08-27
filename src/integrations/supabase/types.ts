@@ -44,6 +44,75 @@ export type Database = {
         }
         Relationships: []
       }
+      permissions: {
+        Row: {
+          code: string
+          categorie: string
+          libelle: string
+          description: string
+          sensible: boolean
+          position: number
+        }
+        Insert: { code: string; categorie: string; libelle: string; description: string; sensible?: boolean; position?: number }
+        Update: { code?: string; categorie?: string; libelle?: string; description?: string; sensible?: boolean; position?: number }
+        Relationships: []
+      }
+      staff_roles: {
+        Row: {
+          code: string
+          libelle: string
+          description: string
+          systeme: boolean
+          position: number
+          created_at: string
+        }
+        Insert: { code: string; libelle: string; description: string; systeme?: boolean; position?: number }
+        Update: { code?: string; libelle?: string; description?: string; systeme?: boolean; position?: number }
+        Relationships: []
+      }
+      role_permissions: {
+        Row: { role_code: string; permission_code: string }
+        Insert: { role_code: string; permission_code: string }
+        Update: { role_code?: string; permission_code?: string }
+        Relationships: []
+      }
+      staff_assignments: {
+        Row: {
+          user_id: string
+          role_code: string
+          granted_by: string | null
+          granted_at: string
+        }
+        Insert: { user_id: string; role_code: string; granted_by?: string | null }
+        Update: { user_id?: string; role_code?: string; granted_by?: string | null }
+        Relationships: []
+      }
+      user_permissions: {
+        Row: {
+          user_id: string
+          permission_code: string
+          accorde: boolean
+          motif: string | null
+          granted_by: string | null
+          granted_at: string
+        }
+        Insert: { user_id: string; permission_code: string; accorde?: boolean; motif?: string | null }
+        Update: { user_id?: string; permission_code?: string; accorde?: boolean; motif?: string | null }
+        Relationships: []
+      }
+      pricing_rules: {
+        Row: {
+          id: string
+          version: number
+          label: string
+          is_active: boolean
+          effective_from: string
+          created_at: string
+        }
+        Insert: { version: number; label: string; is_active?: boolean }
+        Update: { version?: number; label?: string; is_active?: boolean }
+        Relationships: []
+      }
       commission_rules: {
         Row: {
           base: string
@@ -1317,6 +1386,14 @@ export type Database = {
       }
       runner_profiles: {
         Row: {
+          date_of_birth: string | null
+          id_document_type: string | null
+          id_document_expires_on: string | null
+          selfie_url: string | null
+          identity_submitted_at: string | null
+          identity_reviewed_at: string | null
+          identity_reviewed_by: string | null
+          identity_review_note: string | null
           bio: string | null
           city: string
           created_at: string
@@ -2270,6 +2347,62 @@ export type Database = {
       account_delete_self: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      active_pricing_grid: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      my_permissions: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
+      }
+      has_permission: {
+        Args: { _user_id: string; _code: string }
+        Returns: boolean
+      }
+      staff_assign_role: {
+        Args: { p_user_id: string; p_role_code: string; p_accorder?: boolean }
+        Returns: undefined
+      }
+      staff_set_permission: {
+        Args: { p_user_id: string; p_code: string; p_accorde: boolean; p_motif?: string }
+        Returns: undefined
+      }
+      runner_submit_identity: {
+        Args: {
+          p_date_of_birth: string
+          p_document_type: string
+          p_document_expires: string | null
+          p_id_doc_url: string
+          p_selfie_url: string
+        }
+        Returns: Database["public"]["Tables"]["runner_profiles"]["Row"]
+      }
+      pricing_quote: {
+        Args: {
+          p_city: string
+          p_vehicle: string
+          p_volume: string
+          p_urgency: string
+          p_dropoff: string
+          p_distance_km: number
+          p_minutes: number
+          p_items_count: number
+        }
+        Returns: Json
+      }
+      pricing_publish: {
+        Args: {
+          p_label: string
+          p_scalaires: Json
+          p_vehicules: Json
+          p_villes: Json
+        }
+        Returns: {
+          id: string
+          version: number
+          label: string
+        }[]
       }
       dispute_frozen_amounts: {
         Args: Record<PropertyKey, never>

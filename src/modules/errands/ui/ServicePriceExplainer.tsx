@@ -3,7 +3,7 @@ import { ArrowRight, Banknote, Wallet } from "lucide-react";
 
 import { useCommissionRule } from "@/modules/errands/application/useCommissionRule";
 import { PAY_METHODS, formatFcfa } from "@/modules/errands/domain";
-import { FREE_MINUTES, PER_MINUTE } from "@/modules/errands/pricing";
+import { usePricingGrid } from "@/modules/errands/application/usePricingGrid";
 
 /**
  * Le prix, expliqué avant qu'on le demande.
@@ -17,6 +17,9 @@ import { FREE_MINUTES, PER_MINUTE } from "@/modules/errands/pricing";
  */
 export function ServicePriceExplainer() {
   const { rule } = useCommissionRule();
+  // Les minutes offertes et le prix à la minute appartiennent au barème
+  // tarifaire, pas au barème de commission : ils se lisent ailleurs.
+  const { grille } = usePricingGrid();
   const tauxCommission = Math.round(rule.rate * 100);
 
   return (
@@ -61,7 +64,9 @@ export function ServicePriceExplainer() {
               et l'urgence.
             </li>
             <li className="text-pretty">
-              Les {FREE_MINUTES} premières minutes sont comprises, puis {PER_MINUTE} FCFA la minute.
+              {grille
+                ? `Les ${grille.freeMinutes} premières minutes sont comprises, puis ${grille.perMinute} FCFA la minute.`
+                : "Le détail du temps s'affiche dès que le barème est chargé."}
             </li>
             <li className="text-pretty">
               La commission Akwaba de {tauxCommission} % est prélevée sur ces frais seulement. Le

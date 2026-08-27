@@ -12,33 +12,36 @@ export type FundMode = "customer_advance" | "runner_advance" | "on_delivery";
 export type DropoffMode = "runner_delivers" | "third_party" | "customer_pickup";
 export type MomoProvider = "wave" | "orange_money" | "mtn_momo" | "moov_money" | "bank";
 
+/**
+ * Ce qui s'affiche pour choisir un véhicule. Les tarifs n'y figurent plus :
+ * ils vivent dans `pricing_rules`, lus par `usePricingGrid`. Les garder ici
+ * aurait recréé la deuxième source qu'on vient de supprimer.
+ */
 export const VEHICLE_OPTIONS: {
   value: VehicleKind;
   label: string;
   emoji: string;
   hint: string;
-  base: number;
-  perKm: number;
 }[] = [
-  { value: "any", label: "Peu importe", emoji: "🤝", hint: "Le shopper choisit", base: 700, perKm: 120 },
-  { value: "a_pied", label: "À pied", emoji: "🚶", hint: "Petites courses de quartier", base: 500, perKm: 100 },
-  { value: "moto", label: "Moto", emoji: "🛵", hint: "Rapide, sacs légers", base: 700, perKm: 130 },
-  { value: "tricycle", label: "Tricycle", emoji: "🛺", hint: "Gros sacs, packs d'eau", base: 1200, perKm: 160 },
-  { value: "voiture", label: "Voiture", emoji: "🚗", hint: "Courses volumineuses, fragile", base: 1500, perKm: 200 },
-  { value: "camionnette", label: "Camionnette", emoji: "🚚", hint: "Quincaillerie, meubles, gros volume", base: 3000, perKm: 300 },
+  { value: "any", label: "Peu importe", emoji: "🤝", hint: "Le shopper choisit" },
+  { value: "a_pied", label: "À pied", emoji: "🚶", hint: "Petites courses de quartier" },
+  { value: "moto", label: "Moto", emoji: "🛵", hint: "Rapide, sacs légers" },
+  { value: "tricycle", label: "Tricycle", emoji: "🛺", hint: "Gros sacs, packs d'eau" },
+  { value: "voiture", label: "Voiture", emoji: "🚗", hint: "Courses volumineuses, fragile" },
+  { value: "camionnette", label: "Camionnette", emoji: "🚚", hint: "Quincaillerie, meubles, gros volume" },
 ];
 
-export const VOLUME_OPTIONS: { value: VolumeSize; label: string; hint: string; fee: number }[] = [
-  { value: "small", label: "Petit", hint: "1 sac, tient sur une moto", fee: 0 },
-  { value: "medium", label: "Moyen", hint: "2 à 4 sacs", fee: 500 },
-  { value: "large", label: "Grand", hint: "Plein coffre, pack d'eau, gaz", fee: 1500 },
-  { value: "xl", label: "Très grand", hint: "Camionnette nécessaire", fee: 3000 },
+export const VOLUME_OPTIONS: { value: VolumeSize; label: string; hint: string }[] = [
+  { value: "small", label: "Petit", hint: "1 sac, tient sur une moto" },
+  { value: "medium", label: "Moyen", hint: "2 à 4 sacs" },
+  { value: "large", label: "Grand", hint: "Plein coffre, pack d'eau, gaz" },
+  { value: "xl", label: "Très grand", hint: "Camionnette nécessaire" },
 ];
 
-export const URGENCY_OPTIONS: { value: Urgency; label: string; hint: string; fee: number }[] = [
-  { value: "scheduled", label: "Planifié", hint: "À une date/heure choisie", fee: 0 },
-  { value: "standard", label: "Aujourd'hui", hint: "Dans la journée", fee: 0 },
-  { value: "express", label: "Express", hint: "Sous 1 h, priorité maximale", fee: 1000 },
+export const URGENCY_OPTIONS: { value: Urgency; label: string; hint: string }[] = [
+  { value: "scheduled", label: "Planifié", hint: "À une date/heure choisie" },
+  { value: "standard", label: "Aujourd'hui", hint: "Dans la journée" },
+  { value: "express", label: "Express", hint: "Sous 1 h, priorité maximale" },
 ];
 
 export const FUND_MODES: { value: FundMode; label: string; hint: string; badge: string }[] = [
@@ -79,87 +82,14 @@ export const MOMO_PROVIDERS: { value: MomoProvider; label: string; emoji: string
 /** Commission Akwaba : uniquement sur les frais de service, jamais sur les achats. */
 export const COMMISSION_RATE = 0.15;
 export const MIN_SERVICE_FEE = 1000;
-export const FREE_MINUTES = 30;
-export const PER_MINUTE = 10;
 export const MIN_PAYOUT = 2000;
 export const RUNNER_ADVANCE_CAP = 50000;
 
-export interface QuoteInput {
-  vehicle: VehicleKind;
-  volume: VolumeSize;
-  urgency: Urgency;
-  distanceKm: number;
-  estimatedMinutes: number;
-  dropoff: DropoffMode;
-  itemsCount?: number;
-  /**
-   * Barème en vigueur, lu dans `commission_rules`. Les constantes ne sont
-   * que le repli : un exploitant qui publie un nouveau barème changerait le
-   * prix appliqué par le serveur sans changer celui annoncé à l'écran.
-   */
-  minServiceFee?: number;
-  commissionRate?: number;
-}
-
-export interface Quote {
-  base: number;
-  distanceFee: number;
-  timeFee: number;
-  volumeFee: number;
-  urgencyFee: number;
-  itemsFee: number;
-  dropoffAdjustment: number;
-  serviceFee: number;
-  commission: number;
-  runnerPayout: number;
-}
-
-const round50 = (n: number) => Math.round(n / 50) * 50;
-
-export function quoteErrand(input: QuoteInput): Quote {
-  const minServiceFee = input.minServiceFee ?? MIN_SERVICE_FEE;
-  const commissionRate = input.commissionRate ?? COMMISSION_RATE;
-  const v = VEHICLE_OPTIONS.find((o) => o.value === input.vehicle) ?? VEHICLE_OPTIONS[0];
-  const vol = VOLUME_OPTIONS.find((o) => o.value === input.volume) ?? VOLUME_OPTIONS[0];
-  const urg = URGENCY_OPTIONS.find((o) => o.value === input.urgency) ?? URGENCY_OPTIONS[1];
-
-  const base = v.base;
-  // Aucun arrondi sur les composantes : le serveur somme les valeurs exactes
-  // et n'arrondit qu'une fois. Arrondir ici puis à nouveau sur le total
-  // faisait diverger le devis annoncé du montant enregistré, d'un pas de
-  // cinquante francs, dans un cas sur quatre.
-  const distanceFee = Math.max(0, input.distanceKm) * v.perKm;
-  const extraMinutes = Math.max(0, (input.estimatedMinutes || 0) - FREE_MINUTES);
-  const timeFee = extraMinutes * PER_MINUTE;
-  const volumeFee = vol.fee;
-  const urgencyFee = urg.fee;
-  // Longue liste = plus de temps en rayon
-  const itemsFee = Math.max(0, (input.itemsCount ?? 0) - 10) * 50;
-  const dropoffAdjustment =
-    input.dropoff === "customer_pickup" ? -500 : input.dropoff === "third_party" ? -300 : 0;
-
-  const raw = base + distanceFee + timeFee + volumeFee + urgencyFee + itemsFee + dropoffAdjustment;
-  const serviceFee = Math.max(minServiceFee, round50(raw));
-  // La commission doit être arrondie exactement comme le serveur l'arrondit,
-  // sinon le client lit un montant et la base en enregistre un autre. Le
-  // serveur fait round(service * taux, 2) : on reproduit cela au centime, et
-  // surtout pas l'arrondi à cinquante francs utilisé pour les frais eux-mêmes.
-  const commission = Math.round(serviceFee * commissionRate * 100) / 100;
-  const runnerPayout = serviceFee - commission;
-
-  return {
-    base,
-    distanceFee,
-    timeFee,
-    volumeFee,
-    urgencyFee,
-    itemsFee,
-    dropoffAdjustment,
-    serviceFee,
-    commission,
-    runnerPayout,
-  };
-}
+/**
+ * Le devis se calcule désormais dans `grilleTarifaire.ts`, à partir de la
+ * grille publiée en base. Ce fichier ne décrit plus que ce qui s'affiche et
+ * les deux seuils du barème de commission, qui vivent dans une autre table.
+ */
 
 /** Régularisation finale : ce que le client doit encore (ou récupère). */
 export function settle(params: {

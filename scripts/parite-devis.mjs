@@ -1,76 +1,91 @@
 /**
  * Parité du devis : l'écran contre le serveur.
  *
- * Le prix annoncé au client pendant qu'il décrit sa course est calculé par le
- * navigateur ; celui qui est enregistré est calculé par PostgreSQL. Les deux
- * barèmes sont écrits deux fois, à deux endroits, dans deux langages. Rien ne
- * signale leur divergence : le client valide un montant, la base en inscrit un
- * autre, et personne ne s'en aperçoit avant la facture.
+ * Les tarifs ne sont plus écrits qu'une fois, dans `pricing_rules`. Restent
+ * deux formules, l'une en TypeScript pour chiffrer pendant que le client
+ * remplit son formulaire, l'autre en PL/pgSQL pour enregistrer le montant qui
+ * fera foi. Elles lisent les mêmes nombres, mais rien ne garantit qu'elles en
+ * font le même usage.
  *
- * Ce contrôle balaie l'espace des combinaisons et compare les deux calculs, au
- * franc près, contre la base réelle. Il ne modifie rien.
+ * Ce contrôle balaie l'espace des combinaisons, sur toutes les villes du
+ * référentiel, et compare les deux calculs au franc près contre la base
+ * réelle. Il ne modifie rien.
  *
  * Usage :
  *   node scripts/parite-devis.mjs
- *
- * Le barème en vigueur est lu dans commission_rules, pas supposé.
  */
-import fs from "node:fs";
 import pg from "pg";
-import { exigerConfiguration } from './lib/connexion-base.mjs'
 import * as esbuild from "esbuild";
+import { exigerConfiguration } from "./lib/connexion-base.mjs";
 
-/**
- * Le devis du navigateur doit valoir, au franc pres, celui du serveur.
- * On compare les deux sur un balayage de cas reels, contre la vraie base.
- */
 const build = await esbuild.build({
-  entryPoints: ["src/modules/errands/pricing.ts"],
+  entryPoints: ["src/modules/errands/grilleTarifaire.ts"],
   bundle: true, write: false, format: "esm", platform: "neutral", target: "es2020",
 });
-const mod = await import("data:text/javascript;base64," + Buffer.from(build.outputFiles[0].text).toString("base64"));
-const { quoteErrand } = mod;
+const { lireGrille, devisDepuisGrille } = await import(
+  "data:text/javascript;base64," + Buffer.from(build.outputFiles[0].text).toString("base64")
+);
 
-const c = new pg.Client(exigerConfiguration("parité du devis"))
+const c = new pg.Client(exigerConfiguration("parité du devis"));
 await c.connect();
-const regle = (await c.query("select rate, min_service_fee from public.commission_rules where is_active order by version desc limit 1")).rows[0];
-const minServiceFee = Number(regle.min_service_fee), commissionRate = Number(regle.rate);
 
-const vehicules = ["any", "a_pied", "moto", "tricycle", "voiture", "camionnette"];
-const volumes = ["small", "medium", "large", "xl"];
-const urgences = ["scheduled", "standard", "express"];
-const remises = ["runner_delivers", "third_party", "customer_pickup"];
+// La grille lue est celle que le navigateur lit : la même fonction, le même
+// contrat. Comparer contre une grille écrite à la main ici ne prouverait rien.
+const grille = lireGrille((await c.query("select public.active_pricing_grid() g")).rows[0].g);
+if (!grille) {
+  console.error("Aucun barème n'est publié : rien à comparer.");
+  await c.end();
+  process.exit(1);
+}
+console.log(`barème version ${grille.version} (${grille.label})`);
 
-let cas = 0, ecarts = [];
-for (const vehicle of vehicules)
-  for (const volume of volumes)
-    for (const urgency of urgences)
-      for (const dropoff of remises)
-        for (const distanceKm of [0, 1.3, 2.6, 7.4, 12.75])
-          for (const estimatedMinutes of [0, 20, 32, 47, 95])
-            for (const itemsCount of [0, 3, 14]) {
-              const q = quoteErrand({ vehicle, volume, urgency, distanceKm, estimatedMinutes, dropoff, itemsCount, minServiceFee, commissionRate });
+const villes = (await c.query("select slug, name from public.service_cities order by slug")).rows;
+const vehicules = Object.keys(grille.vehicles);
+const volumes = Object.keys(grille.volume);
+const urgences = Object.keys(grille.urgency);
+const remises = Object.keys(grille.dropoff);
+
+let cas = 0;
+const ecarts = [];
+
+for (const ville of villes)
+  for (const vehicle of vehicules)
+    for (const volume of volumes)
+      for (const urgency of urgences)
+        for (const dropoff of remises)
+          for (const distanceKm of [0, 1.4, 7.3, 22])
+            for (const [estimatedMinutes, itemsCount] of [[0, 0], [45, 3], [120, 31]]) {
+              const entree = {
+                vehicle, volume, urgency, dropoff,
+                distanceKm, estimatedMinutes, itemsCount, citySlug: ville.slug,
+              };
+              const ecran = devisDepuisGrille(entree, grille);
+              // Le serveur reçoit le nom de la ville, comme errand_create le lui
+              // passe : c'est ce chemin-là qu'il faut éprouver, pas un autre.
+              const serveur = (await c.query(
+                "select public.pricing_quote($1,$2,$3,$4,$5,$6,$7,$8) q",
+                [ville.name, vehicle, volume, urgency, dropoff, distanceKm, estimatedMinutes, itemsCount]
+              )).rows[0].q;
+
               cas++;
-              const r = await c.query(
-                `SELECT GREATEST(round((
-                    CASE $1 WHEN 'a_pied' THEN 500 WHEN 'moto' THEN 700 WHEN 'tricycle' THEN 1200
-                            WHEN 'voiture' THEN 1500 WHEN 'camionnette' THEN 3000 ELSE 700 END
-                  + $2::numeric * CASE $1 WHEN 'a_pied' THEN 100 WHEN 'moto' THEN 130 WHEN 'tricycle' THEN 160
-                            WHEN 'voiture' THEN 200 WHEN 'camionnette' THEN 300 ELSE 120 END
-                  + GREATEST($3::int - 30, 0) * 10
-                  + CASE $4 WHEN 'medium' THEN 500 WHEN 'large' THEN 1500 WHEN 'xl' THEN 3000 ELSE 0 END
-                  + CASE $5 WHEN 'express' THEN 1000 ELSE 0 END
-                  + GREATEST($6::int - 10, 0) * 50
-                  + CASE $7 WHEN 'customer_pickup' THEN -500 WHEN 'third_party' THEN -300 ELSE 0 END
-                  ) / 50) * 50, $8::numeric) AS service`,
-                [vehicle, distanceKm, estimatedMinutes, volume, urgency, itemsCount, dropoff, minServiceFee]
-              );
-              const serveur = Number(r.rows[0].service);
-              if (serveur !== q.serviceFee) {
-                ecarts.push(`${vehicle}/${volume}/${urgency}/${dropoff} ${distanceKm}km ${estimatedMinutes}min ${itemsCount}art : ecran ${q.serviceFee}, serveur ${serveur}`);
+              for (const champ of ["serviceFee", "commission", "runnerPayout"]) {
+                if (Number(ecran[champ]) !== Number(serveur[champ])) {
+                  ecarts.push(
+                    `${ville.slug}/${vehicle}/${volume}/${urgency}/${dropoff}/${distanceKm}km/` +
+                    `${estimatedMinutes}min/${itemsCount}art ${champ} : ` +
+                    `écran ${ecran[champ]}, serveur ${serveur[champ]}`
+                  );
+                }
               }
             }
-console.log(`cas compares : ${cas}`);
-console.log(`ecarts : ${ecarts.length}`);
-ecarts.slice(0, 5).forEach((e) => console.log("  " + e));
+
 await c.end();
+
+console.log(`cas comparés : ${cas}`);
+if (ecarts.length === 0) {
+  console.log("AUCUN ECART : l'écran annonce ce que le serveur enregistre.");
+} else {
+  console.error(`ECARTS : ${ecarts.length}`);
+  for (const e of ecarts.slice(0, 10)) console.error("  " + e);
+  process.exit(1);
+}
