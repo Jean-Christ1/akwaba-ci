@@ -1,17 +1,53 @@
 import { Link, useLocation } from "react-router-dom";
-import { Compass, Home, ShoppingBasket, Bike, User } from "lucide-react";
+import { Compass, Home, ShoppingBasket, ListChecks, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/**
+ * Deux onglets sur cinq menaient au meme endroit : « Courses » ouvrait le
+ * formulaire de demande, « Services » ouvrait le catalogue qui ouvre le meme
+ * formulaire. Pendant ce temps, « Mes courses » n'apparaissait nulle part dans
+ * la barre : un client qui venait de publier une demande ne pouvait la
+ * retrouver qu'en passant par son profil, sur le produit principal de la
+ * plateforme.
+ *
+ * Le service principal porte donc ses deux moments : le geste et le suivi. Le
+ * catalogue des services reste atteignable depuis l'accueil et le pied de page,
+ * ou il a sa place : on le consulte, on n'y revient pas chaque jour.
+ */
 const TABS = [
   { to: "/", label: "Accueil", icon: Home },
   { to: "/explorer", label: "Explorer", icon: Compass },
-  { to: "/courses/nouvelle", label: "Courses", icon: ShoppingBasket, highlight: true },
-  { to: "/services", label: "Services", icon: Bike },
+  { to: "/courses/nouvelle", label: "Demander", icon: ShoppingBasket, highlight: true },
+  { to: "/courses", label: "Mes courses", icon: ListChecks },
   { to: "/profil", label: "Profil", icon: User },
 ] as const;
 
+/**
+ * L'onglet actif est celui dont le chemin colle le plus longtemps.
+ *
+ * Un simple startsWith allumait deux onglets a la fois depuis que « Demander »
+ * et « Mes courses » partagent un prefixe : sur /courses/nouvelle, les deux
+ * repondaient. Le plus long l'emporte, et « / » ne gagne que sur lui-meme,
+ * sans quoi l'accueil resterait allume partout.
+ */
+export function ongletActif(pathname: string, chemins: readonly string[]): string | null {
+  let meilleur: string | null = null;
+  for (const chemin of chemins) {
+    const colle =
+      chemin === "/" ? pathname === "/" : pathname === chemin || pathname.startsWith(chemin + "/");
+    if (colle && (meilleur === null || chemin.length > meilleur.length)) {
+      meilleur = chemin;
+    }
+  }
+  return meilleur;
+}
+
 export function MobileTabBar() {
   const { pathname } = useLocation();
+  const actif = ongletActif(
+    pathname,
+    TABS.map((t) => t.to)
+  );
   return (
     <nav
       aria-label="Navigation principale"
@@ -21,7 +57,7 @@ export function MobileTabBar() {
         {TABS.map((tab) => {
           const { to, label, icon: Icon } = tab;
           const highlight = "highlight" in tab && tab.highlight;
-          const active = pathname === to || (to !== "/" && pathname.startsWith(to));
+          const active = actif === to;
           return (
             <li key={to} className="flex-1">
               <Link

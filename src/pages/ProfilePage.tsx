@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 import { DeleteAccountCard } from "@/modules/account/ui/DeleteAccountCard";
 import { NotificationChannelCard } from "@/modules/account/ui/NotificationChannelCard";
+import { MyRequestsList } from "@/modules/leads/ui/MyRequestsList";
 
 type LeadRow = Database["public"]["Tables"]["leads"]["Row"] & {
   /** Jointure select("*, places(name, slug)"). */
@@ -244,6 +245,11 @@ export default function ProfilePage() {
                   Elle n'était exerçable nulle part, et l'adresse de contact
                   censée recueillir la demande est encore à compléter. */}
               <div className="mt-3">
+                {/* Une demande de reservation etait enregistree, l etablissement
+                    prevenu, et pour celui qui l avait faite elle disparaissait :
+                    aucun ecran ne la lui montrait. */}
+                <MyRequestsList />
+
                 <NotificationChannelCard telephone={profile.phone} />
 
                 <DeleteAccountCard onDeleted={() => navigate("/")} />
