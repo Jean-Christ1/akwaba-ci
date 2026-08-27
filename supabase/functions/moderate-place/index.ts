@@ -122,8 +122,10 @@ Note du moderateur :
 ${v.note}`
         : intro;
 
+      // v porte la note validee, pas la fiche. Avec v.place_id, l'avis partait
+      // avec un identifiant vide et le partenaire n'etait jamais prevenu.
       const { data: depot, error: depotErr } = await admin.rpc("place_notify", {
-        p_place_id: v.place_id,
+        p_place_id: place_id,
         p_event: `moderation_${action}`,
         p_subject: subject,
         p_body: corps,
