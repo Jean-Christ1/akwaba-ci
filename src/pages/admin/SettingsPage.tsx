@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { PricingGridEditor } from "@/modules/admin/PricingGridEditor";
+import { HelpArticlesEditor } from "@/modules/admin/HelpArticlesEditor";
 import { formatFcfa } from "@/modules/errands/domain";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
@@ -267,6 +268,8 @@ export default function SettingsPage() {
 
       {/* Moyens de paiement */}
       <PricingGridEditor />
+
+      <HelpArticlesEditor />
 
       <section className="mt-4 rounded-2xl border border-border bg-card p-4">
         <h2 className="font-display text-lg font-semibold">Moyens de paiement</h2>
