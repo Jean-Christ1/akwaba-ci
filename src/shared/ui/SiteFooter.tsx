@@ -41,6 +41,9 @@ export function SiteFooter() {
             <Link className="text-muted-foreground hover:text-foreground" to="/partner/signup">
               Inscrire mon établissement
             </Link>
+            <Link className="text-muted-foreground hover:text-foreground" to="/aide">
+              Centre d'aide
+            </Link>
             <Link className="text-muted-foreground hover:text-foreground" to="/conditions">
               Conditions générales
             </Link>

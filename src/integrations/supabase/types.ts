@@ -113,6 +113,25 @@ export type Database = {
         Update: { version?: number; label?: string; is_active?: boolean }
         Relationships: []
       }
+      help_articles: {
+        Row: {
+          id: string
+          slug: string
+          categorie: string
+          audience: string
+          question: string
+          reponse: string
+          lien_action: string | null
+          lien_libelle: string | null
+          publie: boolean
+          position: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: { slug: string; categorie: string; audience?: string; question: string; reponse: string; lien_action?: string | null; lien_libelle?: string | null; publie?: boolean; position?: number }
+        Update: { slug?: string; categorie?: string; audience?: string; question?: string; reponse?: string; lien_action?: string | null; lien_libelle?: string | null; publie?: boolean; position?: number }
+        Relationships: []
+      }
       commission_rules: {
         Row: {
           base: string
@@ -1296,6 +1315,11 @@ export type Database = {
       }
       profiles: {
         Row: {
+          whatsapp: string | null
+          canal_prefere: string
+          whatsapp_consent_at: string | null
+          sms_consent_at: string | null
+          email_consent_at: string | null
           avatar_url: string | null
           created_at: string
           display_name: string | null
@@ -2351,6 +2375,19 @@ export type Database = {
       active_pricing_grid: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      notification_preferences_set: {
+        Args: {
+          p_canal_prefere: string
+          p_whatsapp?: string | null
+          p_whatsapp_ok?: boolean | null
+          p_sms_ok?: boolean | null
+        }
+        Returns: Database["public"]["Tables"]["profiles"]["Row"]
+      }
+      notification_route: {
+        Args: { p_user_id: string }
+        Returns: { canal: string; destination: string | null; motif: string | null }[]
       }
       my_permissions: {
         Args: Record<PropertyKey, never>
