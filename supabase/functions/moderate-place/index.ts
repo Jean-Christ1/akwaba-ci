@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
-import { escapeHtml, escapeHtmlMultiline, safeOrigin, sanitizeHeaderText } from "../_shared/html.ts";
-import { isEmail, isUuid } from "../_shared/validation.ts";
+import { sanitizeHeaderText } from "../_shared/html.ts";
+import { isUuid } from "../_shared/validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -89,86 +89,57 @@ Deno.serve(async (req) => {
       .insert({ place_id, moderator_id: userId, action, note: v.note });
     if (evErr) throw evErr;
 
-    // Email delivery - return verbose status
-    const RESEND = Deno.env.get("RESEND_API_KEY");
-    const LOVABLE = Deno.env.get("LOVABLE_API_KEY");
-    let email: { status: string; detail?: string; provider_id?: string; recipient?: string } = {
+    // L'avis au partenaire passe par la file de notifications.
+    //
+    // Il partait auparavant par un appel direct a un connecteur exterieur,
+    // avec un expediteur de demonstration, et sans reprise : un echec restait
+    // dans les journaux de la fonction, et le moderateur voyait « failed »
+    // sans que rien ne soit rejoue. Le partenaire, lui, n'apprenait jamais que
+    // sa fiche avait ete validee ou refusee.
+    //
+    // La file choisit aussi le canal. Sur les etablissements publies, un seul
+    // a une adresse renseignee et quatre ont un numero WhatsApp : prevenir par
+    // courriel seul touchait un partenaire sur sept.
+    let email: { status: string; detail?: string; recipient?: string } = {
       status: "skipped",
-      detail: "action 'note' n'envoie pas d'email",
+      detail: "action 'note' n'envoie pas d'avis",
     };
 
     if (action !== "note") {
-      // L'adresse de la fiche est saisie par le partenaire : elle n'est
-      // retenue que si elle a la forme d'une adresse.
-      const declared = (place.email ?? "").trim();
-      let recipient: string | null = isEmail(declared) ? declared : null;
-      if (!recipient && place.owner_id) {
-        const { data: { user } } = await admin.auth.admin.getUserById(place.owner_id);
-        const ownerEmail = (user?.email ?? "").trim();
-        recipient = isEmail(ownerEmail) ? ownerEmail : null;
-      }
-      if (!recipient) {
-        email = { status: "no_recipient", detail: "Aucune adresse email connue pour cette fiche." };
-      } else if (!RESEND || !LOVABLE) {
-        email = {
-          status: "not_configured",
-          detail: "Connecteur Resend non configuré (RESEND_API_KEY/LOVABLE_API_KEY manquants).",
-          recipient,
-        };
+      // Le nom de la fiche vient de l'exterieur : il est nettoye avant
+      // d'entrer dans un sujet de message.
+      const placeName = sanitizeHeaderText(place.name, 120) || "votre etablissement";
+      const subject = action === "approved"
+        ? `Votre fiche « ${placeName} » est validee`
+        : `Votre fiche « ${placeName} » demande des ajustements`;
+      const intro = action === "approved"
+        ? `Bonne nouvelle : votre etablissement ${placeName} est desormais publie sur Akwaba.`
+        : `Votre fiche ${placeName} n'a pas pu etre validee en l'etat.`;
+      const corps = v.note
+        ? `${intro}
+
+Note du moderateur :
+${v.note}`
+        : intro;
+
+      const { data: depot, error: depotErr } = await admin.rpc("place_notify", {
+        p_place_id: v.place_id,
+        p_event: `moderation_${action}`,
+        p_subject: subject,
+        p_body: corps,
+      });
+
+      if (depotErr) {
+        email = { status: "failed", detail: depotErr.message };
+        log("avis non depose", email);
+      } else if (depot?.depose) {
+        // « Depose », pas « envoye » : le porteur s'en charge ensuite, et le
+        // dire autrement laisserait croire que le partenaire l'a deja recu.
+        email = { status: "queued", detail: `canal ${depot.canal}` };
+        log("avis depose", { canal: depot.canal });
       } else {
-        // Le nom de la fiche et l'en-tête Origin viennent tous deux de
-        // l'extérieur : ils sont nettoyés avant d'entrer dans le courriel.
-        const origin = safeOrigin(req.headers.get("origin"), "https://akwaba.app");
-        const placeName = sanitizeHeaderText(place.name, 120) || "votre établissement";
-        const subject = action === "approved"
-          ? `Votre fiche "${placeName}" est validée`
-          : `Votre fiche "${placeName}" nécessite des ajustements`;
-        const safeName = escapeHtml(placeName);
-        const intro = action === "approved"
-          ? `<p>Bonne nouvelle ! Votre établissement <strong>${safeName}</strong> est désormais publié sur Akwaba.</p>`
-          : `<p>Votre fiche <strong>${safeName}</strong> n'a pas pu être validée en l'état.</p>`;
-        const noteHtml = v.note
-          ? `<p><em>Note du modérateur :</em><br/>${escapeHtmlMultiline(v.note)}</p>`
-          : "";
-        const cta = `<p><a href="${escapeHtml(`${origin}/profil`)}" style="display:inline-block;padding:10px 16px;background:#0f766e;color:#fff;text-decoration:none;border-radius:6px">Accéder à mon profil</a></p>`;
-        try {
-          const resp = await fetch("https://connector-gateway.lovable.dev/resend/emails", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${LOVABLE}`,
-              "X-Connection-Api-Key": RESEND,
-            },
-            body: JSON.stringify({
-              from: "Akwaba <onboarding@resend.dev>",
-              to: [recipient],
-              subject,
-              html: `${intro}${noteHtml}${cta}`,
-            }),
-          });
-          const text = await resp.text();
-          let parsed: any = null;
-          try { parsed = JSON.parse(text); } catch { /* keep text */ }
-          if (resp.ok) {
-            email = {
-              status: "sent",
-              recipient,
-              provider_id: parsed?.id ?? undefined,
-              detail: `HTTP ${resp.status}`,
-            };
-            log("email sent", { recipient, id: parsed?.id });
-          } else {
-            email = {
-              status: "failed",
-              recipient,
-              detail: `HTTP ${resp.status} ${parsed?.message ?? text.slice(0, 200)}`,
-            };
-            log("email failed", email);
-          }
-        } catch (e) {
-          email = { status: "failed", recipient, detail: (e as Error).message };
-          log("email exception", email);
-        }
+        email = { status: "no_recipient", detail: depot?.motif ?? "aucun moyen de joindre" };
+        log("partenaire injoignable", email);
       }
     }
 

@@ -1,5 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { buildPartnerEmailHtml, buildPartnerEmailSubject, validateLead } from "./lead.ts";
+import { validateLead } from "./lead.ts";
 
 const base = {
   kind: "generic",
@@ -56,7 +56,7 @@ Deno.test("refuse une date inexistante et un intervalle inversé", () => {
   );
 });
 
-Deno.test("le corps du courriel échappe le balisage du visiteur", () => {
+Deno.test("la validation laisse passer le texte du visiteur sans le mutiler", () => {
   const r = validateLead({
     ...base,
     full_name: "<img src=x onerror=alert(1)>",
@@ -64,28 +64,11 @@ Deno.test("le corps du courriel échappe le balisage du visiteur", () => {
   });
   assertEquals(r.ok, true);
   if (!r.ok) return;
-  const html = buildPartnerEmailHtml(r.data);
-  // Le texte reste lisible, mais aucun signe n'ouvre plus de balise : le nom
-  // et le message ne peuvent plus produire d'élément dans le courriel.
-  assertEquals(html.includes("<script"), false);
-  assertEquals(html.includes("<img"), false);
-  assertEquals(html.includes("&lt;img src=x onerror=alert(1)&gt;"), true);
-  assertEquals(html.includes("&lt;script&gt;"), true);
+  // Le balisage est desormais echappe par le porteur, qui applique escapeHtml
+  // au sujet comme au corps. Ce qui se verifie ici est que la validation
+  // laisse passer le texte sans le mutiler : c'est elle qui decide ce qui
+  // entre en base.
+  assertEquals(r.data.full_name.includes("<img"), true);
+  assertEquals(r.data.message.includes("<script>"), true);
 });
 
-Deno.test("le corps du courriel conserve les sauts de ligne sans balisage", () => {
-  const r = validateLead({ ...base, message: "Première ligne\nSeconde ligne" });
-  assertEquals(r.ok, true);
-  if (!r.ok) return;
-  assertEquals(buildPartnerEmailHtml(r.data).includes("Première ligne<br/>Seconde ligne"), true);
-});
-
-Deno.test("l'objet du courriel ne transporte pas de retour chariot", () => {
-  const subject = buildPartnerEmailSubject("Maquis\r\nBcc: victime@exemple.test");
-  assertEquals(subject.includes("\r"), false);
-  assertEquals(subject.includes("\n"), false);
-});
-
-Deno.test("l'objet du courriel a une valeur de repli", () => {
-  assertEquals(buildPartnerEmailSubject(null), "Nouvelle demande pour votre établissement");
-});
