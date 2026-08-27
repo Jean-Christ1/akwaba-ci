@@ -12,8 +12,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+/**
+ * Le suivi des courses etait relegue au menu du compte, derriere un clic et
+ * derriere la connexion, alors que le Shopper est le produit principal. Un
+ * client qui vient de publier une demande doit pouvoir la retrouver sans
+ * chercher. « Demander » et « Mes courses » ouvrent donc la navigation, avant
+ * la decouverte de lieux qui est l'univers secondaire.
+ */
 const NAV = [
   { to: "/", label: "Accueil", end: true },
+  { to: "/courses/nouvelle", label: "Demander" },
+  { to: "/courses", label: "Mes courses", end: true },
   { to: "/explorer", label: "Explorer" },
   { to: "/carte", label: "Carte" },
   { to: "/parcours", label: "Parcours" },

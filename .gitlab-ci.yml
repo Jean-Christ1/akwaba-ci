@@ -280,3 +280,13 @@ codes-promotionnels:
   extends: .recette
   script:
     - node scripts/recette-promo.mjs
+
+financement-achats:
+  extends: .recette
+  script:
+    - node scripts/recette-financement.mjs
+
+demandes-reservation:
+  extends: .recette
+  script:
+    - node scripts/recette-demandes-reservation.mjs
