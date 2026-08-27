@@ -61,12 +61,16 @@ Deno.serve(async (req) => {
       }, 429, { "Retry-After": String(decision.retryAfterSeconds) });
     }
 
+    // L'envoi passe directement par Resend. Il transitait auparavant par un
+    // connecteur exterieur, qui ajoutait une dependance et une cle de plus
+    // sans rien apporter : ce que cette sonde doit eprouver, c'est la
+    // configuration d'envoi d'Akwaba, pas celle d'un intermediaire.
     const RESEND = Deno.env.get("RESEND_API_KEY");
-    const LOVABLE = Deno.env.get("LOVABLE_API_KEY");
-    if (!RESEND || !LOVABLE) {
+    const EXPEDITEUR = Deno.env.get("NOTIFICATION_FROM");
+    if (!RESEND || !EXPEDITEUR) {
       return json({
         status: "not_configured",
-        detail: "RESEND_API_KEY ou LOVABLE_API_KEY manquant.",
+        detail: "RESEND_API_KEY ou NOTIFICATION_FROM manquant.",
         recipient,
       });
     }
@@ -75,15 +79,17 @@ Deno.serve(async (req) => {
     // devenir un lien dans le courriel.
     const origin = safeOrigin(req.headers.get("origin"), "https://akwaba.app");
     try {
-      const resp = await fetch("https://connector-gateway.lovable.dev/resend/emails", {
+      const resp = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${LOVABLE}`,
-          "X-Connection-Api-Key": RESEND,
+          Authorization: `Bearer ${RESEND}`,
         },
         body: JSON.stringify({
-          from: "Akwaba <onboarding@resend.dev>",
+          // L'expediteur est celui du service, pas un domaine de
+          // demonstration : une sonde qui part d'ailleurs que la production
+          // n'eprouve pas la production.
+          from: EXPEDITEUR,
           to: [recipient],
           subject: "Akwaba - test de livraison email",
           html: `<p>Ceci est un email de test envoyé depuis l'AdminPage Akwaba.</p>

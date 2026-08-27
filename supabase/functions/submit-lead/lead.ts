@@ -1,4 +1,3 @@
-import { escapeHtml, escapeHtmlMultiline, sanitizeHeaderText } from "../_shared/html.ts";
 import {
   boundedInteger,
   isEmail,
@@ -87,32 +86,8 @@ export function validateLead(body: unknown): ValidationResult {
   };
 }
 
-/**
- * Objet du courriel adressé au partenaire. Le nom de l'établissement provient
- * d'une fiche saisie par un partenaire : il est nettoyé de tout caractère de
- * contrôle avant de rejoindre un en-tête.
- */
-export function buildPartnerEmailSubject(placeName: string | null | undefined): string {
-  const name = sanitizeHeaderText(placeName, 120);
-  return `Nouvelle demande pour ${name.length > 0 ? name : "votre établissement"}`;
-}
-
-/**
- * Corps du courriel adressé au partenaire. Tout ce qui vient du visiteur est
- * échappé : sans cela, le visiteur choisit le balisage que lit le partenaire.
- */
-export function buildPartnerEmailHtml(lead: LeadInput): string {
-  const rows: string[] = [
-    `<p><strong>${escapeHtml(lead.full_name)}</strong> (${escapeHtml(lead.email)})</p>`,
-  ];
-  if (lead.phone) rows.push(`<p>Téléphone : ${escapeHtml(lead.phone)}</p>`);
-  if (lead.party_size) rows.push(`<p>Nombre de personnes : ${escapeHtml(lead.party_size)}</p>`);
-  if (lead.date_from || lead.date_to) {
-    rows.push(
-      `<p>Dates : ${escapeHtml(lead.date_from ?? "-")} au ${escapeHtml(lead.date_to ?? "-")}</p>`,
-    );
-  }
-  if (lead.budget) rows.push(`<p>Budget : ${escapeHtml(lead.budget)}</p>`);
-  rows.push(`<p>${escapeHtmlMultiline(lead.message)}</p>`);
-  return rows.join("");
-}
+// Le corps et l'objet du message au partenaire ne sont plus construits ici :
+// ils le sont par le declencheur lead_notify_place, dans la meme transaction
+// que la demande. L'echappement du contenu saisi par le visiteur reste assure,
+// et l'est desormais pour toutes les notifications : le porteur applique
+// escapeHtml au sujet comme au corps, quel que soit ce qui les a deposes.

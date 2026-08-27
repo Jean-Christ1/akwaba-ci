@@ -108,7 +108,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data, error } = await admin.rpc("notify_claim_batch", { p_limit: 25 });
+    // Le porteur declare ce qu'il sait porter. La file ne lui remet rien
+    // d'autre : un canal sans fournisseur attend au lieu de bruler ses
+    // tentatives, et un porteur plus ancien ne recoit que du courriel.
+    const canaux = ["email"];
+    if (WHATSAPP_URL && WHATSAPP_TOKEN) canaux.push("whatsapp");
+    if (SMS_URL && SMS_TOKEN) canaux.push("sms");
+    // « in_app » n'a rien a porter : la personne le lit dans l'application.
+    // Le reclamer sert seulement a le marquer remis.
+    canaux.push("in_app");
+
+    const { data, error } = await admin.rpc("notify_claim_batch", {
+      p_limit: 25,
+      p_canaux: canaux,
+    });
     if (error) return reponse({ error: error.message }, 500);
 
     const lot = (data ?? []) as Notification[];

@@ -2393,6 +2393,20 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string[]
       }
+      help_article_upsert: {
+        Args: {
+          p_slug: string
+          p_categorie: string
+          p_audience: string
+          p_question: string
+          p_reponse: string
+          p_lien_action?: string
+          p_lien_libelle?: string
+          p_publie?: boolean
+          p_position?: number
+        }
+        Returns: Database["public"]["Tables"]["help_articles"]["Row"]
+      }
       has_permission: {
         Args: { _user_id: string; _code: string }
         Returns: boolean

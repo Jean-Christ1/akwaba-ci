@@ -165,7 +165,12 @@ try {
   });
 
   await etape("le portage reclame le canal et la destination du depot", async () => {
-    const lot = (await c.query(`select * from public.notify_claim_batch(50)`)).rows;
+    // Le porteur declare ce qu'il sait porter. Sans declaration, la file ne
+    // remet que du courriel : c'est ce qui protege les messages WhatsApp du
+    // porteur en place, qui ne sait pas les envoyer.
+    const lot = (
+      await c.query(`select * from public.notify_claim_batch(50, array['email','whatsapp'])`)
+    ).rows;
     const ligne = lot.find((x) => x.event === "recette_canal");
     if (!ligne) throw new Error("la notification deposee n'est pas reclamee");
     if (ligne.canal !== "whatsapp") throw new Error(`le portage recoit ${ligne.canal}`);
@@ -183,7 +188,9 @@ try {
       `select public.notify_enqueue($1, null, 'recette_sans_adresse', 'Sujet', 'Corps')`,
       [uid]
     );
-    const lot = (await c.query(`select * from public.notify_claim_batch(50)`)).rows;
+    const lot = (
+      await c.query(`select * from public.notify_claim_batch(50, array['email','whatsapp'])`)
+    ).rows;
     const ligne = lot.find((x) => x.event === "recette_sans_adresse");
     if (!ligne) throw new Error("perdue faute d'adresse, comme avant");
     return `${ligne.canal} -> ${ligne.destination}`;
@@ -207,7 +214,7 @@ try {
       )
     ).rows[0].id;
 
-    await c.query(`select * from public.notify_claim_batch(50)`);
+    await c.query(`select * from public.notify_claim_batch(50, array['email','whatsapp'])`);
     const apresReclamation = (
       await c.query(`select attempts from public.notification_outbox where id = $1`, [id])
     ).rows[0].attempts;
@@ -224,6 +231,27 @@ try {
     if (apres.state !== "pending") throw new Error(`etat ${apres.state}`);
     if (!apres.last_error.includes("fournisseur")) throw new Error("la raison n'est pas inscrite");
     return "tentative rendue, message conserve";
+  });
+
+  await etape("un porteur qui ne declare rien ne recoit que du courriel", async () => {
+    // Les fonctions serveur ne peuvent pas etre redeployees depuis ce poste.
+    // Le porteur en place ne sait envoyer que des courriels : lui remettre un
+    // message WhatsApp lui ferait bruler cinq tentatives et le condamnerait.
+    await c.query(`update public.notification_outbox set state = 'pending', attempts = 0`);
+    const enAttente = (
+      await c.query(
+        `select count(*)::int n from public.notification_outbox
+          where state = 'pending' and channel = 'whatsapp'`
+      )
+    ).rows[0].n;
+    if (enAttente === 0) throw new Error("aucun whatsapp en attente : rien a eprouver");
+
+    const lot = (await c.query(`select * from public.notify_claim_batch(50)`)).rows;
+    const canaux = [...new Set(lot.map((x) => x.canal))];
+    if (canaux.some((x) => x !== "email")) {
+      throw new Error(`le porteur par defaut recoit ${canaux.join(", ")}`);
+    }
+    return `${enAttente} whatsapp preserve(s)`;
   });
 
   await etape("la vue de sante compte par canal", async () => {

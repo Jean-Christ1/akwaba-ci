@@ -1,7 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { clientIp, SlidingWindowRateLimiter } from "../_shared/rate_limit.ts";
-import { isEmail } from "../_shared/validation.ts";
-import { buildPartnerEmailHtml, buildPartnerEmailSubject, validateLead } from "./lead.ts";
+import { validateLead } from "./lead.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -103,39 +102,16 @@ Deno.serve(async (req) => {
       return json({ error: "Enregistrement impossible pour le moment." }, 500);
     }
 
-    // Notification du partenaire, si le connecteur est configuré.
-    const RESEND = Deno.env.get("RESEND_API_KEY");
-    const LOVABLE = Deno.env.get("LOVABLE_API_KEY");
-    if (RESEND && LOVABLE && v.data.place_id) {
-      try {
-        const { data: place } = await supabase
-          .from("places")
-          .select("name, email, owner_id")
-          .eq("id", v.data.place_id)
-          .single();
-        // L'adresse vient de la fiche partenaire : on ne la transmet au
-        // connecteur que si elle a la forme d'une adresse.
-        const recipient = typeof place?.email === "string" ? place.email.trim() : "";
-        if (isEmail(recipient)) {
-          await fetch("https://connector-gateway.lovable.dev/resend/emails", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${LOVABLE}`,
-              "X-Connection-Api-Key": RESEND,
-            },
-            body: JSON.stringify({
-              from: "Akwaba <onboarding@resend.dev>",
-              to: [recipient],
-              subject: buildPartnerEmailSubject(place?.name),
-              html: buildPartnerEmailHtml(v.data),
-            }),
-          });
-        }
-      } catch (e) {
-        console.warn("[submit-lead] notification non bloquante en échec", e);
-      }
-    }
+    // L'avis a l'etablissement est depose par un declencheur de base, dans la
+    // meme transaction que la demande : ou les deux existent, ou aucun des
+    // deux. La version precedente appelait un connecteur exterieur apres
+    // l'enregistrement, avalait l'echec dans un catch, et rendait « ok » au
+    // client. Un hotelier pouvait ne jamais savoir qu'on avait voulu reserver
+    // chez lui, et personne ne pouvait le constater.
+    //
+    // Le depot passe desormais par la file de notifications, qui reessaie,
+    // garde une trace, choisit WhatsApp quand l'etablissement en a un, et
+    // inscrit au journal d'audit ceux qu'on ne sait pas joindre.
 
     return json({ ok: true, id: data.id }, 200);
   } catch (e) {
