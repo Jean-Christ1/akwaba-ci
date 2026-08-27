@@ -1622,6 +1622,66 @@ export type Database = {
         }
         Relationships: []
       }
+      service_modes: {
+        Row: {
+          code: string
+          libelle: string
+          emoji: string
+          exemple: string
+          description: string | null
+          actif: boolean
+          modes_financement: string[]
+          exige_panier_valide: boolean
+          position: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          code: string
+          libelle: string
+          emoji?: string
+          exemple?: string
+          description?: string | null
+          actif?: boolean
+          modes_financement?: string[]
+          exige_panier_valide?: boolean
+          position?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          code?: string
+          libelle?: string
+          emoji?: string
+          exemple?: string
+          description?: string | null
+          actif?: boolean
+          modes_financement?: string[]
+          exige_panier_valide?: boolean
+          position?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      service_mode_cities: {
+        Row: {
+          mode_code: string
+          city_slug: string
+          actif: boolean
+        }
+        Insert: {
+          mode_code: string
+          city_slug: string
+          actif?: boolean
+        }
+        Update: {
+          mode_code?: string
+          city_slug?: string
+          actif?: boolean
+        }
+        Relationships: []
+      }
       service_cities: {
         Row: {
           created_at: string
@@ -2467,6 +2527,32 @@ export type Database = {
       runner_advance_ceiling: {
         Args: { p_user_id: string }
         Returns: number
+      }
+      whatsapp_sante: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      service_modes_ouverts: {
+        Args: { p_ville?: string | null }
+        Returns: {
+          code: string
+          libelle: string
+          emoji: string
+          exemple: string
+          description: string | null
+          modes_financement: string[]
+          exige_panier_valide: boolean
+        }[]
+      }
+      service_mode_regler: {
+        Args: {
+          p_code: string
+          p_actif: boolean
+          p_modes_financement?: string[] | null
+          p_exige_panier?: boolean | null
+          p_villes_fermees?: string[] | null
+        }
+        Returns: Json
       }
       promo_evaluer: {
         Args: {

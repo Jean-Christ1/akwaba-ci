@@ -37,7 +37,10 @@ describe("l'accueil et la page Services ne se répètent pas", () => {
       ACCUEIL.includes("CATEGORIES"),
       "l'accueil ne doit pas rendre le catalogue : il appartient à /services"
     ).toBe(false);
-    expect(HUB).toContain("CATEGORIES.map");
+    // Le hub garde le catalogue, mais il ne le tient plus d'une constante du
+    // code : il le demande au serveur, qui seul sait ce qui est ouvert.
+    expect(HUB).toContain("useServiceModes");
+    expect(HUB).toContain("catalogue.map");
   });
 
   it("la promesse du service n'est écrite qu'une fois", () => {

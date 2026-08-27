@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { NotificationHealthCard } from "@/modules/admin/NotificationHealthCard";
 import { formatFcfa } from "@/modules/errands/domain";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
@@ -231,6 +232,8 @@ export default function OperationsPage() {
             <Carte libelle="Retraits à traiter" valeur={String(kpi.retraits_en_attente)} />
             <Carte libelle="Montant à verser" valeur={formatFcfa(kpi.montant_a_verser)} />
           </div>
+
+          <NotificationHealthCard />
 
           {derives.length > 0 && (
             <>

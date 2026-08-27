@@ -25,7 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  CATEGORIES,
   resoudreCategorie,
   PAY_METHODS,
   formatFcfa,
@@ -47,6 +46,11 @@ import {
 } from "@/modules/errands/pricing";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 import { usePricingGrid } from "@/modules/errands/application/usePricingGrid";
+import {
+  modeEncoreOuvert,
+  reglementsDe,
+  useServiceModes,
+} from "@/modules/errands/application/useServiceModes";
 import { devisDepuisGrille } from "@/modules/errands/grilleTarifaire";
 import { PromoCodeField, type EvaluationPromo } from "@/modules/errands/ui/PromoCodeField";
 import { useServiceAreas, zonesOfCity } from "@/modules/places/application/useServiceAreas";
@@ -115,6 +119,26 @@ export default function NewErrandPage() {
   const [dropoff, setDropoff] = useState<DropoffMode>("runner_delivers");
   const [thirdParty, setThirdParty] = useState("");
   const [fundMode, setFundMode] = useState<FundMode>("customer_advance");
+
+  // Le catalogue vient du serveur et depend de la ville : une categorie peut
+  // etre ouverte a Abidjan et fermee la ou aucun shopper ne la tient encore.
+  const { modes, chargement: chargementModes, erreur: erreurModes } = useServiceModes(city);
+  const reglementsOuverts = reglementsDe(modes, category);
+
+  // Changer de ville peut fermer la categorie deja choisie, ou lui retirer le
+  // reglement retenu. Laisser la selection en place menerait le client jusqu'au
+  // bout du formulaire pour se faire refuser a l'envoi, sans comprendre.
+  useEffect(() => {
+    if (!modes || modes.length === 0) return;
+    if (!modeEncoreOuvert(modes, category)) {
+      setCategory(modes[0].code);
+      return;
+    }
+    const ouverts = reglementsDe(modes, category);
+    if (ouverts && ouverts.length > 0 && !ouverts.includes(fundMode)) {
+      setFundMode(ouverts[0]);
+    }
+  }, [modes, category, fundMode]);
 
   // Coordonnées de l'adresse de remise, quand elle a pu être localisée.
   // Elles ancrent la distance, donc le prix, sur un trajet réel.
@@ -357,19 +381,32 @@ export default function NewErrandPage() {
           {/* 1. Type */}
           <section className="rounded-2xl border border-border bg-card p-4">
             <h2 className="text-sm font-semibold">1. Quel type de course ?</h2>
+            {chargementModes && (
+              <p className="mt-3 text-xs text-muted-foreground">Chargement des services ouverts...</p>
+            )}
+            {erreurModes && (
+              <p className="mt-3 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                Les services ouverts n'ont pas pu etre lus. Rechargez la page avant de continuer.
+              </p>
+            )}
+            {modes && modes.length === 0 && (
+              <p className="mt-3 rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                Aucune course n'est ouverte a {city} pour le moment. Choisissez une autre ville.
+              </p>
+            )}
             <div className="scrollbar-none mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {CATEGORIES.map((c) => (
+              {(modes ?? []).map((c) => (
                 <button
-                  key={c.value}
+                  key={c.code}
                   type="button"
-                  onClick={() => setCategory(c.value)}
+                  onClick={() => setCategory(c.code)}
                   className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${
-                    category === c.value ? "border-primary bg-primary-soft" : "border-border hover:border-primary/40"
+                    category === c.code ? "border-primary bg-primary-soft" : "border-border hover:border-primary/40"
                   }`}
                 >
                   <span className="text-lg">{c.emoji}</span>
-                  <p className="text-sm font-medium">{c.label}</p>
-                  <p className="text-[11px] text-muted-foreground line-clamp-1">{c.hint}</p>
+                  <p className="text-sm font-medium">{c.libelle}</p>
+                  <p className="text-[11px] text-muted-foreground line-clamp-1">{c.exemple}</p>
                 </button>
               ))}
             </div>
@@ -595,7 +632,7 @@ export default function NewErrandPage() {
               on régularise au franc près avec le reçu, après la course.
             </p>
             <div className="mt-3 space-y-2">
-              {FUND_MODES.map((f) => (
+              {FUND_MODES.filter((f) => !reglementsOuverts || reglementsOuverts.includes(f.value)).map((f) => (
                 <button
                   key={f.value}
                   type="button"
