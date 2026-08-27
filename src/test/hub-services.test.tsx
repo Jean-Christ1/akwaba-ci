@@ -24,7 +24,18 @@ function afficherHub() {
   );
 }
 
-describe("hub des services : rien de précieux ne doit disparaître", () => {
+/**
+ * Ces controles montent la page entière et cherchent par rôle accessible. Le
+ * calcul du nom accessible parcourt tout le sous-arbre de chaque élément, ce
+ * qui coûte près d'une seconde et demie par requête sur une page de cette
+ * taille ; le premier en enchaîne sept. Le délai est donc élargi pour ce
+ * fichier, faute de quoi il échouerait sur sa durée alors que toutes ses
+ * assertions passent.
+ *
+ * Le réseau n'y est pour rien : le socle de test le coupe, et les autres
+ * contrôles du même fichier s'exécutent en une seconde et demie.
+ */
+describe("hub des services : rien de précieux ne doit disparaître", { timeout: 30_000 }, () => {
   it("porte les quatre entrées du service", () => {
     afficherHub();
 
