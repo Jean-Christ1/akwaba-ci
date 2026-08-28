@@ -57,6 +57,32 @@ les litiges d'Abidjan et validait les shoppers de Yamoussoukro.
 annoncée et jamais appliquée. Elle doit rendre zéro ligne, et l'audit strict le
 vérifie.
 
+### Les portes qui se passaient de la matrice
+
+Une troisième mesure a été nécessaire, parce que les deux premières ne
+pouvaient pas voir le trou : elles cherchent des droits mal branchés, pas des
+portes qui se passent d'eux. Quinze politiques et treize fonctions décidaient
+encore d'un accès en lisant `user_roles`.
+
+L'effet était symétrique. Un responsable financier, à qui la console affiche
+« Consulter les paiements », ne voyait pas le portefeuille d'un shopper. Un
+ancien modérateur, sans aucun rôle dans la matrice, lisait encore les messages
+de toutes les courses du pays.
+
+`portes_au_role_herite()` les liste. Elle doit rendre zéro ligne. Les exceptions
+légitimes sont nommées dans le corps de la fonction, avec leur raison, en trois
+familles :
+
+1. les fonctions qui portent l'accès de secours elles-mêmes, ou qui le rendent
+   visible (`has_permission`, la réconciliation, la revue) ;
+2. les politiques de `user_roles`, la table du rôle hérité : les écrire en
+   fonction de la matrice serait circulaire ;
+3. trois suppressions et une création qu'aucun droit du catalogue ne nomme :
+   effacer une fiche de lieu, effacer une preuve de course, effacer l'image d'un
+   lieu, et créer une fiche en tant que partenaire. Les trois premières restent
+   au seul accès de secours. Les élargir à un droit approchant pour faire taire
+   la mesure serait exactement le contraire du travail fait ici.
+
 Deux pièges rencontrés, qui valent d'être connus :
 
 - **Consulter un droit ne suffit pas.** `courses.corriger` était bien consulté
@@ -266,13 +292,14 @@ transaction annulée : elles ne laissent rien derrière elles.
 
 | Commande | Ce qu'elle prouve |
 |---|---|
-| `node scripts/audit-securite-base.mjs --strict` | Douze classes de défauts déjà rencontrées, dont les droits sensibles que rien ne consulte. |
+| `node scripts/audit-securite-base.mjs --strict` | Quatorze classes de défauts déjà rencontrées, dont les trois mesures de la gouvernance. |
 | `node scripts/recette-gouvernance-acces.mjs` | Confinement, portées, échéances, revue, réconciliation. |
 | `node scripts/recette-suspension-compte.mjs` | La suspension, ses quatre refus, l'annuaire des comptes. |
 | `node scripts/recette-droits-vivants.mjs` | Les lieux, l'envoi d'un message, la gestion d'une organisation, et qu'aucun droit du catalogue n'est mort. |
 | `node scripts/recette-portee-par-ville.mjs` | Une personne restreinte à une ville passe chez elle et se fait refuser ailleurs, sur les treize droits concernés. |
+| `node scripts/recette-portes-de-la-matrice.mjs` | Chaque porte rendue à la matrice s'ouvre avec son droit et se ferme sans lui, sur dix-sept portes. |
 
-Les cinq tournent dans la chaîne d'intégration à chaque poussée.
+Les six tournent dans la chaîne d'intégration à chaque poussée.
 
 ---
 

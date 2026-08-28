@@ -255,6 +255,27 @@ await controle(
 );
 
 // ---------------------------------------------------------------------------
+// 9c. Une porte qui regarde encore le role herite
+//
+// C'est le trou que les deux mesures precedentes ne pouvaient pas voir : elles
+// cherchent des droits mal branches, pas des portes qui se passent d'eux. Une
+// politique qui lit user_roles ignore la matrice entierement, droit et portee
+// compris.
+//
+// Les exceptions legitimes sont nommees dans le corps de la fonction, avec leur
+// raison : les fonctions qui portent l'acces de secours lui-meme, les politiques
+// de la table du role herite, et trois suppressions qu'aucun droit du catalogue
+// ne nomme.
+// ---------------------------------------------------------------------------
+await controle(
+  "Porte qui regarde encore le role herite",
+  `select genre || ' ' || objet || coalesce(' :: ' || nullif(detail, ''), '') as porte
+     from public.portes_au_role_herite()`,
+  (l) => l.porte,
+  "Elle ignore la matrice : ni le droit ni sa portee ne s'appliquent."
+);
+
+// ---------------------------------------------------------------------------
 // 10. Une preuve de consentement que l'interesse peut ecrire lui-meme
 //
 // Les dates de consentement servent de preuve : elles disent qu'a tel moment,
