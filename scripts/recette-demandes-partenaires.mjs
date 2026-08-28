@@ -223,21 +223,53 @@ try {
     return "déplacement refusé";
   });
 
-  await etape("la note interne n'est pas lisible dans la table", async () => {
+  await etape("dette assumée : la note interne reste lisible dans la table", async () => {
+    // La lecture par colonne l'avait refermée, ce qui est la bonne correction.
+    // Elle a du etre rouverte : le frontal en production demande « select * »
+    // sur cette table, et la restriction cassait trois écrans. L'ordre correct
+    // est le code d'abord, le verrou ensuite.
+    //
+    // Cette étape échouera le jour où la restriction reviendra, et c'est
+    // voulu : elle sera alors à retourner, et la dette sera payée. Une dette
+    // qu'aucun contrôle ne rappelle est une dette qu'on oublie.
+    const s = await scene();
+    await commeSi(s.proprietaire);
+    await c.query("set local role authenticated");
+    let lisible = false;
+    try {
+      await c.query(`select partner_note from public.leads where id = $1`, [s.demande]);
+      lisible = true;
+    } catch {
+      await c.query("rollback to savepoint etape");
+    }
+    await c.query("reset role").catch(() => {});
+    await anonyme();
+    if (!lisible) {
+      throw new Error(
+        "la colonne est refermée : retournez cette étape, la dette est payée"
+      );
+    }
+    return "lisible, le temps que le frontal suive";
+  });
+
+  await etape("mais l'écriture directe reste fermée", async () => {
+    // C'est la moitié de la correction qui ne casse rien qu'on ne veuille
+    // casser, et elle est conservée : un partenaire ne peut plus réécrire le
+    // message du visiteur ni déplacer sa demande.
     const s = await scene();
     await commeSi(s.proprietaire);
     await c.query("set local role authenticated");
     let msg = "";
     try {
-      await c.query(`select partner_note from public.leads where id = $1`, [s.demande]);
+      await c.query(`update public.leads set status = 'closed' where id = $1`, [s.demande]);
     } catch (e) {
       msg = e.message;
       await c.query("rollback to savepoint etape");
     }
-    await c.query("reset role");
+    await c.query("reset role").catch(() => {});
     await anonyme();
-    if (!msg) throw new Error("la note interne est lisible dans la table");
-    return "colonne refusée";
+    if (!msg) throw new Error("l'écriture directe est revenue");
+    return "refusée";
   });
 
   await etape("le propriétaire relit sa note par la fonction prévue", async () => {
