@@ -78,6 +78,43 @@ const essayer = async (uid, requete, parametres = []) => {
 const droit = async (uid, code) =>
   (await c.query(`select public.has_permission($1, $2) a`, [uid, code])).rows[0].a;
 
+/**
+ * Une course dans une ville donnee.
+ *
+ * La table est vide en production : compter zero ne prouverait rien, ni dans un
+ * sens ni dans l'autre. Chaque mesure de visibilite doit donc poser d'abord ce
+ * qu'elle pretend compter.
+ *
+ * Seule Abidjan est ouverte aux courses. Les autres villes sont ouvertes ici,
+ * dans la transaction annulee, pour pouvoir mesurer un perimetre.
+ */
+const creerCourse = async (ville) => {
+  await c.query(`update public.service_cities set errands_enabled = true where name = $1`, [ville]);
+  const client = await creerCompte();
+  await commeSi(client);
+  const id = (
+    await c.query(
+      `select (public.errand_create('Course de gouvernance', 'grocery'::errand_category, $1, null,
+         'Adresse de recette', '[{"label":"Riz","qty":1}]'::jsonb, 10000, null, 'chat', null,
+         'wave'::pay_method, 'moto', 'small', 'standard', 10, 45,
+         'runner_delivers'::dropoff_mode, null, 'customer_advance'::fund_mode)).id as id`,
+      [ville]
+    )
+  ).rows[0].id;
+  await anonyme();
+  return id;
+};
+
+/** Ce que ce compte voit de la table des courses, sous son propre role. */
+const coursesVues = async (uid, colonne = "count(*)::int n") => {
+  await commeSi(uid);
+  await c.query("set local role authenticated");
+  const r = await c.query(`select ${colonne} from public.errands`);
+  await c.query("reset role");
+  await anonyme();
+  return r.rows;
+};
+
 /** Un super administrateur, seul habilité à tout distribuer. */
 const superAdmin = async () => {
   const uid = await creerCompte();
@@ -430,6 +467,72 @@ try {
     if (t.details.expire_dans_jours !== 60) throw new Error("l'échéance n'est pas tracée");
     if (!t.details.motif) throw new Error("le motif n'est pas tracé");
     return "ville, échéance et motif conservés";
+  });
+
+  await etape("LA MATRICE GOUVERNE : un droit de la matrice ouvre vraiment les courses", async () => {
+    // Le constat le plus profond : la politique de visibilite partait de
+    // l'ancien role et ne consultait pas la matrice. Une personne a qui l'on
+    // confiait « admin_operations » ne voyait aucune course.
+    const s = await superAdmin();
+    const agent = await creerCompte();
+    await essayer(s, `select public.staff_assign_role($1, 'admin_operations', true)`, [agent]);
+    if (!(await droit(agent, "courses.lire"))) throw new Error("le role n'ouvre pas courses.lire");
+
+    await creerCourse("Abidjan");
+    const vues = (await coursesVues(agent))[0].n;
+    if (Number(vues) === 0) throw new Error("LA MATRICE NE GOUVERNE TOUJOURS RIEN");
+    return `${vues} course(s) visibles`;
+  });
+
+  await etape("LE PERIMETRE S'APPLIQUE : Bouake ne montre pas Abidjan", async () => {
+    const s = await superAdmin();
+    const local = await creerCompte();
+    await essayer(s, `select public.staff_assign_role($1, 'admin_operations', true, 'bouake')`, [local]);
+
+    await creerCourse("Abidjan");
+    await creerCourse("Bouaké");
+
+    const villes = (await coursesVues(local, "distinct city")).map((r) => r.city);
+    if (villes.includes("Abidjan")) throw new Error("il voit Abidjan alors qu'il est limite a Bouake");
+    if (!villes.includes("Bouaké")) throw new Error("il ne voit pas sa propre ville");
+    return `voit ${villes.join(", ")}`;
+  });
+
+  await etape("un ancien moderateur continue de voir, par la matrice", async () => {
+    // Le changement ne doit pas fermer la porte a ceux qui l'avaient : le
+    // declencheur recopie l'ancien role, et c'est par la qu'ils passent.
+    const ancien = await creerCompte();
+    await c.query(`update public.user_roles set role = 'moderator' where user_id = $1`, [ancien]);
+    if (!(await droit(ancien, "courses.lire"))) throw new Error("l'ancien role n'ouvre plus rien");
+    await creerCourse("Abidjan");
+    const n = (await coursesVues(ancien))[0].n;
+    if (Number(n) === 0) throw new Error("un ancien moderateur ne voit plus rien");
+    return `${n} course(s)`;
+  });
+
+  await etape("un compte ordinaire ne voit que ses propres courses", async () => {
+    await creerCourse("Abidjan");
+    const quidam = await creerCompte();
+    const n = (await coursesVues(quidam))[0].n;
+    if (Number(n) !== 0) throw new Error(`${n} course(s) visibles par un quidam`);
+    return "aucune, alors qu'il en existe";
+  });
+
+  await etape("la console peut annoncer la restriction plutot que la faire deviner", async () => {
+    // Trois courses la ou un collegue en voit trente ressemble a une panne.
+    const s = await superAdmin();
+    const local = await creerCompte();
+    await essayer(s, `select public.staff_assign_role($1, 'admin_operations', true, 'bouake')`, [local]);
+    const r = await essayer(local, `select * from public.mon_perimetre()`, []);
+    if (!r.ok) throw new Error(r.message);
+    if (!r.valeur.restreint) throw new Error("la restriction n'est pas annoncee");
+    if (!r.valeur.villes.includes("Bouaké")) throw new Error(`villes : ${r.valeur.villes}`);
+
+    const global = await creerCompte();
+    await essayer(s, `select public.staff_assign_role($1, 'admin_operations', true)`, [global]);
+    const g = await essayer(global, `select * from public.mon_perimetre()`, []);
+    if (g.valeur.restreint) throw new Error("une attribution globale est annoncee restreinte");
+    return "restreint a Bouake, global sans restriction";
   });
 
   await etape("l'ancienne signature sans confinement a bien disparu", async () => {
