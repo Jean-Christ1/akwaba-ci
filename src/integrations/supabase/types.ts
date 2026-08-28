@@ -2727,6 +2727,7 @@ export type Database = {
           courriel: string
           intitule: string
           code: string
+          perimetre: string
           sensible: boolean
           motif: string | null
           accorde_le: string
@@ -2736,7 +2737,12 @@ export type Database = {
         }[]
       }
       acces_confirmer_revue: {
-        Args: { p_genre: string; p_user_id: string; p_code: string }
+        Args: {
+          p_genre: string
+          p_user_id: string
+          p_code: string
+          p_scope_value?: string | null
+        }
         Returns: Json
       }
       gouvernance_sante: {

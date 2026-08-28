@@ -309,6 +309,95 @@ try {
     if (!t.details.motif) throw new Error("le motif n'est pas tracé");
     return "multiplicateur, ville, durée et motif conservés";
   });
+  await etape("LA PROMESSE SURVIT A LA COURSE : la commission ignore le supplement jusqu'au bout", async () => {
+    // Le devis calculait bien la commission sur le tarif d'avant. La course
+    // n'en gardait aucune memoire, et l'acceptation d'une offre la recalculait
+    // sur le prix majore : Akwaba reprenait quinze pour cent du supplement des
+    // qu'un shopper acceptait, c'est-a-dire toujours.
+    const r = await responsable();
+    await essayer(r, `select public.surge_ouvrir(1.5, 'Majoration qui doit survivre a la course', 120, 'abidjan')`);
+
+    const client = await creerCompte();
+    await commeSi(client);
+    const course = (
+      await c.query(
+        `select (public.errand_create('Course majoree','grocery'::errand_category,'Abidjan',null,
+           'Adresse de recette','[{"label":"Riz","qty":1}]'::jsonb,10000,null,'chat',null,
+           'wave'::pay_method,'moto','small','standard',10,45,
+           'runner_delivers'::dropoff_mode,null,'customer_advance'::fund_mode)).id as id`
+      )
+    ).rows[0].id;
+    await anonyme();
+
+    const e = (
+      await c.query(
+        `select service_fee, commission_amount, surge_fee, surge_reason from public.errands where id = $1`,
+        [course]
+      )
+    ).rows[0];
+    if (Number(e.surge_fee) <= 0) throw new Error("la course ne retient pas la majoration");
+    if (!e.surge_reason) throw new Error("la course ne retient pas le motif");
+
+    // Le shopper fait une offre au prix affiche, majoration comprise, et
+    // l'accepte : c'est le parcours reel.
+    const shopper = await creerCompte();
+    await c.query(
+      `insert into public.runner_profiles (user_id, full_name, phone, city, status)
+       values ($1,'Shopper de recette','+2250700000000','Abidjan','approved')`,
+      [shopper]
+    );
+    const offre = (
+      await c.query(
+        `insert into public.errand_offers (errand_id, runner_id, price, eta_minutes, message)
+         values ($1, $2, $3::numeric, 30, 'Je peux y aller') returning id`,
+        [course, shopper, e.service_fee]
+      )
+    ).rows[0].id;
+
+    await commeSi(client);
+    await c.query(`select public.errand_accept_offer($1)`, [offre]);
+    await anonyme();
+
+    const apres = (
+      await c.query(
+        `select service_fee, commission_amount, runner_payout, surge_fee from public.errands where id = $1`,
+        [course]
+      )
+    ).rows[0];
+
+    // L'assiette de la commission, c'est le prix moins la majoration.
+    const assiette = Number(apres.service_fee) - Number(apres.surge_fee);
+    const attendue = Math.round(assiette * 0.15 * 100) / 100;
+    if (Math.abs(Number(apres.commission_amount) - attendue) > 0.01) {
+      throw new Error(
+        `commission ${apres.commission_amount} sur un prix de ${apres.service_fee} dont ${apres.surge_fee} de majoration : attendu ${attendue}`
+      );
+    }
+    return `commission ${apres.commission_amount} sur ${assiette}, majoration ${apres.surge_fee} au shopper`;
+  });
+
+  await etape("LE PERIMETRE : un responsable de ville n'ouvre pas de majoration nationale", async () => {
+    // Le trou : demander « partout » contournait la restriction, et ouvrait
+    // plus que ce que la restriction laissait faire dans sa propre ville.
+    const s = await creerCompte();
+    await c.query(`insert into public.staff_assignments (user_id, role_code) values ($1, 'super_admin')`, [s]);
+    const local = await creerCompte();
+    await essayer(s, `select public.staff_assign_role($1, 'admin_operations', true, 'bouake')`, [local]);
+
+    const nationale = await essayer(
+      local,
+      `select public.surge_ouvrir(1.5, 'Majoration nationale depuis une seule ville', 60, null)`
+    );
+    if (nationale.ok) throw new Error("UNE MAJORATION NATIONALE A ETE OUVERTE DEPUIS BOUAKE");
+
+    const chezLui = await essayer(
+      local,
+      `select public.surge_ouvrir(1.5, 'Majoration dans sa propre ville', 60, 'bouake')`
+    );
+    if (!chezLui.ok) throw new Error(`refuse dans sa propre ville : ${chezLui.message}`);
+    return "nationale refusee, Bouake acceptee";
+  });
+
 } catch (e) {
   echecs.push("interrompu : " + e.message);
   console.error("interrompu :", e.message);

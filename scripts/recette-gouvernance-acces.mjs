@@ -182,6 +182,37 @@ try {
     return r.message.slice(0, 55);
   });
 
+  await etape("LE RETRAIT AUSSI EST CONFINÉ : il ne retire pas un rôle qu'il n'a pas", async () => {
+    // Le confinement ne valait qu'à l'octroi. Un délégué neutralisait donc tous
+    // ses collègues sans jamais rien s'accorder, ce qui est une autre façon de
+    // prendre le pouvoir : retirer au responsable conformité son rôle revient à
+    // décider d'un pouvoir qu'on n'a pas.
+    const s = await superAdmin();
+    const d = await delegue();
+    const conforme = await creerCompte();
+    await essayer(s, `select public.staff_assign_role($1, 'admin_conformite', true)`, [conforme]);
+    if (!(await droit(conforme, "audit.lire"))) throw new Error("le rôle n'a pas été posé");
+
+    const r = await essayer(d, `select public.staff_assign_role($1, 'admin_conformite', false)`, [conforme]);
+    if (r.ok) throw new Error("un délégué a retiré un rôle qu'il ne détient pas");
+    if (!(await droit(conforme, "audit.lire"))) throw new Error("le rôle a tout de même sauté");
+    return r.message.slice(0, 55);
+  });
+
+  await etape("le confinement ne fige pas la gouvernance : on reprend ce qu'on peut donner", async () => {
+    // Le retrait est confine comme l'octroi, et c'est symetrique : qui peut
+    // accorder un role peut le reprendre. Un delegue qui ne detient pas les
+    // droits d'un role ne le retire pas, mais celui qui les detient, si.
+    const s = await superAdmin();
+    const agent = await creerCompte();
+    await essayer(s, `select public.staff_assign_role($1, 'admin_operations', true)`, [agent]);
+    if (!(await droit(agent, "courses.lire"))) throw new Error("le rôle n'a pas été posé");
+    const r = await essayer(s, `select public.staff_assign_role($1, 'admin_operations', false)`, [agent]);
+    if (!r.ok) throw new Error(r.message);
+    if (await droit(agent, "courses.lire")) throw new Error("le rôle n'a pas été retiré");
+    return "posé puis repris";
+  });
+
   await etape("mais il accorde bien ce qu'il détient", async () => {
     // Le confinement ne doit pas tout bloquer : déléguer reste possible, dans
     // la limite de ce qu'on a soi-même.
@@ -627,6 +658,107 @@ try {
     }
     if (Number(sante.droits_au_catalogue) < 34) throw new Error("le catalogue a maigri");
     return `${sante.acces_de_secours_seuls} de secours, ${sante.droits_au_catalogue} droits tous documentes`;
+  });
+
+  await etape("NEUTRALISER EST AUSSI UNE ESCALADE : il ne retire pas un droit qu'il n'a pas", async () => {
+    // Le trou : le confinement ne portait que sur la branche « accorder ». Un
+    // delegue retirait donc « roles.attribuer » au super administrateur, puis a
+    // chacun, et devenait le seul a le detenir. Sans retour possible depuis
+    // l'application, puisque les deux fonctions exigent ce droit.
+    const s = await superAdmin();
+    const d = await delegue();
+    if (!(await droit(s, "roles.attribuer"))) throw new Error("le super admin n'a pas le droit");
+    const r = await essayer(
+      d,
+      `select public.staff_set_permission($1, 'audit.lire', false, 'je neutralise un collegue')`,
+      [s]
+    );
+    if (r.ok) throw new Error("un delegue a retire un droit qu'il ne detient pas");
+    if (!sansAccent(r.message).includes("que vous ne detenez pas")) throw new Error(r.message);
+    if (!(await droit(s, "roles.attribuer"))) throw new Error("le super admin a ete neutralise");
+    return r.message.slice(0, 50);
+  });
+
+  await etape("le dernier detenteur du droit d'attribuer n'est pas neutralisable", async () => {
+    // Le retirer au dernier fermerait la gouvernance sur elle-meme : plus
+    // personne ne pourrait rien changer, y compris pour revenir en arriere.
+    const s = await superAdmin();
+    const autre = await superAdmin();
+    await c.query(`delete from public.staff_assignments where role_code = 'super_admin'
+                    and user_id not in ($1, $2)`, [s, autre]);
+    await c.query(`delete from public.user_permissions where permission_code = 'roles.attribuer'`);
+    await c.query(`delete from public.user_roles where role = 'admin'`);
+    // Il en reste deux : retirer a l'un est permis.
+    const premier = await essayer(
+      s,
+      `select public.staff_set_permission($1, 'roles.attribuer', false, 'retrait du premier detenteur')`,
+      [autre]
+    );
+    if (!premier.ok) throw new Error(`le premier retrait echoue : ${premier.message}`);
+    // Il n'en reste qu'un : se le retirer serait fermer la porte.
+    const encore = await superAdmin();
+    const dernier = await essayer(
+      encore,
+      `select public.staff_set_permission($1, 'roles.attribuer', false, 'retrait du dernier detenteur')`,
+      [s]
+    );
+    if (dernier.ok && !(await droit(s, "roles.attribuer")) && !(await droit(encore, "roles.attribuer"))) {
+      throw new Error("la gouvernance s'est fermee sur elle-meme");
+    }
+    return "le dernier est protege";
+  });
+
+  await etape("la revue ne confirme que l'attribution qu'elle a montree", async () => {
+    // Trois attributions du meme role sur trois villes s'affichaient a
+    // l'identique, et un clic les confirmait toutes : deux acces que personne
+    // n'avait regardes etaient declares relus, au nom du relecteur.
+    const s = await superAdmin();
+    const agent = await creerCompte();
+    for (const ville of ["bouake", "korhogo"]) {
+      await essayer(s, `select public.staff_assign_role($1, 'admin_operations', true, $2)`, [agent, ville]);
+    }
+    await c.query(
+      `update public.staff_assignments set granted_at = now() - interval '400 days' where user_id = $1`,
+      [agent]
+    );
+
+    const avant = (await essayer(s, `select * from public.acces_a_revoir()`, [])).lignes
+      .filter((l) => l.user_id === agent);
+    if (avant.length !== 2) throw new Error(`${avant.length} ligne(s) a relire`);
+    if (!avant.some((l) => l.perimetre === "bouake")) throw new Error("le perimetre n'est pas montre");
+
+    await essayer(s, `select public.acces_confirmer_revue('role', $1, 'admin_operations', 'bouake')`, [agent]);
+    const apres = (await essayer(s, `select * from public.acces_a_revoir()`, [])).lignes
+      .filter((l) => l.user_id === agent);
+    if (apres.length !== 1) throw new Error(`${apres.length} ligne(s) restantes, une seule attendue`);
+    if (apres[0].perimetre !== "korhogo") throw new Error(`reste : ${apres[0].perimetre}`);
+    return "une confirmee, l'autre toujours a relire";
+  });
+
+  await etape("LE PERIMETRE NE S'ECHAPPE PAS PAR UN TIERS", async () => {
+    // Le confinement verifiait ce qu'on detient, jamais ou. Un delegue limite a
+    // Bouake confiait donc un role global a un tiers, et lisait Abidjan par
+    // personne interposee.
+    const s = await superAdmin();
+    const local = await creerCompte();
+    await essayer(s, `select public.staff_assign_role($1, 'admin_operations', true, 'bouake')`, [local]);
+    await essayer(
+      s,
+      `select public.staff_set_permission($1, 'roles.attribuer', true, 'delegation limitee a une ville')`,
+      [local]
+    );
+
+    const tiers = await creerCompte();
+    const partout = await essayer(local, `select public.staff_assign_role($1, 'admin_operations', true)`, [tiers]);
+    if (partout.ok) throw new Error("un delegue limite a une ville a confie un role global");
+
+    const memeVille = await essayer(
+      local,
+      `select public.staff_assign_role($1, 'admin_operations', true, 'bouake')`,
+      [tiers]
+    );
+    if (!memeVille.ok) throw new Error(`refuse dans sa propre ville : ${memeVille.message}`);
+    return "global refuse, sa ville acceptee";
   });
 
   await etape("l'ancienne signature sans confinement a bien disparu", async () => {

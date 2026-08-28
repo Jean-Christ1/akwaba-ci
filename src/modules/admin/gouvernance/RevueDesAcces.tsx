@@ -11,6 +11,8 @@ interface ALire {
   courriel: string;
   intitule: string;
   code: string;
+  /** La ville, ou « partout ». Sans elle, trois lignes seraient identiques. */
+  perimetre: string;
   sensible: boolean;
   motif: string | null;
   accorde_le: string;
@@ -60,12 +62,16 @@ export function RevueDesAcces() {
   }, [charger]);
 
   const confirmer = async (l: ALire) => {
-    const clef = `${l.genre}-${l.user_id}-${l.code}`;
+    const clef = clefDe(l);
     setEnCours(clef);
     const { error } = await supabase.rpc("acces_confirmer_revue", {
       p_genre: l.genre,
       p_user_id: l.user_id,
       p_code: l.code,
+      // Le perimetre fait partie de l'identite de l'attribution : sans lui, un
+      // clic confirmait le meme role sur toutes ses villes d'un coup, dont
+      // celles que personne n'avait regardees.
+      p_scope_value: l.perimetre === "partout" ? null : l.perimetre,
     });
     setEnCours(null);
     if (error) {
@@ -92,13 +98,17 @@ export function RevueDesAcces() {
     );
   }
 
+  // La cle porte le perimetre, sinon React donnerait la meme a trois lignes
+  // distinctes et l'etat « en cours » sauterait de l'une a l'autre.
+  const clefDe = (l: ALire) => `${l.genre}-${l.user_id}-${l.code}-${l.perimetre}`;
+
   const sensibles = lignes.filter((l) => l.sensible);
   const courants = lignes.filter((l) => !l.sensible);
 
   const rendre = (liste: ALire[]) => (
     <ul className="mt-2 space-y-2">
       {liste.map((l) => {
-        const clef = `${l.genre}-${l.user_id}-${l.code}`;
+        const clef = clefDe(l);
         return (
           <li
             key={clef}
@@ -113,6 +123,11 @@ export function RevueDesAcces() {
                   <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
                     {l.genre === "role" ? "rôle" : "exception"}
                   </span>
+                  {l.perimetre !== "partout" && (
+                    <span className="ml-1.5 rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary">
+                      {l.perimetre}
+                    </span>
+                  )}
                 </p>
                 <p className="mt-0.5 text-xs text-muted-foreground">{l.courriel}</p>
                 <p className="mt-1 text-[11px] text-muted-foreground">
