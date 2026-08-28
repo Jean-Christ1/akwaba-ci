@@ -99,14 +99,19 @@ afterEach(() => {
 });
 
 describe("la gouvernance des accès", { timeout: 30_000 }, () => {
-  it("rend la matrice avec un rôle par colonne, du moins étendu au plus étendu", async () => {
+  it("rend la matrice avec un rôle par colonne, rangée par rang croissant", async () => {
     servir();
     afficher();
 
-    // Les rôles arrivent dans l'ordre de leur rang : c'est ce qui permet de
-    // lire de gauche à droite ce que chaque échelon ajoute.
+    // Les rôles arrivent dans l'ordre de leur rang. L'écran disait « du moins
+    // étendu au plus étendu », ce qui était faux : les rôles sont des métiers
+    // et ne se contiennent pas. Le responsable financier détient un droit que
+    // l'administrateur de plateforme, de rang supérieur, n'a pas.
     await screen.findByText("Modérateur");
     expect(screen.getByText("Super administrateur")).toBeInTheDocument();
+    expect(
+      screen.getByText(/il ne signifie pas qu'un rôle en contient un autre/i)
+    ).toBeInTheDocument();
 
     // Une cellule par croisement, et son état est dit aux lecteurs d'écran :
     // un point vert seul ne dit rien à qui ne le voit pas.

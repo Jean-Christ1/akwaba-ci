@@ -59,9 +59,18 @@ const TONS: Record<string, string> = {
  * seul coup d'oeil. La liste des rôles et celle des droits existaient déjà,
  * mais côte à côte, et le croisement se faisait de tête.
  *
- * Les colonnes vont du rôle le moins étendu au plus étendu, par rang. Lire de
- * gauche à droite montre alors ce que chaque échelon ajoute, et une ligne
- * pleine dès la première colonne signale un droit que tout le personnel porte.
+ * Les colonnes sont rangées par rang croissant. Le rang dit qui peut attribuer
+ * quoi, il ne dit pas qu'un rôle en contient un autre : les rôles sont des
+ * métiers, pas des échelons emboîtés. Le responsable financier détient
+ * « Approuver un retrait » que l'administrateur de plateforme, pourtant de rang
+ * supérieur, n'a pas.
+ *
+ * L'écran l'a longtemps présenté comme une échelle, du moins étendu au plus
+ * étendu. C'était faux, et de la pire façon : un lecteur qui parcourt les
+ * colonnes de gauche à droite en concluait qu'un rang supérieur couvre tout ce
+ * que couvre un rang inférieur, et accordait le rôle le plus haut en croyant
+ * bien faire. Une ligne pleine reste lisible d'un coup d'oeil : elle signale un
+ * droit que tout le personnel porte.
  *
  * Cet écran ne décide de rien. Il montre ce que le serveur applique ; une case
  * n'ouvre aucun accès par elle-même.
@@ -97,8 +106,10 @@ export function MatriceDesDroits({ droits, roles, onOuvrir, recherche }: Proprie
   return (
     <div>
       <p className="text-xs text-muted-foreground">
-        Matrice des permissions par rôle, du rôle le moins étendu au plus étendu. Ouvrez un
-        droit pour lire ce qu'il permet et, surtout, ce qu'il ne permet pas.
+        Matrice des permissions par rôle, rangée par rang croissant. Le rang dit qui peut
+        attribuer quoi : il ne signifie pas qu'un rôle en contient un autre, les rôles étant
+        des métiers distincts. Ouvrez un droit pour lire ce qu'il permet et, surtout, ce
+        qu'il ne permet pas.
       </p>
 
       {/* La matrice défile horizontalement plutôt que de comprimer ses colonnes :

@@ -70,6 +70,46 @@ Deux pièges rencontrés, qui valent d'être connus :
 
 ---
 
+## 2b. Les rôles sont des métiers, pas des échelons
+
+C'est le point le plus facile à lire de travers, et il a fallu le corriger dans
+la console.
+
+| Rôle | Rang | Ce qu'il couvre | Droits |
+|---|---|---|---|
+| `moderateur` | 10 | Périmètre historique : courses, litiges, dossiers de shopper, lieux. | 19 |
+| `admin_support` | 20 | Consultation large, décisions limitées au déverrouillage d'une remise. | 10 |
+| `admin_contenu` | 30 | Établissements, fiches et modération éditoriale. | 5 |
+| `admin_operations` | 40 | Suivi des courses, litiges, villes et quartiers. | 12 |
+| `admin_finance` | 50 | Paiements, retraits, commissions et barèmes. Aucun accès aux identités. | 10 |
+| `admin_conformite` | 60 | Pièces d'identité, journal d'audit et exports. Aucun pouvoir sur l'argent. | 6 |
+| `admin_plateforme` | 80 | Exploitation courante, sans les pièces d'identité ni le journal d'audit. | 22 |
+| `super_admin` | 100 | Tous les droits, y compris celui d'en attribuer. À réserver à une ou deux personnes. | 35 |
+
+**Le rang ne dit pas qu'un rôle en contient un autre.** Le responsable financier
+détient « Approuver un retrait », que l'administrateur de plateforme, pourtant
+de rang supérieur, n'a pas. Le responsable conformité ouvre les pièces
+d'identité, que l'administrateur de plateforme n'ouvre pas.
+
+C'est voulu : la séparation des pouvoirs vaut mieux qu'une échelle où le haut
+contient tout. Mais la console présentait les colonnes « du rôle le moins étendu
+au plus étendu », ce qui invitait à lire une échelle et donc à accorder le rôle
+le plus haut en croyant couvrir le besoin. Le libellé dit désormais ce que le
+rang signifie vraiment : **qui peut attribuer quoi**.
+
+Le rang sert à deux choses, et à deux seulement :
+
+1. ordonner les colonnes de la matrice ;
+2. empêcher d'attribuer un rôle de rang supérieur au sien.
+
+Ce second point n'est pas la garantie principale. Celle qui protège est la
+vérification droit par droit : `staff_assign_role` refuse le rôle dès qu'il
+porte un seul droit que vous ne détenez pas dans le périmètre visé. Un
+administrateur de plateforme ne peut donc pas nommer un responsable financier,
+faute de détenir `retraits.approuver`, alors même que le rang le lui permettrait.
+
+---
+
 ## 3. Accorder un accès
 
 Écran : `/admin/permissions`, onglet **Droits d'une personne**.
