@@ -803,6 +803,37 @@ export default function NewErrandPage() {
           </div>
         </aside>
       </div>
+
+      {/* Le devis, toujours visible sur téléphone.
+          Le panneau ci-dessus se rend après tout le formulaire : sur un écran
+          de 390 pixels, le prix se découvrait à la fin, alors qu'il change à
+          chaque choix. Cette barre le montre pendant qu'on choisit, et met la
+          publication à portée de pouce.
+          Elle se place au-dessus de la barre de navigation, dont la hauteur et
+          la marge de sécurité sont reprises ici. */}
+      <div
+        className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-lg lg:hidden"
+        role="region"
+        aria-label="Devis et publication"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] text-muted-foreground">Frais de service</p>
+            <p className="truncate font-display text-lg font-semibold">
+              {quote ? formatFcfa(quote.serviceFee) : "Tarif indisponible"}
+            </p>
+          </div>
+          <Button onClick={submit} disabled={saving || !valid} className="shrink-0">
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Publier
+          </Button>
+        </div>
+        {!valid && (
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Titre, adresse et au moins un article requis.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
