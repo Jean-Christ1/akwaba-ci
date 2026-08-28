@@ -78,13 +78,13 @@ const publier = async (uid, categorie = "grocery", ville = "Abidjan", mode = "cu
 };
 
 try {
-  await etape("les dix categories sont ouvertes au depart", async () => {
+  await etape("les dix catégories sont ouvertes au départ", async () => {
     const r = await c.query(`select * from public.service_modes_ouverts('Abidjan')`);
     if (r.rows.length !== 10) throw new Error(`${r.rows.length} categorie(s) ouvertes`);
     return `${r.rows.length} ouvertes`;
   });
 
-  await etape("une categorie fermee disparait du catalogue", async () => {
+  await etape("une catégorie fermée disparaît du catalogue", async () => {
     await c.query(`update public.service_modes set actif = false where code = 'gas'`);
     const r = await c.query(`select code from public.service_modes_ouverts('Abidjan')`);
     if (r.rows.some((x) => x.code === "gas")) throw new Error("le gaz reste propose");
@@ -93,7 +93,7 @@ try {
     return "9 ouvertes";
   });
 
-  await etape("fermer une categorie la ferme reellement, pas seulement a l'ecran", async () => {
+  await etape("fermer une catégorie la ferme réellement, pas seulement à l'écran", async () => {
     // Le formulaire ne la proposera plus, mais un appel direct le pourrait.
     const uid = await creerCompte();
     await c.query(`update public.service_modes set actif = false where code = 'gas'`);
@@ -106,7 +106,7 @@ try {
     return r.message.slice(0, 60);
   });
 
-  await etape("une categorie peut etre fermee dans une seule ville", async () => {
+  await etape("une catégorie peut être fermée dans une seule ville", async () => {
     const uid = await creerCompte();
     await c.query(
       `insert into public.service_mode_cities (mode_code, city_slug, actif)
@@ -121,7 +121,7 @@ try {
     return aAbidjan.message.slice(0, 60);
   });
 
-  await etape("la meme categorie reste ouverte ailleurs", async () => {
+  await etape("la même catégorie reste ouverte ailleurs", async () => {
     const uid = await creerCompte();
     await c.query(
       `insert into public.service_mode_cities (mode_code, city_slug, actif)
@@ -133,7 +133,7 @@ try {
     return "ouverte a Abidjan, fermee a Korhogo";
   });
 
-  await etape("un mode de reglement non autorise est refuse", async () => {
+  await etape("un mode de règlement non autorisé est refusé", async () => {
     // Un colis n'a pas d'achat a financer : proposer une avance n'aurait pas
     // de sens, et le client se demanderait quoi envoyer.
     const uid = await creerCompte();
@@ -146,14 +146,14 @@ try {
     return r.message.slice(0, 60);
   });
 
-  await etape("le mode autorise, lui, passe", async () => {
+  await etape("le mode autorisé, lui, passe", async () => {
     const uid = await creerCompte();
     const r = await publier(uid, "parcel", "Abidjan", "on_delivery");
     if (!r.ok) throw new Error(`refuse alors que le mode est autorise : ${r.message}`);
     return "accepte";
   });
 
-  await etape("regler un service demande le droit correspondant", async () => {
+  await etape("régler un service demande le droit correspondant", async () => {
     const uid = await creerCompte();
     await c.query(`select set_config('request.jwt.claims', $1, true)`, [
       JSON.stringify({ sub: uid, role: "authenticated" }),
@@ -171,7 +171,7 @@ try {
     return "refuse";
   });
 
-  await etape("le personnel habilite regle, et c'est trace", async () => {
+  await etape("le personnel habilité règle, et c'est tracé", async () => {
     const admin = await creerCompte();
     await c.query(`insert into public.staff_assignments (user_id, role_code) values ($1, 'admin_operations')`, [admin]);
     await c.query(`select set_config('request.jwt.claims', $1, true)`, [
@@ -200,7 +200,7 @@ try {
     return "ferme, restreint, trace";
   });
 
-  await etape("la liste des villes fermees remplace la precedente", async () => {
+  await etape("la liste des villes fermées remplace la précédente", async () => {
     // C'est un etat, pas une suite d'ajouts : raisonner par ajouts laisserait
     // des fermetures oubliees que personne ne retrouverait.
     const admin = await creerCompte();
@@ -222,7 +222,7 @@ try {
     return "une seule, la derniere donnee";
   });
 
-  await etape("le catalogue est lisible par un visiteur non connecte", async () => {
+  await etape("le catalogue est lisible par un visiteur non connecté", async () => {
     await c.query("set local role anon");
     const r = await c.query(`select count(*)::int n from public.service_modes_ouverts('Abidjan')`);
     await c.query("reset role");
@@ -237,8 +237,8 @@ try {
   await c.end();
 }
 
-console.log(`\n${n - echecs.length}/${n} etapes vertes`);
-console.log("(transaction annulee : la base est intacte)");
+console.log(`\n${n - echecs.length}/${n} étapes vertes`);
+console.log("(transaction annulée : la base est intacte)");
 if (echecs.length) {
   for (const e of echecs) console.error("  " + e);
   process.exit(1);

@@ -133,7 +133,7 @@ const emettre = async (client, course, plafond = 15000) => {
 };
 
 try {
-  await etape("le client ouvre un paiement et recoit un code, une seule fois", async () => {
+  await etape("le client ouvre un paiement et reçoit un code, une seule fois", async () => {
     const s = await scene();
     const bon = await emettre(s.client, s.course);
     if (!bon.code || bon.code.length !== 16) throw new Error(`code ${bon.code}`);
@@ -145,7 +145,7 @@ try {
     return `code de 16 signes, empreinte seule en base`;
   });
 
-  await etape("le shopper ne peut pas s'ouvrir un droit de depense", async () => {
+  await etape("le shopper ne peut pas s'ouvrir un droit de dépense", async () => {
     // C'est la premiere porte : si le shopper pouvait emettre, il fixerait
     // lui-meme le plafond sur l'argent d'un autre.
     const s = await scene();
@@ -167,7 +167,7 @@ try {
     return "refuse";
   });
 
-  await etape("le plafond ne depasse pas le budget de la course", async () => {
+  await etape("le plafond ne dépasse pas le budget de la course", async () => {
     // Le budget connu au moment de l'emission est l'estimation donnee a la
     // publication : le panier n'existe pas encore, et rien n'a ete achete.
     const s = await scene();
@@ -179,7 +179,7 @@ try {
     return r.message.slice(0, 45);
   });
 
-  await etape("le plafond est borne des l'affectation, avant tout panier", async () => {
+  await etape("le plafond est borné dès l'affectation, avant tout panier", async () => {
     // Le defaut trouve par la revue adverse : a « assigned », basket_total et
     // budget_approved_amount sont vides et items_total vaut zero. Sans
     // budget_estimate dans la borne, deux codes de 500 000 FCFA passaient sur
@@ -252,7 +252,7 @@ try {
     return r.message.slice(0, 45);
   });
 
-  await etape("un second code est refuse par la base, pas seulement par la garde", async () => {
+  await etape("un second code est refusé par la base, pas seulement par la garde", async () => {
     // Une garde en plpgsql se contourne par un appel concurrent : deux appels
     // simultanes passent tous deux la verification avant que l'un n'ait ecrit.
     // Seul un index unique les departage.
@@ -277,7 +277,7 @@ try {
     return "index unique";
   });
 
-  await etape("deux codes ouverts a la fois sur la meme course sont refuses", async () => {
+  await etape("deux codes ouverts à la fois sur la même course sont refusés", async () => {
     // Deux droits de depense simultanes permettraient de payer deux fois le
     // meme panier, et le client ne s'en apercevrait qu'au relevé.
     const s = await scene();
@@ -349,7 +349,7 @@ try {
     return r.message.slice(0, 45);
   });
 
-  await etape("un marchand non verifie ne peut pas encaisser", async () => {
+  await etape("un marchand non vérifié ne peut pas encaisser", async () => {
     const s = await scene();
     await commeSi(s.admin);
     const brouillon = (
@@ -370,7 +370,7 @@ try {
     return r.message.slice(0, 45);
   });
 
-  await etape("le montant demande ne depasse pas le plafond du client", async () => {
+  await etape("le montant demandé ne dépasse pas le plafond du client", async () => {
     const s = await scene();
     const bon = await emettre(s.client, s.course, 10000);
     const r = await essayer(
@@ -383,7 +383,7 @@ try {
     return r.message.slice(0, 45);
   });
 
-  await etape("le shopper ne peut pas demander l'encaissement a la place du marchand", async () => {
+  await etape("le shopper ne peut pas demander l'encaissement à la place du marchand", async () => {
     const s = await scene();
     const bon = await emettre(s.client, s.course);
     const r = await essayer(s.shopper, `select public.counter_payment_demander($1, 9000, $2) j`, [
@@ -436,7 +436,7 @@ try {
     return "paye au marchand, rien au shopper";
   });
 
-  await etape("un code deja regle ne se represente pas", async () => {
+  await etape("un code déjà réglé ne se représente pas", async () => {
     const s = await scene();
     const bon = await emettre(s.client, s.course, 15000);
     await commeSi(s.commercant);
@@ -455,7 +455,7 @@ try {
     return "refuse";
   });
 
-  await etape("le client refuse, et le shopper est prevenu de ne rien avancer", async () => {
+  await etape("le client refuse, et le shopper est prévenu de ne rien avancer", async () => {
     const s = await scene();
     const bon = await emettre(s.client, s.course, 15000);
     await commeSi(s.commercant);
@@ -481,7 +481,7 @@ try {
     return "refuse, shopper prevenu";
   });
 
-  await etape("seul le client decide, pas le marchand ni le shopper", async () => {
+  await etape("seul le client décide, pas le marchand ni le shopper", async () => {
     const s = await scene();
     const bon = await emettre(s.client, s.course, 15000);
     await commeSi(s.commercant);
@@ -498,7 +498,7 @@ try {
     return "les deux sont refuses";
   });
 
-  await etape("un code expire ne sert plus, et rien n'a bouge", async () => {
+  await etape("un code expiré ne sert plus, et rien n'a bougé", async () => {
     const s = await scene();
     const bon = await emettre(s.client, s.course, 15000);
     await c.query(`update public.counter_payments set expire_le = now() - interval '1 minute' where id = $1`, [bon.id]);
@@ -519,7 +519,7 @@ try {
     return "expire, aucune ecriture";
   });
 
-  await etape("le client annule tant que rien n'est valide", async () => {
+  await etape("le client annule tant que rien n'est validé", async () => {
     const s = await scene();
     const bon = await emettre(s.client, s.course, 15000);
     await commeSi(s.client);
@@ -532,7 +532,7 @@ try {
     return "annule";
   });
 
-  await etape("un paiement valide ne s'annule pas en silence", async () => {
+  await etape("un paiement validé ne s'annule pas en silence", async () => {
     // L'annulation d'un paiement deja fait effacerait la trace de ce que le
     // client doit au marchand. Ce cas releve du litige, pas d'un bouton.
     const s = await scene();
@@ -549,7 +549,7 @@ try {
     return r.message.slice(0, 45);
   });
 
-  await etape("le numero du marchand n'est pas lisible par un client", async () => {
+  await etape("le numéro du marchand n'est pas lisible par un client", async () => {
     // Le diffuser inviterait a payer hors du dispositif, sans trace, et le
     // client perdrait tout recours.
     await c.query("set local role authenticated");
@@ -565,7 +565,7 @@ try {
     return "colonne refusee";
   });
 
-  await etape("le shopper retrouve le code qu'il doit presenter", async () => {
+  await etape("le shopper retrouve le code qu'il doit présenter", async () => {
     // Le defaut le plus grave trouve par la revue : le client emettait le code,
     // le voyait une fois, et la base n'en gardait qu'une empreinte. Le shopper,
     // seul au comptoir, n'avait rien a montrer.
@@ -586,7 +586,7 @@ try {
     return "relu";
   });
 
-  await etape("personne d'autre ne relit le code, pas meme le support", async () => {
+  await etape("personne d'autre ne relit le code, pas même le support", async () => {
     // Connaitre le code permettrait de le presenter soi-meme : c'est une
     // capacite que le support n'a aucune raison d'avoir.
     const s = await scene();
@@ -616,7 +616,7 @@ try {
     return `${n} trace(s)`;
   });
 
-  await etape("le numero du shopper ne peut pas servir de numero de marchand", async () => {
+  await etape("le numéro du shopper ne peut pas servir de numéro de marchand", async () => {
     // La console ne rattache aucun compte : la garde par le compte etait donc
     // inerte pour tous les marchands qu'elle inscrit. On compare aussi les
     // numeros d'encaissement declares par le shopper.
@@ -672,7 +672,7 @@ try {
     return "refuse";
   });
 
-  await etape("le marchand constate qu'il a ete paye", async () => {
+  await etape("le marchand constate qu'il a été payé", async () => {
     // Sans cela, il n'a aucun moyen de rapprocher un encaissement d'une course.
     const s = await scene();
     const bon = await emettre(s.client, s.course, 15000);
@@ -745,7 +745,7 @@ try {
     return `${messages.length} avis, aucun ne dit « paye »`;
   });
 
-  await etape("un marchand par virement bancaire est refuse des l'inscription", async () => {
+  await etape("un marchand par virement bancaire est refusé dès l'inscription", async () => {
     // Le type pay_method ne connait pas « bank » : la conversion echouait a la
     // validation, au comptoir, une fois le panier rempli. Il vaut mieux le dire
     // au moment de l'inscription.
@@ -765,7 +765,7 @@ try {
     return r.message.slice(0, 50);
   });
 
-  await etape("une course annulee ne laisse plus rien passer au comptoir", async () => {
+  await etape("une course annulée ne laisse plus rien passer au comptoir", async () => {
     const s = await scene();
     const bon = await emettre(s.client, s.course, 15000);
     await c.query(`select set_config('app.errand_engine', 'on', true)`);
@@ -785,7 +785,7 @@ try {
     return r.message.slice(0, 45);
   });
 
-  await etape("annuler une course avec un paiement en attente est refuse", async () => {
+  await etape("annuler une course avec un paiement en attente est refusé", async () => {
     // Le client doit trancher : sinon le code reste presentable au comptoir sur
     // une course qui n'existe plus, et le commercant a deja commence a emballer.
     const s = await scene();
@@ -826,7 +826,7 @@ try {
     return r.message.slice(0, 40);
   });
 
-  await etape("le montant valide compte comme une avance du client", async () => {
+  await etape("le montant validé compte comme une avance du client", async () => {
     // Sans cela, le reglement final ignore que le panier est deja finance, et
     // le client le paie une seconde fois.
     const s = await scene();
@@ -853,7 +853,7 @@ try {
     return `avance ${avant} -> ${apres.a}`;
   });
 
-  await etape("une expiration annoncee n'est jamais ecrite a moitie", async () => {
+  await etape("une expiration annoncée n'est jamais écrite à moitié", async () => {
     // Le code marquait « expire » puis levait une exception : le RAISE annulait
     // l'ecriture. Il ne pretend plus ranger ce qu'il ne range pas.
     const s = await scene();
@@ -875,7 +875,7 @@ try {
     return `range par le travail planifie (${n})`;
   });
 
-  await etape("rattacher un compte marchand ouvre l'acces au comptoir", async () => {
+  await etape("rattacher un compte marchand ouvre l'accès au comptoir", async () => {
     // Sans rattachement, la politique de lecture ne montre rien au commercant :
     // le registre existait, mais personne ne pouvait s'en servir.
     const s = await scene();
@@ -921,8 +921,8 @@ try {
   await c.end();
 }
 
-console.log(`\n${n - echecs.length}/${n} etapes vertes`);
-console.log("(transaction annulee : la base est intacte)");
+console.log(`\n${n - echecs.length}/${n} étapes vertes`);
+console.log("(transaction annulée : la base est intacte)");
 if (echecs.length) {
   for (const e of echecs) console.error("  " + e);
   process.exit(1);

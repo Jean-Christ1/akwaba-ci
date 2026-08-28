@@ -90,7 +90,7 @@ const etat = async (id) =>
   ).rows[0];
 
 try {
-  await etape("une reponse acceptee confirme la remise", async () => {
+  await etape("une réponse acceptée confirme la remise", async () => {
     const id = await ligneRemise({ statut: 201, contenu: '{"sid":"SM0000","status":"queued"}' });
     await c.query(`select public.whatsapp_reconcilier(50)`);
     const l = await etat(id);
@@ -101,7 +101,7 @@ try {
     return "confirmee, code 201";
   });
 
-  await etape("un refus franc de Twilio devient un echec, avec son motif", async () => {
+  await etape("un refus franc de Twilio devient un échec, avec son motif", async () => {
     // C'est exactement la reponse que la base a deja conservee : le porteur la
     // comptait comme un envoi reussi.
     const id = await ligneRemise({
@@ -118,7 +118,7 @@ try {
     return l.last_error.slice(0, 50);
   });
 
-  await etape("un debit depasse remet le message dans la file", async () => {
+  await etape("un débit dépassé remet le message dans la file", async () => {
     // Le destinataire n'y est pour rien : ce message merite une nouvelle
     // chance, pas un abandon definitif.
     const id = await ligneRemise({
@@ -133,7 +133,7 @@ try {
     return "remis en attente";
   });
 
-  await etape("une panne du transporteur donne droit a une reprise", async () => {
+  await etape("une panne du transporteur donne droit à une reprise", async () => {
     const id = await ligneRemise({ statut: 503, contenu: "Service Unavailable" });
     await c.query(`select public.whatsapp_reconcilier(50)`);
     const l = await etat(id);
@@ -141,7 +141,7 @@ try {
     return "remis en attente";
   });
 
-  await etape("une remise recente sans reponse reste en suspens", async () => {
+  await etape("une remise récente sans réponse reste en suspens", async () => {
     // Twilio n'a pas encore repondu : conclure maintenant serait conclure trop
     // tot, et un envoi correct passerait pour un echec.
     const uid = await creerCompte();
@@ -163,7 +163,7 @@ try {
     return "laissee en suspens";
   });
 
-  await etape("une remise trop vieille sans reponse est declaree inverifiable", async () => {
+  await etape("une remise trop vieille sans réponse est déclarée invérifiable", async () => {
     // pg_net a purge la reponse : personne ne saura jamais. Le dire vaut mieux
     // que de laisser la ligne passer pour un envoi reussi.
     const uid = await creerCompte();
@@ -188,7 +188,7 @@ try {
     return l.last_error.slice(0, 45);
   });
 
-  await etape("la cadence ne se regle pas sans le droit", async () => {
+  await etape("la cadence ne se règle pas sans le droit", async () => {
     const uid = await creerCompte();
     await c.query(`select set_config('request.jwt.claims', $1, true)`, [
       JSON.stringify({ sub: uid, role: "authenticated" }),
@@ -205,7 +205,7 @@ try {
     return "refuse";
   });
 
-  await etape("l'exploitation regle la cadence, et c'est trace", async () => {
+  await etape("l'exploitation règle la cadence, et c'est tracé", async () => {
     const admin = await creerCompte();
     await c.query(
       `insert into public.staff_assignments (user_id, role_code) values ($1, 'admin_operations')`,
@@ -234,7 +234,7 @@ try {
     return "1,5 s et lot de 40, trace";
   });
 
-  await etape("le lot demande ne depasse jamais le lot regle", async () => {
+  await etape("le lot demandé ne dépasse jamais le lot réglé", async () => {
     // Le travail planifie demande trente. Le reglage en autorise vingt : c'est
     // le reglage qui doit gagner, sans quoi il ne servirait a rien.
     const source = (
@@ -247,7 +247,7 @@ try {
     return "borne par LEAST";
   });
 
-  await etape("la sante distingue remis et confirme", async () => {
+  await etape("la santé distingue remis et confirmé", async () => {
     const admin = await creerCompte();
     await c.query(
       `insert into public.staff_assignments (user_id, role_code) values ($1, 'admin_operations')`,
@@ -273,8 +273,8 @@ try {
   await c.end();
 }
 
-console.log(`\n${n - echecs.length}/${n} etapes vertes`);
-console.log("(transaction annulee : la base est intacte)");
+console.log(`\n${n - echecs.length}/${n} étapes vertes`);
+console.log("(transaction annulée : la base est intacte)");
 if (echecs.length) {
   for (const e of echecs) console.error("  " + e);
   process.exit(1);
