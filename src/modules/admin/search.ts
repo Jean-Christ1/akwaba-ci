@@ -22,7 +22,7 @@ export interface UserHit {
   displayName: string | null;
   phone: string | null;
   /** Table d'où vient la correspondance, pour que l'exploitant sache ce qu'il lit. */
-  source: "profil" | "demande";
+  source: "profil" | "demande" | "compte";
 }
 
 export interface SearchResult {
@@ -67,7 +67,16 @@ function fusionnerUtilisateurs(...listes: UserHit[][]): UserHit[] {
   const parCle = new Map<string, UserHit>();
   for (const liste of listes) {
     for (const hit of liste) {
-      const cle = hit.userId ?? `courriel:${hit.email ?? ""}`;
+      // L'adresse d'abord, l'identifiant ensuite.
+      //
+      // La cle etait l'identifiant quand il existait, et l'adresse sinon. Une
+      // demande deposee sans compte porte pourtant la meme adresse que le
+      // compte trouve a cote : les deux tombaient dans des cases differentes,
+      // et l'exploitant voyait la meme personne deux fois, une ligne « compte »
+      // et une ligne « demande ».
+      const cle = hit.email ? `courriel:${hit.email.toLowerCase()}` : (hit.userId ?? "");
+      if (!cle) continue;
+
       const existant = parCle.get(cle);
       if (!existant) {
         parCle.set(cle, hit);
@@ -78,6 +87,8 @@ function fusionnerUtilisateurs(...listes: UserHit[][]): UserHit[] {
         email: existant.email ?? hit.email,
         displayName: existant.displayName ?? hit.displayName,
         phone: existant.phone ?? hit.phone,
+        // Celle des deux qui porte un compte fait foi : un nom saisi dans un
+        // formulaire a pu l'etre par n'importe qui.
         source: existant.userId ? existant.source : hit.source,
       });
     }
@@ -128,9 +139,28 @@ export async function searchConsole(requete: string): Promise<SearchResult> {
     };
   }
 
-  // Une adresse ne se cherche que là où l'application en conserve : la table
-  // des comptes d'authentification n'est pas exposée au navigateur.
   if (ressembleAUnCourriel(q)) {
+    // L'annuaire lit la table des comptes d'authentification, que le navigateur
+    // ne peut pas interroger. Sans lui, chercher quelqu'un par son adresse ne
+    // trouvait que ses demandes de visiteur, jamais son compte : une adresse
+    // qui n'avait jamais rempli de formulaire ne remontait rien du tout.
+    //
+    // Il est reserve au droit « utilisateurs.lire ». Un refus n'est donc pas
+    // une panne, c'est la reponse a une question posee par quelqu'un qui n'a
+    // pas le droit de la poser : on continue sur les demandes.
+    const annuaire = await supabase.rpc("annuaire_des_comptes", {
+      p_recherche: q,
+      p_limite: LIMITE,
+    });
+
+    const comptes: UserHit[] = (annuaire.data ?? []).map((l) => ({
+      userId: l.user_id,
+      email: l.courriel,
+      displayName: l.nom_affiche,
+      phone: l.telephone,
+      source: "compte" as const,
+    }));
+
     const demandes = await supabase
       .from("leads")
       .select("email,full_name,phone,user_id")
@@ -140,15 +170,18 @@ export async function searchConsole(requete: string): Promise<SearchResult> {
 
     if (demandes.error) erreurs.push(demandes.error.message);
 
-    const parCourriel = fusionnerUtilisateurs(
-      (demandes.data ?? []).map((d) => ({
+    // Les comptes d'abord : quand la meme adresse apparait des deux cotes, le
+    // compte fait foi sur ce qu'une personne a saisi dans un formulaire.
+    const parCourriel = fusionnerUtilisateurs([
+      ...comptes,
+      ...(demandes.data ?? []).map((d) => ({
         userId: d.user_id,
         email: d.email,
         displayName: d.full_name,
         phone: d.phone,
         source: "demande" as const,
-      }))
-    );
+      })),
+    ]);
 
     // Le nom affiché du compte prime sur celui saisi dans un formulaire.
     const identifiants = parCourriel.map((u) => u.userId).filter(Boolean) as string[];
