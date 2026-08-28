@@ -1395,6 +1395,9 @@ export type Database = {
           locale: string
           phone: string | null
           updated_at: string
+          suspendu_le: string | null
+          suspendu_par: string | null
+          suspendu_motif: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -2718,6 +2721,38 @@ export type Database = {
       surge_arreter: {
         Args: { p_id: string }
         Returns: Json
+      }
+      annuaire_des_comptes: {
+        Args: { p_recherche?: string | null; p_limite?: number }
+        Returns: {
+          user_id: string
+          courriel: string | null
+          nom_affiche: string | null
+          telephone: string | null
+          cree_le: string
+          suspendu_le: string | null
+          suspendu_motif: string | null
+          suspendu_par_courriel: string | null
+          roles: string[]
+          courses: number
+        }[]
+      }
+      compte_suspendre: {
+        Args: { p_user_id: string; p_suspendre: boolean; p_motif?: string | null }
+        Returns: Json
+      }
+      message_envoyer: {
+        Args: { p_user_id: string; p_sujet: string; p_corps: string }
+        Returns: Json
+      }
+      organisation_gerer: {
+        Args: {
+          p_org: string
+          p_nom?: string | null
+          p_contact_email?: string | null
+          p_contact_phone?: string | null
+        }
+        Returns: Database["public"]["Tables"]["organisations"]["Row"]
       }
       acces_a_revoir: {
         Args: { p_jours_sensibles?: number; p_jours_courants?: number }

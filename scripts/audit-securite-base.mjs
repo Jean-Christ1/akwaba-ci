@@ -213,7 +213,30 @@ await controle(
 );
 
 // ---------------------------------------------------------------------------
-// 9. Une preuve de consentement que l'interesse peut ecrire lui-meme
+// 9. Un droit sensible que rien ne consulte
+//
+// Quinze des trente-cinq droits n'etaient consultes nulle part : ni par une
+// politique, ni par une fonction. Ils s'affichaient « accorde » dans la console
+// et n'ouvraient aucune porte, ce qui trompe dans les deux sens. Un auditeur a
+// qui l'on confie « Consulter le journal d'audit » ouvrait un journal vide ; et
+// la promesse inverse, « le responsable financier n'a pas acces aux pieces
+// d'identite », ne tenait pas davantage puisque la porte des pieces regardait
+// un role herite.
+//
+// Il en reste, et c'est assume : ils correspondent a des gestes qui se font
+// encore par ecriture directe, sans fonction serveur ou les brancher. Le
+// controle ne signale que les sensibles, pour que l'ecart reste visible sans
+// noyer le reste.
+// ---------------------------------------------------------------------------
+await controle(
+  "Droit sensible que rien ne consulte",
+  `select code from public.droits_jamais_consultes() where sensible order by code`,
+  (l) => l.code,
+  "Il s'affiche « accordé » dans la console et n'ouvre aucune porte."
+);
+
+// ---------------------------------------------------------------------------
+// 10. Une preuve de consentement que l'interesse peut ecrire lui-meme
 //
 // Les dates de consentement servent de preuve : elles disent qu'a tel moment,
 // cette personne a accepte d'etre jointe sur ce canal. Une preuve que le sujet

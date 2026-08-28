@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { AttribuerUnRole } from "@/modules/admin/gouvernance/AttribuerUnRole";
+import { ComptesEtSuspension } from "@/modules/admin/gouvernance/ComptesEtSuspension";
 import { DroitDetail } from "@/modules/admin/gouvernance/DroitDetail";
 import { DroitsDUnePersonne } from "@/modules/admin/gouvernance/DroitsDUnePersonne";
 import { MatriceDesDroits } from "@/modules/admin/gouvernance/MatriceDesDroits";
@@ -182,6 +183,7 @@ export default function PermissionsPage() {
         <TabsList>
           <TabsTrigger value="matrice">Matrice</TabsTrigger>
           <TabsTrigger value="personne">Droits d'une personne</TabsTrigger>
+          <TabsTrigger value="comptes">Comptes</TabsTrigger>
           <TabsTrigger value="perimetres">Périmètres</TabsTrigger>
           <TabsTrigger value="revue">Revue</TabsTrigger>
           <TabsTrigger value="reconciliation">Réconciliation</TabsTrigger>
@@ -201,6 +203,10 @@ export default function PermissionsPage() {
             <AttribuerUnRole roles={roles} villes={villes} onChange={charger} />
           )}
           <DroitsDUnePersonne mesDroits={mesDroits} />
+        </TabsContent>
+
+        <TabsContent value="comptes" className="mt-4">
+          <ComptesEtSuspension mesDroits={mesDroits} />
         </TabsContent>
 
         <TabsContent value="perimetres" className="mt-4 space-y-4">
