@@ -156,15 +156,25 @@ try {
       JSON.stringify({ sub: client, role: "authenticated" }),
     ]);
     await c.query("set local role authenticated");
-    const r = await c.query(
-      `update public.leads set status = 'contacted' where id = $1 returning id`,
-      [id]
-    );
-    await c.query("reset role");
-    await c.query(`select set_config('request.jwt.claims', null, true)`);
+    // Le refus a change de nature et s'est durci : la politique laissait passer
+    // zero ligne, le droit d'ecrire la table est maintenant retire. Les deux
+    // sont des refus, et le second est le plus fort : il vaut aussi pour les
+    // colonnes qu'aucune politique ne surveillait.
+    let refuse = false;
+    try {
+      const r = await c.query(
+        `update public.leads set status = 'contacted' where id = $1 returning id`,
+        [id]
+      );
+      refuse = r.rowCount === 0;
+    } catch (e) {
+      refuse = /permission|denied|droit/i.test(e.message);
+    }
+    await c.query("reset role").catch(() => {});
+    await c.query(`select set_config('request.jwt.claims', null, true)`).catch(() => {});
     await c.query("rollback to savepoint etape");
 
-    if (r.rowCount !== 0) throw new Error("le client a change son propre statut");
+    if (!refuse) throw new Error("le client a change son propre statut");
     return "refuse";
   });
 

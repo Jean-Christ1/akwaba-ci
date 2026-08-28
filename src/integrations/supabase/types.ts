@@ -997,6 +997,9 @@ export type Database = {
           kind: Database["public"]["Enums"]["lead_kind"]
           message: string
           partner_note: string | null
+          partner_reply: string | null
+          replied_at: string | null
+          replied_by: string | null
           party_size: number | null
           phone: string | null
           place_id: string | null
@@ -1015,6 +1018,9 @@ export type Database = {
           kind?: Database["public"]["Enums"]["lead_kind"]
           message: string
           partner_note?: string | null
+          partner_reply?: string | null
+          replied_at?: string | null
+          replied_by?: string | null
           party_size?: number | null
           phone?: string | null
           place_id?: string | null
@@ -1033,6 +1039,9 @@ export type Database = {
           kind?: Database["public"]["Enums"]["lead_kind"]
           message?: string
           partner_note?: string | null
+          partner_reply?: string | null
+          replied_at?: string | null
+          replied_by?: string | null
           party_size?: number | null
           phone?: string | null
           place_id?: string | null
@@ -2659,6 +2668,19 @@ export type Database = {
       merchant_rattacher: {
         Args: { p_id: string; p_email: string | null }
         Returns: Json
+      }
+      lead_traiter: {
+        Args: {
+          p_id: string
+          p_status?: Database["public"]["Enums"]["lead_status"] | null
+          p_note?: string | null
+          p_reponse?: string | null
+        }
+        Returns: Json
+      }
+      lead_note_interne: {
+        Args: { p_id: string }
+        Returns: string
       }
       merchant_basculer: {
         Args: { p_id: string; p_actif: boolean }

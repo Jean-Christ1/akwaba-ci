@@ -16,6 +16,8 @@ interface Demande {
   message: string | null;
   created_at: string;
   place_id: string | null;
+  partner_reply: string | null;
+  replied_at: string | null;
   places: { name: string; slug: string; type: string } | null;
 }
 
@@ -99,7 +101,10 @@ export function MyRequestsList() {
 
     const { data, error } = await supabase
       .from("leads")
-      .select("id,kind,status,party_size,date_from,date_to,message,created_at,place_id,places(name,slug,type)")
+      .select(
+        "id,kind,status,party_size,date_from,date_to,message,created_at,place_id," +
+          "partner_reply,replied_at,places(name,slug,type)"
+      )
       .eq("user_id", session.user.id)
       .order("created_at", { ascending: false });
 
@@ -131,8 +136,8 @@ export function MyRequestsList() {
     <section className="rounded-2xl border border-border bg-card p-4">
       <h2 className="font-display text-base font-semibold">Mes demandes de réservation</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Akwaba transmet votre demande à l'établissement, qui vous répond directement. La
-        plateforme ne confirme pas la réservation à sa place.
+        Akwaba transmet votre demande à l'établissement. Sa réponse s'affiche ici dès
+        qu'il l'écrit. La plateforme ne confirme pas la réservation à sa place.
       </p>
 
       <ul className="mt-3 space-y-2">
@@ -157,6 +162,20 @@ export function MyRequestsList() {
                   {libelle.titre}
                 </span>
               </div>
+              {/* La réponse de l'établissement, telle qu'il l'a écrite. Elle
+                  arrivait auparavant par un canal extérieur au service, quand
+                  elle arrivait : le visiteur voyait sa demande passer à
+                  « recontacté » sans jamais lire un mot. */}
+              {d.partner_reply && (
+                <div className="mt-2 rounded-xl border border-primary/30 bg-primary-soft px-3 py-2">
+                  <p className="text-[11px] font-medium text-primary">
+                    Réponse de {d.places?.name ?? "l'établissement"}
+                    {d.replied_at &&
+                      ` · ${new Date(d.replied_at).toLocaleDateString("fr-FR")}`}
+                  </p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm">{d.partner_reply}</p>
+                </div>
+              )}
               {d.places?.slug && (
                 <Link
                   className="mt-2 inline-block text-xs text-primary hover:underline"

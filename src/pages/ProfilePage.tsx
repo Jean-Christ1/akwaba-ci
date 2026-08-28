@@ -18,8 +18,15 @@ import { DeleteAccountCard } from "@/modules/account/ui/DeleteAccountCard";
 import { NotificationChannelCard } from "@/modules/account/ui/NotificationChannelCard";
 import { MyRequestsList } from "@/modules/leads/ui/MyRequestsList";
 
-type LeadRow = Database["public"]["Tables"]["leads"]["Row"] & {
-  /** Jointure select("*, places(name, slug)"). */
+/**
+ * Deux colonnes de la table sont absentes de ce que le navigateur recoit :
+ * partner_note est interne a l'etablissement, replied_by ne sert a rien ici.
+ */
+type LeadRow = Omit<
+  Database["public"]["Tables"]["leads"]["Row"],
+  "partner_note" | "replied_by"
+> & {
+  /** Jointure select("..., places(name, slug)"). */
   places?: { name: string; slug: string } | null;
 };
 /** Sous-ensemble réellement sélectionné pour la liste des fiches du partenaire. */
@@ -67,7 +74,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("leads").select("*, places(name, slug)").eq("user_id", user.id)
+    supabase.from("leads").select("id,user_id,place_id,kind,full_name,email,phone,party_size,date_from,date_to,budget,message,status,partner_reply,replied_at,created_at,updated_at, places(name, slug)").eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .then(({ data }) => setLeads(data ?? []));
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle()

@@ -45,9 +45,11 @@ export function useAdminData({ enabled, isAdmin, isModerator }: Options): AdminD
         .order("created_at", { ascending: false });
       setPlaces(p ?? []);
 
+      // Colonnes nommees plutot qu'une etoile : partner_note n'est plus
+      // accordee en lecture, et une etoile demanderait une colonne refusee.
       const { data: l } = await supabase
         .from("leads")
-        .select("*, places(name)")
+        .select("id,user_id,place_id,kind,full_name,email,phone,party_size,date_from,date_to,budget,message,status,partner_reply,replied_at,created_at,updated_at, places(name)")
         .order("created_at", { ascending: false });
       setLeads(l ?? []);
 
