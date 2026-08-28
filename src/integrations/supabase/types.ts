@@ -1751,6 +1751,42 @@ export type Database = {
         }
         Relationships: []
       }
+      pricing_surges: {
+        Row: {
+          id: string
+          city_slug: string | null
+          multiplicateur: number
+          motif: string
+          debut: string
+          fin: string
+          actif: boolean
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          city_slug?: string | null
+          multiplicateur: number
+          motif: string
+          debut?: string
+          fin: string
+          actif?: boolean
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          city_slug?: string | null
+          multiplicateur?: number
+          motif?: string
+          debut?: string
+          fin?: string
+          actif?: boolean
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       service_modes: {
         Row: {
           code: string
@@ -2659,6 +2695,28 @@ export type Database = {
       }
       whatsapp_sante: {
         Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      surge_en_vigueur: {
+        Args: { p_city?: string | null }
+        Returns: {
+          id: string
+          multiplicateur: number
+          motif: string
+          fin: string
+        }[]
+      }
+      surge_ouvrir: {
+        Args: {
+          p_multiplicateur: number
+          p_motif: string
+          p_minutes?: number
+          p_city_slug?: string | null
+        }
+        Returns: Json
+      }
+      surge_arreter: {
+        Args: { p_id: string }
         Returns: Json
       }
       acces_a_revoir: {

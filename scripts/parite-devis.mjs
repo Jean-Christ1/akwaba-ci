@@ -48,6 +48,22 @@ const remises = Object.keys(grille.dropoff);
 let cas = 0;
 const ecarts = [];
 
+/**
+ * La majoration en cours, telle que le navigateur la recevrait.
+ *
+ * Elle ne se deduit pas de la grille : elle depend de l'heure et de la ville.
+ * La comparaison doit donc se faire deux fois, sans elle et avec elle, sinon la
+ * moitie du calcul reste hors de portee du controle.
+ */
+const majorationDe = async (nomVille) => {
+  const r = await c.query("select * from public.surge_en_vigueur($1)", [nomVille]);
+  const l = r.rows[0];
+  return l
+    ? { multiplicateur: Number(l.multiplicateur), motif: String(l.motif), fin: String(l.fin) }
+    : null;
+};
+
+const comparer = async (etiquette) => {
 for (const ville of villes)
   for (const vehicle of vehicules)
     for (const volume of volumes)
@@ -59,7 +75,7 @@ for (const ville of villes)
                 vehicle, volume, urgency, dropoff,
                 distanceKm, estimatedMinutes, itemsCount, citySlug: ville.slug,
               };
-              const ecran = devisDepuisGrille(entree, grille);
+              const ecran = devisDepuisGrille(entree, grille, await majorationDe(ville.name));
               // Le serveur reçoit le nom de la ville, comme errand_create le lui
               // passe : c'est ce chemin-là qu'il faut éprouver, pas un autre.
               const serveur = (await c.query(
@@ -71,13 +87,27 @@ for (const ville of villes)
               for (const champ of ["serviceFee", "commission", "runnerPayout"]) {
                 if (Number(ecran[champ]) !== Number(serveur[champ])) {
                   ecarts.push(
-                    `${ville.slug}/${vehicle}/${volume}/${urgency}/${dropoff}/${distanceKm}km/` +
-                    `${estimatedMinutes}min/${itemsCount}art ${champ} : ` +
+                    `[${etiquette}] ${ville.slug}/${vehicle}/${volume}/${urgency}/${dropoff}/` +
+                    `${distanceKm}km/${estimatedMinutes}min/${itemsCount}art ${champ} : ` +
                     `écran ${ecran[champ]}, serveur ${serveur[champ]}`
                   );
                 }
               }
             }
+};
+
+// Premiere passe : le cas courant, sans majoration.
+await comparer("sans majoration");
+
+// Seconde passe : une majoration en cours, posee dans une transaction annulee.
+// Sans elle, la moitie du calcul du prix n'aurait jamais ete comparee.
+await c.query("begin");
+await c.query(
+  `insert into public.pricing_surges (city_slug, multiplicateur, motif, fin)
+   values ('abidjan', 1.5, 'Controle de parite : majoration simulee', now() + interval '1 hour')`
+);
+await comparer("avec majoration");
+await c.query("rollback");
 
 await c.end();
 

@@ -46,6 +46,7 @@ import {
 } from "@/modules/errands/pricing";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 import { usePricingGrid } from "@/modules/errands/application/usePricingGrid";
+import { useMajoration } from "@/modules/errands/application/useMajoration";
 import {
   modeEncoreOuvert,
   reglementsDe,
@@ -226,6 +227,10 @@ export default function NewErrandPage() {
     return trouvee?.slug ?? null;
   }, [villes, city]);
 
+  // La majoration depend de l'heure et de la ville : elle se lit une fois la
+  // ville connue, et son absence est le cas courant.
+  const { majoration } = useMajoration(villeSlug);
+
   const quote = useMemo(
     () =>
       grille
@@ -240,10 +245,22 @@ export default function NewErrandPage() {
               itemsCount: cleanItems.length,
               citySlug: villeSlug,
             },
-            grille
+            grille,
+            majoration
           )
         : null,
-    [grille, vehicle, volume, urgency, distance, minutes, dropoff, cleanItems.length, villeSlug]
+    [
+      grille,
+      majoration,
+      vehicle,
+      volume,
+      urgency,
+      distance,
+      minutes,
+      dropoff,
+      cleanItems.length,
+      villeSlug,
+    ]
   );
 
   const budgetNum = Number(budget) || 0;
@@ -738,6 +755,12 @@ export default function NewErrandPage() {
               </li>
               <li className="flex justify-between"><span>Volume</span><span>{formatFcfa(quote.volumeFee)}</span></li>
               <li className="flex justify-between"><span>Urgence</span><span>{formatFcfa(quote.urgencyFee)}</span></li>
+              {/* La majoration s'annonce avant de commander, avec son motif. Un
+                  supplément découvert après coup n'est pas un prix, c'est une
+                  surprise. */}
+              {quote.surgeFee > 0 && (
+                <li className="flex justify-between text-accent-foreground"><span>Majoration exceptionnelle</span><span>{formatFcfa(quote.surgeFee)}</span></li>
+              )}
               {quote.itemsFee > 0 && (
                 <li className="flex justify-between"><span>Longue liste</span><span>{formatFcfa(quote.itemsFee)}</span></li>
               )}
@@ -745,6 +768,17 @@ export default function NewErrandPage() {
                 <li className="flex justify-between text-primary"><span>Remise remise/retrait</span><span>{formatFcfa(quote.dropoffAdjustment)}</span></li>
               )}
             </ul>
+
+            {quote.surgeReason && (
+              <p className="mt-2 rounded-xl border border-accent bg-accent/30 px-3 py-2 text-[11px] text-accent-foreground">
+                {quote.surgeReason} Le supplément revient au shopper, pas à Akwaba.
+                {majoration?.fin &&
+                  ` Jusqu'à ${new Date(majoration.fin).toLocaleTimeString("fr-FR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}.`}
+              </p>
+            )}
 
             <div className="mt-3 border-t border-border pt-3">
               <PromoCodeField

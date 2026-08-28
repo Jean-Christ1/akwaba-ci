@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { PricingGridEditor } from "@/modules/admin/PricingGridEditor";
+import { MajorationEditor } from "@/modules/admin/MajorationEditor";
 import { ServiceModesEditor } from "@/modules/admin/ServiceModesEditor";
 import { MerchantsEditor } from "@/modules/admin/MerchantsEditor";
 import { HelpArticlesEditor } from "@/modules/admin/HelpArticlesEditor";
@@ -278,6 +279,8 @@ export default function SettingsPage() {
       <MerchantsEditor />
 
       <PricingGridEditor />
+
+      <MajorationEditor />
 
       <PromoCodesEditor />
 
