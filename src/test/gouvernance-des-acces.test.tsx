@@ -167,10 +167,16 @@ describe("la gouvernance des accès", { timeout: 30_000 }, () => {
     expect(within(tiroir).getByText(/Restreignable à une ou plusieurs villes/)).toBeInTheDocument();
   });
 
-  it("porte les quatre onglets de la gouvernance", async () => {
+  it("porte les cinq onglets de la gouvernance", async () => {
     servir();
     afficher();
-    for (const onglet of ["Matrice", "Droits d'une personne", "Périmètres", "Réconciliation"]) {
+    for (const onglet of [
+      "Matrice",
+      "Droits d'une personne",
+      "Périmètres",
+      "Revue",
+      "Réconciliation",
+    ]) {
       expect(await screen.findByRole("tab", { name: onglet })).toBeInTheDocument();
     }
   });

@@ -535,6 +535,100 @@ try {
     return "restreint a Bouake, global sans restriction";
   });
 
+  await etape("la revue montre ce qu'on a accorde et jamais relu", async () => {
+    // Un droit s'accorde en trois secondes et ne se retire jamais, parce que
+    // rien ne le rappelle. La revue est cet endroit ou la question se pose.
+    const s = await superAdmin();
+    const agent = await creerCompte();
+    await essayer(s, `select public.staff_assign_role($1, 'admin_conformite', true)`, [agent]);
+    // On vieillit l'attribution pour depasser le delai des droits sensibles.
+    await c.query(
+      `update public.staff_assignments set granted_at = now() - interval '200 days' where user_id = $1`,
+      [agent]
+    );
+    const lignes = (await essayer(s, `select * from public.acces_a_revoir()`, [])).lignes;
+    const ligne = lignes.find((l) => l.user_id === agent);
+    if (!ligne) throw new Error("l'attribution ancienne n'apparait pas");
+    if (!ligne.sensible) throw new Error("un role portant un droit sensible n'est pas marque sensible");
+    if (Number(ligne.jours_depuis) < 199) throw new Error(`jours : ${ligne.jours_depuis}`);
+    return `${ligne.jours_depuis} jours sans relecture`;
+  });
+
+  await etape("une attribution a echeance n'attend aucune relecture", async () => {
+    // Elle se referme d'elle-meme : demander de la relire ferait du bruit pour
+    // un droit qui va disparaitre.
+    const s = await superAdmin();
+    const agent = await creerCompte();
+    await essayer(s, `select public.staff_assign_role($1, 'admin_conformite', true, null, 30)`, [agent]);
+    await c.query(
+      `update public.staff_assignments set granted_at = now() - interval '200 days' where user_id = $1`,
+      [agent]
+    );
+    const lignes = (await essayer(s, `select * from public.acces_a_revoir()`, [])).lignes;
+    if (lignes.some((l) => l.user_id === agent)) throw new Error("une attribution a terme est reclamee");
+    return "ignoree, elle se referme seule";
+  });
+
+  await etape("relire remet le compteur a zero, et c'est trace", async () => {
+    const s = await superAdmin();
+    const agent = await creerCompte();
+    await essayer(s, `select public.staff_assign_role($1, 'admin_conformite', true)`, [agent]);
+    await c.query(
+      `update public.staff_assignments set granted_at = now() - interval '200 days' where user_id = $1`,
+      [agent]
+    );
+    const r = await essayer(s, `select public.acces_confirmer_revue('role', $1, 'admin_conformite') j`, [agent]);
+    if (!r.ok) throw new Error(r.message);
+
+    const apres = (await essayer(s, `select * from public.acces_a_revoir()`, [])).lignes;
+    if (apres.some((l) => l.user_id === agent)) throw new Error("l'acces relu est encore reclame");
+
+    const trace = (
+      await c.query(
+        `select count(*)::int n from public.audit_logs
+          where action = 'acces_confirmer_revue' and actor_id = $1 and entity_id = $2`,
+        [s, agent]
+      )
+    ).rows[0].n;
+    if (trace === 0) throw new Error("la relecture n'a laisse aucune trace");
+    return "relu et trace";
+  });
+
+  await etape("on ne relit pas ses propres acces", async () => {
+    // Se relire soi-meme n'est pas une relecture, c'est se donner raison.
+    const s = await superAdmin();
+    const r = await essayer(s, `select public.acces_confirmer_revue('role', $1, 'super_admin') j`, [s]);
+    if (r.ok) throw new Error("il a relu ses propres acces");
+    if (!sansAccent(r.message).includes("quelqu'un d'autre")) throw new Error(r.message);
+    return r.message.slice(0, 50);
+  });
+
+  await etape("la revue n'est pas menee sans le droit", async () => {
+    const curieux = await creerCompte();
+    const r = await essayer(curieux, `select * from public.acces_a_revoir()`, []);
+    if (r.ok) throw new Error("un compte ordinaire a mene la revue");
+    return "refuse";
+  });
+
+  await etape("la sante de la gouvernance compte les acces de secours seuls", async () => {
+    // Le chiffre qu'on regarde en premier : ceux qui tiennent tout d'un acces
+    // que la matrice n'explique pas.
+    const s = await superAdmin();
+    const secours = await creerCompte();
+    await c.query(`insert into public.user_roles (user_id, role) values ($1, 'admin')`, [secours]);
+    await c.query(`delete from public.staff_assignments where user_id = $1`, [secours]);
+
+    const sante = (await essayer(s, `select public.gouvernance_sante() j`, [])).valeur.j;
+    if (Number(sante.acces_de_secours_seuls) < 1) {
+      throw new Error(`aucun acces de secours compte : ${JSON.stringify(sante)}`);
+    }
+    if (Number(sante.droits_non_documentes) !== 0) {
+      throw new Error(`${sante.droits_non_documentes} droit(s) sans phrase de limite`);
+    }
+    if (Number(sante.droits_au_catalogue) < 34) throw new Error("le catalogue a maigri");
+    return `${sante.acces_de_secours_seuls} de secours, ${sante.droits_au_catalogue} droits tous documentes`;
+  });
+
   await etape("l'ancienne signature sans confinement a bien disparu", async () => {
     // La laisser vivante aurait laissé le trou ouvert : il aurait suffi de
     // l'appeler avec trois arguments.

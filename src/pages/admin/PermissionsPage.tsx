@@ -11,6 +11,7 @@ import { DroitDetail } from "@/modules/admin/gouvernance/DroitDetail";
 import { DroitsDUnePersonne } from "@/modules/admin/gouvernance/DroitsDUnePersonne";
 import { MatriceDesDroits } from "@/modules/admin/gouvernance/MatriceDesDroits";
 import { Reconciliation } from "@/modules/admin/gouvernance/Reconciliation";
+import { RevueDesAcces } from "@/modules/admin/gouvernance/RevueDesAcces";
 import type { Attribution, Droit, Role } from "@/modules/admin/gouvernance/types";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
@@ -51,6 +52,7 @@ export default function PermissionsPage() {
   const [ouvert, setOuvert] = useState<Droit | null>(null);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [sante, setSante] = useState<Record<string, number> | null>(null);
 
   const charger = useCallback(async () => {
     setChargement(true);
@@ -73,6 +75,11 @@ export default function PermissionsPage() {
     setRoles((r.data ?? []) as unknown as Role[]);
     setVilles((v.data ?? []) as Ville[]);
     setAttributions((a.data ?? []) as unknown as Attribution[]);
+
+    // La sante n'est lisible que par qui peut attribuer : un refus n'est pas
+    // une erreur, c'est la reponse a la question posee.
+    const { data: s } = await supabase.rpc("gouvernance_sante");
+    setSante((s as Record<string, number> | null) ?? null);
   }, []);
 
   useEffect(() => {
@@ -147,11 +154,36 @@ export default function PermissionsPage() {
         )}
       </div>
 
+      {sante && (
+        <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {[
+            ["Comptes habilités", sante.comptes_avec_droits],
+            ["Exceptions nominatives", sante.exceptions],
+            ["Restreintes par ville", sante.restreintes_par_ville],
+            ["Jamais relues", sante.jamais_relues],
+            ["Accès de secours seuls", sante.acces_de_secours_seuls],
+          ].map(([libelle, valeur]) => (
+            <div
+              key={String(libelle)}
+              className={`rounded-xl border p-3 ${
+                libelle === "Accès de secours seuls" && Number(valeur) > 0
+                  ? "border-destructive/30 bg-destructive/5"
+                  : "border-border"
+              }`}
+            >
+              <dt className="text-[11px] text-muted-foreground">{libelle}</dt>
+              <dd className="mt-0.5 font-display text-lg font-semibold">{valeur}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
       <Tabs defaultValue="matrice" className="mt-4">
         <TabsList>
           <TabsTrigger value="matrice">Matrice</TabsTrigger>
           <TabsTrigger value="personne">Droits d'une personne</TabsTrigger>
           <TabsTrigger value="perimetres">Périmètres</TabsTrigger>
+          <TabsTrigger value="revue">Revue</TabsTrigger>
           <TabsTrigger value="reconciliation">Réconciliation</TabsTrigger>
         </TabsList>
 
@@ -241,6 +273,10 @@ export default function PermissionsPage() {
               </ul>
             )}
           </section>
+        </TabsContent>
+
+        <TabsContent value="revue" className="mt-4">
+          <RevueDesAcces />
         </TabsContent>
 
         <TabsContent value="reconciliation" className="mt-4">

@@ -2661,6 +2661,34 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      acces_a_revoir: {
+        Args: { p_jours_sensibles?: number; p_jours_courants?: number }
+        Returns: {
+          genre: string
+          user_id: string
+          courriel: string
+          intitule: string
+          code: string
+          sensible: boolean
+          motif: string | null
+          accorde_le: string
+          revu_le: string | null
+          jours_depuis: number
+          echeance: string | null
+        }[]
+      }
+      acces_confirmer_revue: {
+        Args: { p_genre: string; p_user_id: string; p_code: string }
+        Returns: Json
+      }
+      gouvernance_sante: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      mon_perimetre: {
+        Args: Record<PropertyKey, never>
+        Returns: { restreint: boolean; villes: string[] }[]
+      }
       catalogue_des_droits: {
         Args: Record<PropertyKey, never>
         Returns: {
