@@ -284,6 +284,39 @@ la suite, et les deux exceptions y sont nommées avec leur raison.
 
 ---
 
+## 8c. La console elle-même
+
+Trois couches devaient être branchées, et la dernière est celle qu'on oublie
+parce qu'elle ne protège rien : l'écran.
+
+La garde de route demandait le rôle hérité. Le serveur avait beau accorder
+« Approuver un retrait » à un responsable financier, `/admin/payouts` lui
+répondait « Accès non autorisé » sur une page dont la base lui aurait tout
+rendu. Le lien vers la console, dans l'en-tête, ne s'affichait pas davantage :
+elle lui était accessible et introuvable.
+
+Chaque route demande désormais le droit qui la décrit :
+
+| Écran | Droit attendu |
+|---|---|
+| `/admin` | un partenaire, ou n'importe quel droit de la matrice |
+| `/admin/courses` | `courses.lire` |
+| `/admin/shoppers` | `shoppers.lire` |
+| `/admin/litiges` | `litiges.lire` |
+| `/admin/pilotage` | `exploitation.sante` ou `courses.lire` |
+| `/admin/payouts` | `retraits.approuver` ou `paiements.lire` |
+| `/admin/parametres` | l'un des cinq droits de réglage |
+| `/admin/droits` | n'importe quel droit : la matrice se lit sans pouvoir attribuer |
+
+La garde n'est pas la barrière qui protège, et ne prétend pas l'être : le
+serveur refuse ce qu'il doit refuser. Elle évite d'afficher un écran
+inexploitable, et doit donc dire la même chose que lui, ni plus ni moins. Le
+rôle hérité continue d'ouvrir, comme `has_permission` le fait côté serveur :
+une garde plus stricte que le serveur fermerait la console au dernier
+administrateur.
+
+---
+
 ## 9. Vérifier que tout cela est vrai
 
 Ces commandes se lancent depuis le poste d'exploitation, avec les variables de

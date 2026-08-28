@@ -46,6 +46,14 @@ interface NotificationChannelCardProps {
  */
 export function NotificationChannelCard({ telephone }: NotificationChannelCardProps) {
   const [canal, setCanal] = useState<CanalPrefere>("whatsapp");
+  /**
+   * Les canaux qui disposent d'un porteur en service.
+   *
+   * Deux des quatre n'en ont pas. Les proposer avec la même assurance que les
+   * autres revient à laisser quelqu'un donner son numéro, dater son
+   * consentement, et ne plus rien recevoir en croyant qu'on ne lui écrit pas.
+   */
+  const [portes, setPortes] = useState<string[] | null>(null);
   const [whatsapp, setWhatsapp] = useState("");
   const [whatsappOk, setWhatsappOk] = useState(false);
   const [smsOk, setSmsOk] = useState(false);
@@ -72,10 +80,17 @@ export function NotificationChannelCard({ telephone }: NotificationChannelCardPr
           setChargement(false);
         });
     });
+    void supabase.rpc("canaux_portes").then(({ data }) => {
+      if (!annule) setPortes((data as string[] | null) ?? []);
+    });
+
     return () => {
       annule = true;
     };
   }, []);
+
+  /** Tant que la réponse n'est pas là, on n'affirme rien. */
+  const porte = (v: CanalPrefere) => portes === null || portes.includes(v);
 
   const enregistrer = async () => {
     if (canal === "whatsapp" && !whatsappOk) {
@@ -97,7 +112,13 @@ export function NotificationChannelCard({ telephone }: NotificationChannelCardPr
     });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("C'est enregistré. Vos prochains messages partiront par là.");
+    // Promettre un envoi sur un canal sans porteur serait exactement le
+    // mensonge que cet ecran vient de cesser de faire.
+    toast.success(
+      porte(canal)
+        ? "C'est enregistré. Vos prochains messages partiront par là."
+        : "C'est enregistré. Ce canal n'est pas encore en service : retrouvez vos messages dans l'application."
+    );
   };
 
   if (chargement) return null;
@@ -128,9 +149,22 @@ export function NotificationChannelCard({ telephone }: NotificationChannelCardPr
           >
             <span className="block text-sm font-medium">{o.label}</span>
             <span className="block text-[11px] text-muted-foreground">{o.aide}</span>
+            {!porte(o.value) && (
+              <span className="mt-0.5 block text-[11px] font-medium text-destructive">
+                Pas encore en service : rien ne partirait par là.
+              </span>
+            )}
           </button>
         ))}
       </div>
+
+      {!porte(canal) && (
+        <p className="mt-3 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+          Le canal que vous avez choisi n'est pas encore en service. Vos messages ne
+          partiront pas par là. Choisissez-en un autre, ou retrouvez-les dans
+          l'application.
+        </p>
+      )}
 
       <div className="mt-4">
         <Label className="text-xs" htmlFor="numero-whatsapp">

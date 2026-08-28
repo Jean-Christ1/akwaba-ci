@@ -2761,6 +2761,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      canaux_portes: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
+      }
       avis_marquer_lu: {
         Args: { p_id?: string | null }
         Returns: number

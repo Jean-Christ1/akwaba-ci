@@ -31,8 +31,11 @@ const NAV = [
 ];
 
 export function DesktopHeader() {
-  const { user, isAdmin, isModerator, signOut } = useAuth();
-  const staff = isAdmin || isModerator;
+  const { user, isAdmin, isModerator, droits, signOut } = useAuth();
+  // Le lien vers la console ne regardait que les rôles hérités. Un responsable
+  // financier détient « Approuver un retrait » côté serveur et ne voyait aucune
+  // entrée : la console lui était accessible et introuvable.
+  const staff = isAdmin || isModerator || droits.length > 0;
 
   return (
     <header className="sticky top-0 z-40 hidden border-b border-border/60 bg-background/85 backdrop-blur-xl lg:block">

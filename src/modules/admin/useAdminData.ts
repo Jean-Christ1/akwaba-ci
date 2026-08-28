@@ -6,8 +6,15 @@ import type { LeadRow, PlaceRow, UserRoleRow } from "./types";
 interface Options {
   /** Aucune requête tant que la session n'est pas établie. */
   enabled: boolean;
-  isAdmin: boolean;
-  isModerator: boolean;
+  /**
+   * Les droits de la matrice, et non plus les rôles hérités.
+   *
+   * Le chargement demandait `isModerator` et `isAdmin` : un responsable de
+   * contenu, à qui le serveur ouvre la modération des fiches, arrivait sur un
+   * écran vide, parce que la requête n'était même pas lancée.
+   */
+  peutModererLieux: boolean;
+  peutAttribuerRoles: boolean;
 }
 
 export interface AdminData {
@@ -28,7 +35,7 @@ export interface AdminData {
  * temps réel. Les séparer multiplierait les rafraîchissements partiels et
  * laisserait des onglets afficher un état périmé.
  */
-export function useAdminData({ enabled, isAdmin, isModerator }: Options): AdminData {
+export function useAdminData({ enabled, peutModererLieux, peutAttribuerRoles }: Options): AdminData {
   const [places, setPlaces] = useState<PlaceRow[]>([]);
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [pending, setPending] = useState<PlaceRow[]>([]);
@@ -53,7 +60,7 @@ export function useAdminData({ enabled, isAdmin, isModerator }: Options): AdminD
         .order("created_at", { ascending: false });
       setLeads(l ?? []);
 
-      if (isModerator) {
+      if (peutModererLieux) {
         const { data: pend } = await supabase
           .from("places")
           .select("*")
@@ -62,7 +69,7 @@ export function useAdminData({ enabled, isAdmin, isModerator }: Options): AdminD
         setPending(pend ?? []);
       }
 
-      if (isAdmin) {
+      if (peutAttribuerRoles) {
         // user_roles et profiles pointent tous deux vers auth.users mais n'ont
         // aucune relation directe : PostgREST ne sait pas les joindre. On charge
         // donc les deux et on rapproche les noms côté client.
@@ -92,7 +99,7 @@ export function useAdminData({ enabled, isAdmin, isModerator }: Options): AdminD
     } finally {
       setLoadBusy(false);
     }
-  }, [isAdmin, isModerator]);
+  }, [peutAttribuerRoles, peutModererLieux]);
 
   useEffect(() => {
     if (enabled) load();
