@@ -1,5 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { validateNote } from "./index.ts";
+import { validateNote } from "./validate.ts";
 
 Deno.test("rejection requires a note of at least 10 chars", () => {
   const r = validateNote("rejected", "trop court");

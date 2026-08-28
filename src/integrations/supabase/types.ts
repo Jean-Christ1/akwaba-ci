@@ -1622,6 +1622,126 @@ export type Database = {
         }
         Relationships: []
       }
+      merchant_accounts: {
+        Row: {
+          id: string
+          nom: string
+          ville: string | null
+          place_id: string | null
+          user_id: string | null
+          moyen: Database["public"]["Enums"]["momo_provider"]
+          actif: boolean
+          verifie_le: string | null
+          verifie_par: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          nom: string
+          ville?: string | null
+          place_id?: string | null
+          user_id?: string | null
+          moyen: Database["public"]["Enums"]["momo_provider"]
+          actif?: boolean
+          verifie_le?: string | null
+          verifie_par?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          nom?: string
+          ville?: string | null
+          place_id?: string | null
+          user_id?: string | null
+          moyen?: Database["public"]["Enums"]["momo_provider"]
+          actif?: boolean
+          verifie_le?: string | null
+          verifie_par?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      counter_payments: {
+        Row: {
+          id: string
+          errand_id: string
+          plafond: number
+          montant: number | null
+          merchant_id: string | null
+          etat: string
+          expire_le: string
+          emis_par: string
+          emis_le: string
+          presente_le: string | null
+          demande_le: string | null
+          decide_le: string | null
+          motif: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          errand_id: string
+          plafond: number
+          montant?: number | null
+          merchant_id?: string | null
+          etat?: string
+          expire_le: string
+          emis_par: string
+          emis_le?: string
+          presente_le?: string | null
+          demande_le?: string | null
+          decide_le?: string | null
+          motif?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          errand_id?: string
+          plafond?: number
+          montant?: number | null
+          merchant_id?: string | null
+          etat?: string
+          expire_le?: string
+          emis_par?: string
+          emis_le?: string
+          presente_le?: string | null
+          demande_le?: string | null
+          decide_le?: string | null
+          motif?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_reglages: {
+        Row: {
+          unique_ligne: boolean
+          secondes_entre_envois: number
+          lot_max: number
+          heures_avant_abandon: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          unique_ligne?: boolean
+          secondes_entre_envois?: number
+          lot_max?: number
+          heures_avant_abandon?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          unique_ligne?: boolean
+          secondes_entre_envois?: number
+          lot_max?: number
+          heures_avant_abandon?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       service_modes: {
         Row: {
           code: string
@@ -2530,6 +2650,58 @@ export type Database = {
       }
       whatsapp_sante: {
         Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      counter_payment_code: {
+        Args: { p_id: string }
+        Returns: string
+      }
+      merchant_rattacher: {
+        Args: { p_id: string; p_email: string | null }
+        Returns: Json
+      }
+      merchant_basculer: {
+        Args: { p_id: string; p_actif: boolean }
+        Returns: Json
+      }
+      counter_payment_emettre: {
+        Args: { p_errand_id: string; p_plafond: number; p_minutes?: number }
+        Returns: Json
+      }
+      counter_payment_lire: {
+        Args: { p_code: string }
+        Returns: Json
+      }
+      counter_payment_demander: {
+        Args: { p_code: string; p_montant: number; p_merchant_id: string }
+        Returns: Json
+      }
+      counter_payment_decider: {
+        Args: { p_id: string; p_accepte: boolean; p_motif?: string | null }
+        Returns: Json
+      }
+      counter_payment_annuler: {
+        Args: { p_id: string }
+        Returns: Json
+      }
+      merchant_enregistrer: {
+        Args: {
+          p_nom: string
+          p_moyen: string
+          p_numero: string
+          p_ville?: string | null
+          p_place_id?: string | null
+          p_user_id?: string | null
+          p_verifier?: boolean
+        }
+        Returns: Json
+      }
+      whatsapp_regler: {
+        Args: {
+          p_secondes_entre_envois?: number | null
+          p_lot_max?: number | null
+          p_heures_avant_abandon?: number | null
+        }
         Returns: Json
       }
       service_modes_ouverts: {

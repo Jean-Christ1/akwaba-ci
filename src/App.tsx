@@ -39,6 +39,7 @@ const NewErrandPage = lazy(() => import("./pages/courses/NewErrandPage"));
 const ErrandDetailPage = lazy(() => import("./pages/courses/ErrandDetailPage"));
 const RunnerSignupPage = lazy(() => import("./pages/courses/RunnerSignupPage"));
 const RunnerDashboardPage = lazy(() => import("./pages/courses/RunnerDashboardPage"));
+const MerchantCounterPage = lazy(() => import("./pages/courses/MerchantCounterPage"));
 const HowItWorksPage = lazy(() => import("./pages/courses/HowItWorksPage"));
 const WalletPage = lazy(() => import("./pages/courses/WalletPage"));
 const SchedulesPage = lazy(() => import("./pages/courses/SchedulesPage"));
@@ -106,6 +107,7 @@ const App = () => (
                 <Route path="/courses/portefeuille" element={<WalletPage />} />
                 <Route path="/courses/devenir-shopper" element={<RunnerSignupPage />} />
                 <Route path="/courses/shopper" element={<RunnerDashboardPage />} />
+                <Route path="/courses/comptoir" element={<MerchantCounterPage />} />
                 <Route path="/courses/:id" element={<ErrandDetailPage />} />
                 {/* L'amorçage du premier administrateur doit rester atteignable
                     avant qu'un rôle n'existe : il est protégé par son propre

@@ -36,11 +36,34 @@ export default function ProfilePage() {
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [profile, setProfile] = useState<{ display_name: string; phone: string; locale: string }>({ display_name: "", phone: "", locale: "fr" });
   const [pwd, setPwd] = useState("");
+  // Le comptoir marchand ne s'affiche qu'à qui tient un commerce : le proposer
+  // à tout le monde ferait ouvrir une page qui ne rend rien.
+  const [estMarchand, setEstMarchand] = useState(false);
   const [saving, setSaving] = useState(false);
   const [myPlaces, setMyPlaces] = useState<PlaceRow[]>([]);
   const [eventsByPlace, setEventsByPlace] = useState<Record<string, ModerationEventRow[]>>({});
   const [tab, setTab] = useTabState("profile", "account");
   const [openPlaceId, setOpenPlaceId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setEstMarchand(false);
+      return;
+    }
+    let annule = false;
+    supabase
+      .from("merchant_accounts")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("actif", true)
+      .limit(1)
+      .then(({ data }) => {
+        if (!annule) setEstMarchand((data ?? []).length > 0);
+      });
+    return () => {
+      annule = true;
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -176,6 +199,18 @@ export default function ProfilePage() {
               </div>
               <span className="text-primary text-sm">→</span>
             </Link>
+            {estMarchand && (
+              <Link to="/courses/comptoir" className="akw-card-hover flex items-center gap-3 px-4 py-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-soft text-primary">
+                  <Store className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">Comptoir marchand</p>
+                  <p className="text-[11px] text-muted-foreground truncate">Encaisser une course</p>
+                </div>
+                <span className="text-primary text-sm">→</span>
+              </Link>
+            )}
             <Link to="/courses/shopper" className="akw-card-hover flex items-center gap-3 px-4 py-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-soft text-primary">
                 <Bike className="h-4 w-4" />

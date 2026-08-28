@@ -1,32 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { sanitizeHeaderText } from "../_shared/html.ts";
 import { isUuid } from "../_shared/validation.ts";
+import { validateNote } from "./validate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const NOTE_MAX = 2000;
-const PROHIBITED = [
-  /\b(fuck|shit|bitch|asshole|connard|enculé|salope|pute)\b/i,
-  /<script\b/i,
-  /https?:\/\/\S{0,}\.(ru|tk|xyz)\b/i,
-];
-
-export function validateNote(action: string, note: string | null | undefined): { ok: true; note: string | null } | { ok: false; error: string } {
-  const n = (note ?? "").trim();
-  if (action === "rejected" && n.length < 10) {
-    return { ok: false, error: "Une note d'au moins 10 caractères est requise pour un refus." };
-  }
-  if (n.length > NOTE_MAX) {
-    return { ok: false, error: `Note trop longue (max ${NOTE_MAX} caractères).` };
-  }
-  for (const re of PROHIBITED) {
-    if (re.test(n)) return { ok: false, error: "Contenu de la note non autorisé." };
-  }
-  return { ok: true, note: n.length ? n : null };
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
