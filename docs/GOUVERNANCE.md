@@ -227,6 +227,37 @@ Il ne devient pas membre et ne voit pas ce que les membres échangent.
 
 ---
 
+## 8b. La couche edge
+
+Les fonctions edge sont la plus facile des trois couches à oublier, et la plus
+dangereuse à laisser de côté : elles s'exécutent avec la clé de service, donc
+aucune politique de sécurité ne les rattrape, et ce qu'elles décident est ce qui
+se produit. Elles vivent hors de la base, si bien que
+`droits_jamais_consultes()` et `portees_qui_ne_restreignent_pas()` ne les voient
+pas.
+
+Deux d'entre elles lisaient `user_roles` en direct et acceptaient les deux rôles
+hérités. Un responsable de contenu à qui la console affiche « Modérer les
+lieux » se faisait refuser la publication, et un ancien modérateur sans rôle
+dans la matrice publiait encore.
+
+- `moderate-place` consulte désormais `lieux.moderer` dans la ville de la fiche.
+  La fiche est chargée avant le contrôle : sans elle, il n'y aurait pas de ville
+  à passer, et la restriction ne restreindrait rien.
+- `test-email` consulte `notifications.parametrer`.
+
+Deux usages de `user_roles` restent, et ne sont pas des autorisations
+déguisées : `bootstrap-admin` crée le tout premier administrateur quand la
+matrice est encore vide, et `register-partner` pose le rôle applicatif
+« partner », qui décrit ce qu'une personne fait sur la plateforme et non ce
+qu'elle administre.
+
+Le test `src/test/edge-passe-par-la-matrice.test.ts` empêche la régression :
+toute nouvelle fonction edge qui autoriserait depuis `user_roles` fait échouer
+la suite, et les deux exceptions y sont nommées avec leur raison.
+
+---
+
 ## 9. Vérifier que tout cela est vrai
 
 Ces commandes se lancent depuis le poste d'exploitation, avec les variables de

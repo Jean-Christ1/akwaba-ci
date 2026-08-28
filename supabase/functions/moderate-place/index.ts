@@ -48,14 +48,25 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { data: roles } = await admin
-      .from("user_roles").select("role").eq("user_id", userId);
-    const allowed = (roles ?? []).some((r) => r.role === "admin" || r.role === "moderator");
-    if (!allowed) return json({ error: "Forbidden" }, 403);
-
+    // La fiche d'abord : le droit de la moderer se verifie dans sa ville, et
+    // la ville est portee par la fiche. Verifier avant de la charger revenait a
+    // ne pouvoir verifier que « quelque part ».
     const { data: place, error: pErr } = await admin
-      .from("places").select("id, name, email, owner_id, status").eq("id", place_id).single();
+      .from("places").select("id, name, email, owner_id, status, city").eq("id", place_id).single();
     if (pErr || !place) return json({ error: "Fiche introuvable" }, 404);
+
+    // Le droit de la matrice, et sa ville. La fonction lisait user_roles en
+    // direct et acceptait les deux roles herites : un responsable de contenu a
+    // qui la console affiche « Moderer les lieux » se faisait refuser, et un
+    // ancien moderateur sans role dans la matrice passait encore. Cette couche
+    // s'execute avec la cle de service, donc aucune politique ne la rattrape.
+    const { data: autorise, error: droitErr } = await admin.rpc("has_scoped_permission", {
+      _user_id: userId,
+      _code: "lieux.moderer",
+      _scope_value: place.city,
+    });
+    if (droitErr) throw droitErr;
+    if (!autorise) return json({ error: "Forbidden" }, 403);
 
     if (action === "approved" || action === "rejected") {
       const newStatus = action === "approved" ? "published" : "rejected";
