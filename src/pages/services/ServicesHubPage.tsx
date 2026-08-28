@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Hammer, Store } from "lucide-react";
 
-import { CATEGORIES } from "@/modules/errands/domain";
+import { useServiceModes } from "@/modules/errands/application/useServiceModes";
 import { ServiceDoors } from "@/modules/errands/ui/ServiceDoors";
 import { ServicePriceExplainer } from "@/modules/errands/ui/ServicePriceExplainer";
 import { ServiceProtection } from "@/modules/errands/ui/ServiceProtection";
@@ -46,6 +46,13 @@ const AUTRES_ENTREES = [
 export default function ServicesHubPage() {
   usePageTitle("Services", "Les services Akwaba, dont Akwaba Shopper.");
 
+  // Sans ville : le catalogue national. La page annonce ce qu'Akwaba propose,
+  // pas ce qui est ouvert au coin de la rue du visiteur, et la restriction par
+  // ville se joue au moment de la demande, ou la ville est connue.
+  const { modes } = useServiceModes(null);
+  const catalogue = modes ?? [];
+  const chargementCatalogue = modes === null;
+
   return (
     <div className="akw-container py-6 lg:py-8">
       <header className="rounded-3xl bg-editorial px-6 py-8 text-background sm:px-10">
@@ -76,19 +83,22 @@ export default function ServicesHubPage() {
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground text-pretty">
           Chaque catégorie ouvre le formulaire de demande avec le bon contexte déjà choisi.
         </p>
+        {chargementCatalogue && (
+          <p className="mt-4 text-sm text-muted-foreground">Chargement du catalogue...</p>
+        )}
         <ul className="scrollbar-none mt-4 flex gap-2.5 overflow-x-auto pb-1">
-          {CATEGORIES.map((c) => (
-            <li key={c.value}>
+          {catalogue.map((c) => (
+            <li key={c.code}>
               <Link
-                to={`/courses/nouvelle?category=${c.value}`}
-                aria-label={`Demander une course : ${c.label}`}
+                to={`/courses/nouvelle?category=${c.code}`}
+                aria-label={`Demander une course : ${c.libelle}`}
                 className="akw-card-hover flex h-full min-h-[96px] min-w-[150px] flex-col justify-center px-4 py-3"
               >
                 <span className="text-xl" aria-hidden="true">
                   {c.emoji}
                 </span>
-                <span className="mt-1 text-sm font-medium text-foreground">{c.label}</span>
-                <span className="text-xs text-muted-foreground">{c.hint}</span>
+                <span className="mt-1 text-sm font-medium text-foreground">{c.libelle}</span>
+                <span className="text-xs text-muted-foreground">{c.exemple}</span>
               </Link>
             </li>
           ))}

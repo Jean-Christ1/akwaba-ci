@@ -25,7 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  CATEGORIES,
   resoudreCategorie,
   PAY_METHODS,
   formatFcfa,
@@ -47,6 +46,12 @@ import {
 } from "@/modules/errands/pricing";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 import { usePricingGrid } from "@/modules/errands/application/usePricingGrid";
+import { useMajoration } from "@/modules/errands/application/useMajoration";
+import {
+  modeEncoreOuvert,
+  reglementsDe,
+  useServiceModes,
+} from "@/modules/errands/application/useServiceModes";
 import { devisDepuisGrille } from "@/modules/errands/grilleTarifaire";
 import { PromoCodeField, type EvaluationPromo } from "@/modules/errands/ui/PromoCodeField";
 import { useServiceAreas, zonesOfCity } from "@/modules/places/application/useServiceAreas";
@@ -115,6 +120,26 @@ export default function NewErrandPage() {
   const [dropoff, setDropoff] = useState<DropoffMode>("runner_delivers");
   const [thirdParty, setThirdParty] = useState("");
   const [fundMode, setFundMode] = useState<FundMode>("customer_advance");
+
+  // Le catalogue vient du serveur et depend de la ville : une categorie peut
+  // etre ouverte a Abidjan et fermee la ou aucun shopper ne la tient encore.
+  const { modes, chargement: chargementModes, erreur: erreurModes } = useServiceModes(city);
+  const reglementsOuverts = reglementsDe(modes, category);
+
+  // Changer de ville peut fermer la categorie deja choisie, ou lui retirer le
+  // reglement retenu. Laisser la selection en place menerait le client jusqu'au
+  // bout du formulaire pour se faire refuser a l'envoi, sans comprendre.
+  useEffect(() => {
+    if (!modes || modes.length === 0) return;
+    if (!modeEncoreOuvert(modes, category)) {
+      setCategory(modes[0].code);
+      return;
+    }
+    const ouverts = reglementsDe(modes, category);
+    if (ouverts && ouverts.length > 0 && !ouverts.includes(fundMode)) {
+      setFundMode(ouverts[0]);
+    }
+  }, [modes, category, fundMode]);
 
   // Coordonnées de l'adresse de remise, quand elle a pu être localisée.
   // Elles ancrent la distance, donc le prix, sur un trajet réel.
@@ -202,6 +227,10 @@ export default function NewErrandPage() {
     return trouvee?.slug ?? null;
   }, [villes, city]);
 
+  // La majoration depend de l'heure et de la ville : elle se lit une fois la
+  // ville connue, et son absence est le cas courant.
+  const { majoration } = useMajoration(villeSlug);
+
   const quote = useMemo(
     () =>
       grille
@@ -216,10 +245,22 @@ export default function NewErrandPage() {
               itemsCount: cleanItems.length,
               citySlug: villeSlug,
             },
-            grille
+            grille,
+            majoration
           )
         : null,
-    [grille, vehicle, volume, urgency, distance, minutes, dropoff, cleanItems.length, villeSlug]
+    [
+      grille,
+      majoration,
+      vehicle,
+      volume,
+      urgency,
+      distance,
+      minutes,
+      dropoff,
+      cleanItems.length,
+      villeSlug,
+    ]
   );
 
   const budgetNum = Number(budget) || 0;
@@ -357,19 +398,32 @@ export default function NewErrandPage() {
           {/* 1. Type */}
           <section className="rounded-2xl border border-border bg-card p-4">
             <h2 className="text-sm font-semibold">1. Quel type de course ?</h2>
+            {chargementModes && (
+              <p className="mt-3 text-xs text-muted-foreground">Chargement des services ouverts...</p>
+            )}
+            {erreurModes && (
+              <p className="mt-3 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                Les services ouverts n'ont pas pu etre lus. Rechargez la page avant de continuer.
+              </p>
+            )}
+            {modes && modes.length === 0 && (
+              <p className="mt-3 rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                Aucune course n'est ouverte a {city} pour le moment. Choisissez une autre ville.
+              </p>
+            )}
             <div className="scrollbar-none mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {CATEGORIES.map((c) => (
+              {(modes ?? []).map((c) => (
                 <button
-                  key={c.value}
+                  key={c.code}
                   type="button"
-                  onClick={() => setCategory(c.value)}
+                  onClick={() => setCategory(c.code)}
                   className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${
-                    category === c.value ? "border-primary bg-primary-soft" : "border-border hover:border-primary/40"
+                    category === c.code ? "border-primary bg-primary-soft" : "border-border hover:border-primary/40"
                   }`}
                 >
                   <span className="text-lg">{c.emoji}</span>
-                  <p className="text-sm font-medium">{c.label}</p>
-                  <p className="text-[11px] text-muted-foreground line-clamp-1">{c.hint}</p>
+                  <p className="text-sm font-medium">{c.libelle}</p>
+                  <p className="text-[11px] text-muted-foreground line-clamp-1">{c.exemple}</p>
                 </button>
               ))}
             </div>
@@ -595,7 +649,7 @@ export default function NewErrandPage() {
               on régularise au franc près avec le reçu, après la course.
             </p>
             <div className="mt-3 space-y-2">
-              {FUND_MODES.map((f) => (
+              {FUND_MODES.filter((f) => !reglementsOuverts || reglementsOuverts.includes(f.value)).map((f) => (
                 <button
                   key={f.value}
                   type="button"
@@ -701,6 +755,12 @@ export default function NewErrandPage() {
               </li>
               <li className="flex justify-between"><span>Volume</span><span>{formatFcfa(quote.volumeFee)}</span></li>
               <li className="flex justify-between"><span>Urgence</span><span>{formatFcfa(quote.urgencyFee)}</span></li>
+              {/* La majoration s'annonce avant de commander, avec son motif. Un
+                  supplément découvert après coup n'est pas un prix, c'est une
+                  surprise. */}
+              {quote.surgeFee > 0 && (
+                <li className="flex justify-between text-accent-foreground"><span>Majoration exceptionnelle</span><span>{formatFcfa(quote.surgeFee)}</span></li>
+              )}
               {quote.itemsFee > 0 && (
                 <li className="flex justify-between"><span>Longue liste</span><span>{formatFcfa(quote.itemsFee)}</span></li>
               )}
@@ -708,6 +768,17 @@ export default function NewErrandPage() {
                 <li className="flex justify-between text-primary"><span>Remise remise/retrait</span><span>{formatFcfa(quote.dropoffAdjustment)}</span></li>
               )}
             </ul>
+
+            {quote.surgeReason && (
+              <p className="mt-2 rounded-xl border border-accent bg-accent/30 px-3 py-2 text-[11px] text-accent-foreground">
+                {quote.surgeReason} Le supplément revient au shopper, pas à Akwaba.
+                {majoration?.fin &&
+                  ` Jusqu'à ${new Date(majoration.fin).toLocaleTimeString("fr-FR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}.`}
+              </p>
+            )}
 
             <div className="mt-3 border-t border-border pt-3">
               <PromoCodeField
@@ -765,6 +836,37 @@ export default function NewErrandPage() {
             )}
           </div>
         </aside>
+      </div>
+
+      {/* Le devis, toujours visible sur téléphone.
+          Le panneau ci-dessus se rend après tout le formulaire : sur un écran
+          de 390 pixels, le prix se découvrait à la fin, alors qu'il change à
+          chaque choix. Cette barre le montre pendant qu'on choisit, et met la
+          publication à portée de pouce.
+          Elle se place au-dessus de la barre de navigation, dont la hauteur et
+          la marge de sécurité sont reprises ici. */}
+      <div
+        className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-lg lg:hidden"
+        role="region"
+        aria-label="Devis et publication"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] text-muted-foreground">Frais de service</p>
+            <p className="truncate font-display text-lg font-semibold">
+              {quote ? formatFcfa(quote.serviceFee) : "Tarif indisponible"}
+            </p>
+          </div>
+          <Button onClick={submit} disabled={saving || !valid} className="shrink-0">
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Publier
+          </Button>
+        </div>
+        {!valid && (
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Titre, adresse et au moins un article requis.
+          </p>
+        )}
       </div>
     </div>
   );

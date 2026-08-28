@@ -69,7 +69,7 @@ const LIENS_ESPACES: { to: string; label: string; icon: LucideIcon; droit: strin
  * de le corriger sans traverser les six autres.
  */
 export default function AdminPage() {
-  const { user, loading, isPartner, isAdmin, isModerator, peut, droits } = useAuth();
+  const { user, loading, isPartner, peut, droits } = useAuth();
   // Porter au moins un droit d'exploitation, c'est etre du personnel. Un
   // partenaire n'en porte aucun ; le role herite admin les porte tous. La
   // deduction tient donc sans avoir a enumerer les roles, et un role cree
@@ -77,7 +77,11 @@ export default function AdminPage() {
   const estPersonnel = droits.length > 0;
   const [view, setView] = useState<View>("dashboard");
 
-  const data = useAdminData({ enabled: !!user, isAdmin, isModerator });
+  const data = useAdminData({
+    enabled: !!user,
+    peutModererLieux: peut("lieux.moderer"),
+    peutAttribuerRoles: peut("roles.attribuer"),
+  });
 
   if (loading) {
     return <div className="akw-container py-20 text-center text-muted-foreground">Chargement…</div>;

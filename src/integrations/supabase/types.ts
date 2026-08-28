@@ -997,6 +997,9 @@ export type Database = {
           kind: Database["public"]["Enums"]["lead_kind"]
           message: string
           partner_note: string | null
+          partner_reply: string | null
+          replied_at: string | null
+          replied_by: string | null
           party_size: number | null
           phone: string | null
           place_id: string | null
@@ -1015,6 +1018,9 @@ export type Database = {
           kind?: Database["public"]["Enums"]["lead_kind"]
           message: string
           partner_note?: string | null
+          partner_reply?: string | null
+          replied_at?: string | null
+          replied_by?: string | null
           party_size?: number | null
           phone?: string | null
           place_id?: string | null
@@ -1033,6 +1039,9 @@ export type Database = {
           kind?: Database["public"]["Enums"]["lead_kind"]
           message?: string
           partner_note?: string | null
+          partner_reply?: string | null
+          replied_at?: string | null
+          replied_by?: string | null
           party_size?: number | null
           phone?: string | null
           place_id?: string | null
@@ -1386,6 +1395,9 @@ export type Database = {
           locale: string
           phone: string | null
           updated_at: string
+          suspendu_le: string | null
+          suspendu_par: string | null
+          suspendu_motif: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -1619,6 +1631,222 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      merchant_accounts: {
+        Row: {
+          id: string
+          nom: string
+          ville: string | null
+          place_id: string | null
+          user_id: string | null
+          moyen: Database["public"]["Enums"]["momo_provider"]
+          actif: boolean
+          verifie_le: string | null
+          verifie_par: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          nom: string
+          ville?: string | null
+          place_id?: string | null
+          user_id?: string | null
+          moyen: Database["public"]["Enums"]["momo_provider"]
+          actif?: boolean
+          verifie_le?: string | null
+          verifie_par?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          nom?: string
+          ville?: string | null
+          place_id?: string | null
+          user_id?: string | null
+          moyen?: Database["public"]["Enums"]["momo_provider"]
+          actif?: boolean
+          verifie_le?: string | null
+          verifie_par?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      counter_payments: {
+        Row: {
+          id: string
+          errand_id: string
+          plafond: number
+          montant: number | null
+          merchant_id: string | null
+          etat: string
+          expire_le: string
+          emis_par: string
+          emis_le: string
+          presente_le: string | null
+          demande_le: string | null
+          decide_le: string | null
+          motif: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          errand_id: string
+          plafond: number
+          montant?: number | null
+          merchant_id?: string | null
+          etat?: string
+          expire_le: string
+          emis_par: string
+          emis_le?: string
+          presente_le?: string | null
+          demande_le?: string | null
+          decide_le?: string | null
+          motif?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          errand_id?: string
+          plafond?: number
+          montant?: number | null
+          merchant_id?: string | null
+          etat?: string
+          expire_le?: string
+          emis_par?: string
+          emis_le?: string
+          presente_le?: string | null
+          demande_le?: string | null
+          decide_le?: string | null
+          motif?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_reglages: {
+        Row: {
+          unique_ligne: boolean
+          secondes_entre_envois: number
+          lot_max: number
+          heures_avant_abandon: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          unique_ligne?: boolean
+          secondes_entre_envois?: number
+          lot_max?: number
+          heures_avant_abandon?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          unique_ligne?: boolean
+          secondes_entre_envois?: number
+          lot_max?: number
+          heures_avant_abandon?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      pricing_surges: {
+        Row: {
+          id: string
+          city_slug: string | null
+          multiplicateur: number
+          motif: string
+          debut: string
+          fin: string
+          actif: boolean
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          city_slug?: string | null
+          multiplicateur: number
+          motif: string
+          debut?: string
+          fin: string
+          actif?: boolean
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          city_slug?: string | null
+          multiplicateur?: number
+          motif?: string
+          debut?: string
+          fin?: string
+          actif?: boolean
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      service_modes: {
+        Row: {
+          code: string
+          libelle: string
+          emoji: string
+          exemple: string
+          description: string | null
+          actif: boolean
+          modes_financement: string[]
+          exige_panier_valide: boolean
+          position: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          code: string
+          libelle: string
+          emoji?: string
+          exemple?: string
+          description?: string | null
+          actif?: boolean
+          modes_financement?: string[]
+          exige_panier_valide?: boolean
+          position?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          code?: string
+          libelle?: string
+          emoji?: string
+          exemple?: string
+          description?: string | null
+          actif?: boolean
+          modes_financement?: string[]
+          exige_panier_valide?: boolean
+          position?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      service_mode_cities: {
+        Row: {
+          mode_code: string
+          city_slug: string
+          actif: boolean
+        }
+        Insert: {
+          mode_code: string
+          city_slug: string
+          actif?: boolean
+        }
+        Update: {
+          mode_code?: string
+          city_slug?: string
+          actif?: boolean
         }
         Relationships: []
       }
@@ -2468,6 +2696,277 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: number
       }
+      whatsapp_sante: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      surge_en_vigueur: {
+        Args: { p_city?: string | null }
+        Returns: {
+          id: string
+          multiplicateur: number
+          motif: string
+          fin: string
+        }[]
+      }
+      surge_ouvrir: {
+        Args: {
+          p_multiplicateur: number
+          p_motif: string
+          p_minutes?: number
+          p_city_slug?: string | null
+        }
+        Returns: Json
+      }
+      surge_arreter: {
+        Args: { p_id: string }
+        Returns: Json
+      }
+      annuaire_des_comptes: {
+        Args: { p_recherche?: string | null; p_limite?: number }
+        Returns: {
+          user_id: string
+          courriel: string | null
+          nom_affiche: string | null
+          telephone: string | null
+          cree_le: string
+          suspendu_le: string | null
+          suspendu_motif: string | null
+          suspendu_par_courriel: string | null
+          roles: string[]
+          courses: number
+        }[]
+      }
+      compte_suspendre: {
+        Args: { p_user_id: string; p_suspendre: boolean; p_motif?: string | null }
+        Returns: Json
+      }
+      message_envoyer: {
+        Args: { p_user_id: string; p_sujet: string; p_corps: string }
+        Returns: Json
+      }
+      mes_avis: {
+        Args: { p_limite?: number }
+        Returns: {
+          id: string
+          evenement: string
+          sujet: string
+          corps: string
+          errand_id: string | null
+          recu_le: string
+          lue_le: string | null
+        }[]
+      }
+      mes_avis_non_lus: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      canaux_portes: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
+      }
+      avis_marquer_lu: {
+        Args: { p_id?: string | null }
+        Returns: number
+      }
+      file_sante: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          canal: string
+          porteur: string | null
+          porteur_actif: boolean
+          en_attente: number
+          plus_ancien: string | null
+          remis: number
+          en_echec: number
+          verdict: string
+        }[]
+      }
+      organisation_gerer: {
+        Args: {
+          p_org: string
+          p_nom?: string | null
+          p_contact_email?: string | null
+          p_contact_phone?: string | null
+        }
+        Returns: Database["public"]["Tables"]["organisations"]["Row"]
+      }
+      acces_a_revoir: {
+        Args: { p_jours_sensibles?: number; p_jours_courants?: number }
+        Returns: {
+          genre: string
+          user_id: string
+          courriel: string
+          intitule: string
+          code: string
+          perimetre: string
+          sensible: boolean
+          motif: string | null
+          accorde_le: string
+          revu_le: string | null
+          jours_depuis: number
+          echeance: string | null
+        }[]
+      }
+      acces_confirmer_revue: {
+        Args: {
+          p_genre: string
+          p_user_id: string
+          p_code: string
+          p_scope_value?: string | null
+        }
+        Returns: Json
+      }
+      gouvernance_sante: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      mon_perimetre: {
+        Args: Record<PropertyKey, never>
+        Returns: { restreint: boolean; villes: string[] }[]
+      }
+      catalogue_des_droits: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          code: string
+          categorie: string
+          libelle: string
+          description: string | null
+          ne_permet_pas: string | null
+          sensible: boolean
+          portee: string
+          rang: number
+          roles: string[]
+        }[]
+      }
+      catalogue_des_roles: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          code: string
+          libelle: string
+          description: string | null
+          niveau: number
+          systeme: boolean
+          droits: number
+          membres: number
+        }[]
+      }
+      permissions_effectives: {
+        Args: { _user_id: string }
+        Returns: {
+          code: string
+          libelle: string
+          categorie: string
+          sensible: boolean
+          accordee: boolean
+          source: string
+          detail: string | null
+          perimetre: string
+          expire_le: string | null
+        }[]
+      }
+      gouvernance_reconciliation: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          courriel: string
+          role_herite: string
+          roles_matrice: string
+          ecart: string
+          gravite: string
+        }[]
+      }
+      has_scoped_permission: {
+        Args: { _user_id: string; _code: string; _scope_value?: string | null }
+        Returns: boolean
+      }
+      counter_payment_code: {
+        Args: { p_id: string }
+        Returns: string
+      }
+      merchant_rattacher: {
+        Args: { p_id: string; p_email: string | null }
+        Returns: Json
+      }
+      lead_traiter: {
+        Args: {
+          p_id: string
+          p_status?: Database["public"]["Enums"]["lead_status"] | null
+          p_note?: string | null
+          p_reponse?: string | null
+        }
+        Returns: Json
+      }
+      lead_note_interne: {
+        Args: { p_id: string }
+        Returns: string
+      }
+      merchant_basculer: {
+        Args: { p_id: string; p_actif: boolean }
+        Returns: Json
+      }
+      counter_payment_emettre: {
+        Args: { p_errand_id: string; p_plafond: number; p_minutes?: number }
+        Returns: Json
+      }
+      counter_payment_lire: {
+        Args: { p_code: string }
+        Returns: Json
+      }
+      counter_payment_demander: {
+        Args: { p_code: string; p_montant: number; p_merchant_id: string }
+        Returns: Json
+      }
+      counter_payment_decider: {
+        Args: { p_id: string; p_accepte: boolean; p_motif?: string | null }
+        Returns: Json
+      }
+      counter_payment_annuler: {
+        Args: { p_id: string }
+        Returns: Json
+      }
+      merchant_enregistrer: {
+        Args: {
+          p_nom: string
+          p_moyen: string
+          p_numero: string
+          p_ville?: string | null
+          p_place_id?: string | null
+          p_user_id?: string | null
+          p_verifier?: boolean
+        }
+        Returns: Json
+      }
+      whatsapp_regler: {
+        Args: {
+          p_secondes_entre_envois?: number | null
+          p_lot_max?: number | null
+          p_heures_avant_abandon?: number | null
+        }
+        Returns: Json
+      }
+      service_modes_ouverts: {
+        Args: { p_ville?: string | null }
+        Returns: {
+          code: string
+          libelle: string
+          emoji: string
+          exemple: string
+          description: string | null
+          modes_financement: string[]
+          exige_panier_valide: boolean
+        }[]
+      }
+      service_mode_regler: {
+        Args: {
+          p_code: string
+          p_actif: boolean
+          p_modes_financement?: string[] | null
+          p_exige_panier?: boolean | null
+          p_villes_fermees?: string[] | null
+        }
+        Returns: Json
+      }
       promo_evaluer: {
         Args: {
           p_code: string
@@ -2518,11 +3017,24 @@ export type Database = {
         Returns: boolean
       }
       staff_assign_role: {
-        Args: { p_user_id: string; p_role_code: string; p_accorder?: boolean }
+        Args: {
+          p_user_id: string
+          p_role_code: string
+          p_accorder?: boolean
+          p_scope_value?: string | null
+          p_jours?: number | null
+          p_motif?: string | null
+        }
         Returns: undefined
       }
       staff_set_permission: {
-        Args: { p_user_id: string; p_code: string; p_accorde: boolean; p_motif?: string }
+        Args: {
+          p_user_id: string
+          p_code: string
+          p_accorde: boolean
+          p_motif?: string | null
+          p_jours?: number | null
+        }
         Returns: undefined
       }
       runner_submit_identity: {

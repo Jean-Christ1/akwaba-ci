@@ -15,11 +15,19 @@ import { useTabState } from "@/shared/hooks/useTabState";
 import { toast } from "sonner";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 import { DeleteAccountCard } from "@/modules/account/ui/DeleteAccountCard";
+import { MesAvis } from "@/modules/account/ui/MesAvis";
 import { NotificationChannelCard } from "@/modules/account/ui/NotificationChannelCard";
 import { MyRequestsList } from "@/modules/leads/ui/MyRequestsList";
 
-type LeadRow = Database["public"]["Tables"]["leads"]["Row"] & {
-  /** Jointure select("*, places(name, slug)"). */
+/**
+ * Deux colonnes de la table sont absentes de ce que le navigateur recoit :
+ * partner_note est interne a l'etablissement, replied_by ne sert a rien ici.
+ */
+type LeadRow = Omit<
+  Database["public"]["Tables"]["leads"]["Row"],
+  "partner_note" | "replied_by"
+> & {
+  /** Jointure select("..., places(name, slug)"). */
   places?: { name: string; slug: string } | null;
 };
 /** Sous-ensemble réellement sélectionné pour la liste des fiches du partenaire. */
@@ -36,6 +44,9 @@ export default function ProfilePage() {
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [profile, setProfile] = useState<{ display_name: string; phone: string; locale: string }>({ display_name: "", phone: "", locale: "fr" });
   const [pwd, setPwd] = useState("");
+  // Le comptoir marchand ne s'affiche qu'à qui tient un commerce : le proposer
+  // à tout le monde ferait ouvrir une page qui ne rend rien.
+  const [estMarchand, setEstMarchand] = useState(false);
   const [saving, setSaving] = useState(false);
   const [myPlaces, setMyPlaces] = useState<PlaceRow[]>([]);
   const [eventsByPlace, setEventsByPlace] = useState<Record<string, ModerationEventRow[]>>({});
@@ -43,8 +54,28 @@ export default function ProfilePage() {
   const [openPlaceId, setOpenPlaceId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!user) {
+      setEstMarchand(false);
+      return;
+    }
+    let annule = false;
+    supabase
+      .from("merchant_accounts")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("actif", true)
+      .limit(1)
+      .then(({ data }) => {
+        if (!annule) setEstMarchand((data ?? []).length > 0);
+      });
+    return () => {
+      annule = true;
+    };
+  }, [user]);
+
+  useEffect(() => {
     if (!user) return;
-    supabase.from("leads").select("*, places(name, slug)").eq("user_id", user.id)
+    supabase.from("leads").select("id,user_id,place_id,kind,full_name,email,phone,party_size,date_from,date_to,budget,message,status,partner_reply,replied_at,created_at,updated_at, places(name, slug)").eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .then(({ data }) => setLeads(data ?? []));
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle()
@@ -176,6 +207,18 @@ export default function ProfilePage() {
               </div>
               <span className="text-primary text-sm">→</span>
             </Link>
+            {estMarchand && (
+              <Link to="/courses/comptoir" className="akw-card-hover flex items-center gap-3 px-4 py-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-soft text-primary">
+                  <Store className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">Comptoir marchand</p>
+                  <p className="text-[11px] text-muted-foreground truncate">Encaisser une course</p>
+                </div>
+                <span className="text-primary text-sm">→</span>
+              </Link>
+            )}
             <Link to="/courses/shopper" className="akw-card-hover flex items-center gap-3 px-4 py-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-soft text-primary">
                 <Bike className="h-4 w-4" />
@@ -249,6 +292,11 @@ export default function ProfilePage() {
                     prevenu, et pour celui qui l avait faite elle disparaissait :
                     aucun ecran ne la lui montrait. */}
                 <MyRequestsList />
+
+                {/* Le canal « dans l'application » etait propose sans que rien
+                    ne le delivre : le message partait dans la file d'envoi, que
+                    seul le personnel peut lire. */}
+                <MesAvis />
 
                 <NotificationChannelCard telephone={profile.phone} />
 

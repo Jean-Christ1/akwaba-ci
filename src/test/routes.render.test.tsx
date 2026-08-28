@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * Montage réel de chaque écran.
@@ -92,8 +92,15 @@ afterEach(() => {
 });
 
 describe("montage de chaque écran", () => {
+  // La compilation de tout l'arbre se paie une fois, et elle se payait dans le
+  // premier test de la boucle : celui-ci a fini par dépasser son délai à mesure
+  // que l'application grossissait, sur un écran qui n'avait rien de fautif.
+  // La sortir d'ici rend la mesure de chaque écran comparable aux autres.
+  beforeAll(async () => {
+    await import("@/App");
+  }, 120000);
+
   for (const route of ROUTES) {
-    // Délai large : le premier montage paie la compilation de tout l'arbre.
     it(`monte ${route.nom} (${route.chemin}) sans plantage`, { timeout: 30000 }, async () => {
       window.history.pushState({}, "", route.chemin);
 

@@ -46,12 +46,19 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", userId);
-    const allowed = (roles ?? []).some((r) => r.role === "admin" || r.role === "moderator");
-    if (!allowed) return json({ error: "Forbidden" }, 403);
+    // Le droit de la matrice, et non plus les deux rôles hérités : envoyer un
+    // message d'essai est le geste que « Régler les envois » recouvre, et cette
+    // couche s'exécute avec la clé de service, donc aucune politique ne la
+    // rattrape.
+    const { data: autorise, error: droitErr } = await admin.rpc("has_permission", {
+      _user_id: userId,
+      _code: "notifications.parametrer",
+    });
+    if (droitErr) throw droitErr;
+    if (!autorise) return json({ error: "Forbidden" }, 403);
 
-    // Le plafond est appliqué après le contrôle de rôle : un appelant sans
-    // droit ne doit pas pouvoir consommer le quota d'un modérateur.
+    // Le plafond est appliqué après le contrôle du droit : un appelant sans
+    // droit ne doit pas pouvoir consommer le quota de quelqu'un d'autre.
     const decision = sendLimiter.consume(userId);
     if (!decision.allowed) {
       return json({

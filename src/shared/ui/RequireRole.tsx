@@ -7,18 +7,39 @@ type Role = "user" | "partner" | "moderator" | "admin";
 interface RequireRoleProps {
   /** Rôle minimum exigé pour accéder aux routes enfants. */
   role?: Role;
+  /**
+   * Les droits de la matrice dont un seul suffit à entrer.
+   *
+   * C'est le chemin normal pour la console. Le rôle hérité reste accepté par
+   * `has_permission` côté serveur, il n'a donc pas à être répété ici.
+   */
+  droit?: string[];
+  /**
+   * Ouvre à quiconque détient au moins un droit, quel qu'il soit.
+   *
+   * Pour les écrans qui n'exigent rien de précis mais n'ont de sens que pour le
+   * personnel : le sommaire de la console, la matrice des droits qui se lit
+   * seule. Chaque écran reste responsable de ce qu'il montre, et le serveur
+   * refuse ce qu'il doit refuser.
+   */
+  personnel?: boolean;
 }
 
 /**
  * Garde de route unique pour les espaces protégés.
  *
- * Les politiques RLS de Supabase restent la seule barrière qui fait autorité :
- * ce composant évite simplement d'afficher un écran que l'utilisateur ne peut
- * pas exploiter, et centralise la redirection au lieu de la répéter, de façon
- * inégale, dans chaque page.
+ * Les politiques de sécurité du serveur restent la seule barrière qui fasse
+ * autorité : ce composant évite d'afficher un écran que la personne ne pourrait
+ * pas exploiter, et centralise la redirection.
+ *
+ * Il ne regardait que les rôles hérités, et c'est là que tout le travail de
+ * gouvernance s'arrêtait. Le serveur avait beau accorder « Approuver un
+ * retrait » à un responsable financier, la porte d'entrée de la console lui
+ * demandait le rôle `admin`, qu'il n'a pas. Les droits de la matrice
+ * ouvraient tout côté base et rien côté écran.
  */
-export function RequireRole({ role = "user" }: RequireRoleProps) {
-  const { user, loading, isPartner, isModerator, isAdmin } = useAuth();
+export function RequireRole({ role = "user", droit, personnel }: RequireRoleProps) {
+  const { user, loading, droits, isPartner, isModerator, isAdmin } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -33,8 +54,13 @@ export function RequireRole({ role = "user" }: RequireRoleProps) {
     return <Navigate to={`/auth?redirect=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
+  const parLaMatrice =
+    (droit?.some((code) => droits.includes(code)) ?? false) ||
+    (personnel === true && droits.length > 0);
+
   const granted =
     role === "user" ||
+    parLaMatrice ||
     // Le back-office accueille aussi la modération : un modérateur y entre sans
     // être partenaire, sans quoi tout son parcours serait injoignable.
     (role === "partner" && (isPartner || isModerator)) ||

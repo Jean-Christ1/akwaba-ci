@@ -17,6 +17,7 @@ import {
   useOverrun,
 } from "@/modules/errands/application/useMissionTracking";
 import { BasketApproval } from "@/modules/errands/ui/BasketApproval";
+import { CounterPaymentCard } from "@/modules/errands/ui/CounterPaymentCard";
 import { BudgetOverrunNotice } from "@/modules/errands/ui/BudgetOverrunNotice";
 import { ErrandChat } from "@/modules/errands/ui/ErrandChat";
 import { ErrandInvoice } from "@/modules/errands/ui/ErrandInvoice";
@@ -264,6 +265,25 @@ export default function ErrandDetailPage() {
               onChange={recharger}
             />
           )}
+
+          {/* Le paiement au comptoir. Il n'a de sens que sur une course financee
+              par le client : quand c'est le shopper qui avance, il n'y a rien a
+              autoriser, et proposer un code ferait croire le contraire. */}
+          {(isCustomer || isRunner) &&
+            errand.fund_mode === "customer_advance" &&
+            (errand.status === "assigned" || errand.status === "shopping") && (
+              <CounterPaymentCard
+                errandId={errand.id}
+                budget={
+                  // Le panier valide d'abord : c'est le montant que le client a
+                  // deja accepte. A defaut, l'estimation, qui reste ce sur quoi
+                  // il s'est engage en publiant la course.
+                  Number(errand.basket_total) || Number(errand.budget_estimate) || 0
+                }
+                role={isRunner ? "shopper" : "client"}
+                statut={errand.status}
+              />
+            )}
 
           {errand.budget_overrun_pending && (isCustomer || isRunner) && (
             <BudgetOverrunNotice

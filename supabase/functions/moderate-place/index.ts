@@ -1,32 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { sanitizeHeaderText } from "../_shared/html.ts";
 import { isUuid } from "../_shared/validation.ts";
+import { validateNote } from "./validate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const NOTE_MAX = 2000;
-const PROHIBITED = [
-  /\b(fuck|shit|bitch|asshole|connard|enculé|salope|pute)\b/i,
-  /<script\b/i,
-  /https?:\/\/\S{0,}\.(ru|tk|xyz)\b/i,
-];
-
-export function validateNote(action: string, note: string | null | undefined): { ok: true; note: string | null } | { ok: false; error: string } {
-  const n = (note ?? "").trim();
-  if (action === "rejected" && n.length < 10) {
-    return { ok: false, error: "Une note d'au moins 10 caractères est requise pour un refus." };
-  }
-  if (n.length > NOTE_MAX) {
-    return { ok: false, error: `Note trop longue (max ${NOTE_MAX} caractères).` };
-  }
-  for (const re of PROHIBITED) {
-    if (re.test(n)) return { ok: false, error: "Contenu de la note non autorisé." };
-  }
-  return { ok: true, note: n.length ? n : null };
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -68,14 +48,25 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { data: roles } = await admin
-      .from("user_roles").select("role").eq("user_id", userId);
-    const allowed = (roles ?? []).some((r) => r.role === "admin" || r.role === "moderator");
-    if (!allowed) return json({ error: "Forbidden" }, 403);
-
+    // La fiche d'abord : le droit de la moderer se verifie dans sa ville, et
+    // la ville est portee par la fiche. Verifier avant de la charger revenait a
+    // ne pouvoir verifier que « quelque part ».
     const { data: place, error: pErr } = await admin
-      .from("places").select("id, name, email, owner_id, status").eq("id", place_id).single();
+      .from("places").select("id, name, email, owner_id, status, city").eq("id", place_id).single();
     if (pErr || !place) return json({ error: "Fiche introuvable" }, 404);
+
+    // Le droit de la matrice, et sa ville. La fonction lisait user_roles en
+    // direct et acceptait les deux roles herites : un responsable de contenu a
+    // qui la console affiche « Moderer les lieux » se faisait refuser, et un
+    // ancien moderateur sans role dans la matrice passait encore. Cette couche
+    // s'execute avec la cle de service, donc aucune politique ne la rattrape.
+    const { data: autorise, error: droitErr } = await admin.rpc("has_scoped_permission", {
+      _user_id: userId,
+      _code: "lieux.moderer",
+      _scope_value: place.city,
+    });
+    if (droitErr) throw droitErr;
+    if (!autorise) return json({ error: "Forbidden" }, 403);
 
     if (action === "approved" || action === "rejected") {
       const newStatus = action === "approved" ? "published" : "rejected";
@@ -122,8 +113,10 @@ Note du moderateur :
 ${v.note}`
         : intro;
 
+      // v porte la note validee, pas la fiche. Avec v.place_id, l'avis partait
+      // avec un identifiant vide et le partenaire n'etait jamais prevenu.
       const { data: depot, error: depotErr } = await admin.rpc("place_notify", {
-        p_place_id: v.place_id,
+        p_place_id: place_id,
         p_event: `moderation_${action}`,
         p_subject: subject,
         p_body: corps,

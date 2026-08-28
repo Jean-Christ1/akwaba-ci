@@ -117,6 +117,19 @@ export interface EntreeDevis {
   citySlug?: string | null;
 }
 
+/**
+ * Une majoration exceptionnelle en cours.
+ *
+ * Elle ne se déduit pas de la grille : elle dépend de l'heure et de la ville, et
+ * seul le serveur sait si elle court. Elle arrive donc à part, et vaut 1 quand
+ * il n'y en a pas.
+ */
+export interface Majoration {
+  multiplicateur: number;
+  motif: string;
+  fin: string;
+}
+
 export interface Devis {
   base: number;
   distanceFee: number;
@@ -125,6 +138,10 @@ export interface Devis {
   urgencyFee: number;
   itemsFee: number;
   dropoffAdjustment: number;
+  /** Le tarif avant majoration : c'est sur lui que porte la commission. */
+  serviceFeeBeforeSurge: number;
+  surgeFee: number;
+  surgeReason: string | null;
   serviceFee: number;
   commission: number;
   runnerPayout: number;
@@ -136,7 +153,11 @@ export interface Devis {
  * La formule reste écrite deux fois, mais plus les nombres. Le contrôle de
  * parité veille sur la formule ; la base veille sur les tarifs.
  */
-export function devisDepuisGrille(e: EntreeDevis, g: GrilleTarifaire): Devis {
+export function devisDepuisGrille(
+  e: EntreeDevis,
+  g: GrilleTarifaire,
+  majoration?: Majoration | null
+): Devis {
   const v = g.vehicles[e.vehicle] ?? g.vehicles.any ?? { base: 0, perKm: 0 };
   const ville = (e.citySlug && g.cities[e.citySlug]) || null;
   const multBase = ville?.baseMultiplier ?? 1;
@@ -152,8 +173,20 @@ export function devisDepuisGrille(e: EntreeDevis, g: GrilleTarifaire): Devis {
 
   const brut = base + distanceFee + timeFee + volumeFee + urgencyFee + itemsFee + dropoffAdjustment;
   const plancher = ville?.minServiceFee ?? g.commission.minServiceFee;
-  const serviceFee = Math.max(Math.round(brut / g.roundingStep) * g.roundingStep, plancher);
-  const commission = Math.round(serviceFee * g.commission.rate * 100) / 100;
+  const avant = Math.max(Math.round(brut / g.roundingStep) * g.roundingStep, plancher);
+
+  // La majoration s'ajoute au tarif arrondi et s'arrondit au même pas : un
+  // supplément de 137 francs sur un prix qui va de cent en cent donnerait un
+  // total qu'on ne saurait pas lire.
+  const mult = majoration?.multiplicateur ?? 1;
+  const surgeFee =
+    mult > 1 ? Math.round((avant * (mult - 1)) / g.roundingStep) * g.roundingStep : 0;
+  const serviceFee = avant + surgeFee;
+
+  // La commission porte sur le tarif d'avant majoration. Le supplément revient
+  // entièrement au shopper : il existe pour le convaincre de sortir, pas pour
+  // enrichir la plateforme d'une pénurie.
+  const commission = Math.round(avant * g.commission.rate * 100) / 100;
 
   return {
     base,
@@ -163,6 +196,9 @@ export function devisDepuisGrille(e: EntreeDevis, g: GrilleTarifaire): Devis {
     urgencyFee,
     itemsFee,
     dropoffAdjustment,
+    serviceFeeBeforeSurge: avant,
+    surgeFee,
+    surgeReason: surgeFee > 0 ? (majoration?.motif ?? null) : null,
     serviceFee,
     commission,
     runnerPayout: serviceFee - commission,

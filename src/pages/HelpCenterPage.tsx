@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, LifeBuoy, Search } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 
@@ -22,6 +23,15 @@ const AUDIENCES: { value: string; label: string }[] = [
   { value: "client", label: "Je commande" },
   { value: "shopper", label: "Je fais les courses" },
 ];
+
+/**
+ * Le mode d'emploi interne ne s'affiche qu'à qui le tient.
+ *
+ * La base refuse déjà ces réponses aux autres : la politique de lecture les
+ * réserve aux personnes habilitées. Cet onglet n'ajoute donc pas de protection,
+ * il évite seulement de proposer un filtre qui ne ramènerait rien.
+ */
+const AUDIENCE_EXPLOITATION = { value: "exploitation", label: "Exploitation" };
 
 /**
  * Enlève les accents pour comparer.
@@ -54,6 +64,10 @@ export default function HelpCenterPage() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [recherche, setRecherche] = useState("");
   const [audience, setAudience] = useState("tous");
+  const { peut } = useAuth();
+  const onglets = peut("exploitation.sante")
+    ? [...AUDIENCES, AUDIENCE_EXPLOITATION]
+    : AUDIENCES;
   const [ouvert, setOuvert] = useState<string | null>(null);
 
   useEffect(() => {
@@ -79,7 +93,13 @@ export default function HelpCenterPage() {
     return articles.filter((a) => {
       // « tous » désigne une réponse qui vaut pour les deux côtés : elle
       // s'affiche quel que soit le filtre choisi.
-      const pourMoi = audience === "tous" || a.audience === audience || a.audience === "tous";
+      // « Tout » désigne ce qui s'adresse au public. Le mode d'emploi interne
+      // ne s'y mêle pas : il noierait les réponses que l'on vient chercher.
+      const pourMoi =
+        audience === "exploitation"
+          ? a.audience === "exploitation"
+          : a.audience !== "exploitation" &&
+            (audience === "tous" || a.audience === audience || a.audience === "tous");
       if (!pourMoi) return false;
       if (!q) return true;
       return sansAccent(`${a.question} ${a.reponse} ${a.categorie}`).includes(q);
@@ -125,7 +145,7 @@ export default function HelpCenterPage() {
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        {AUDIENCES.map((a) => (
+        {onglets.map((a) => (
           <button
             key={a.value}
             type="button"

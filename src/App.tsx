@@ -39,6 +39,7 @@ const NewErrandPage = lazy(() => import("./pages/courses/NewErrandPage"));
 const ErrandDetailPage = lazy(() => import("./pages/courses/ErrandDetailPage"));
 const RunnerSignupPage = lazy(() => import("./pages/courses/RunnerSignupPage"));
 const RunnerDashboardPage = lazy(() => import("./pages/courses/RunnerDashboardPage"));
+const MerchantCounterPage = lazy(() => import("./pages/courses/MerchantCounterPage"));
 const HowItWorksPage = lazy(() => import("./pages/courses/HowItWorksPage"));
 const WalletPage = lazy(() => import("./pages/courses/WalletPage"));
 const SchedulesPage = lazy(() => import("./pages/courses/SchedulesPage"));
@@ -106,6 +107,7 @@ const App = () => (
                 <Route path="/courses/portefeuille" element={<WalletPage />} />
                 <Route path="/courses/devenir-shopper" element={<RunnerSignupPage />} />
                 <Route path="/courses/shopper" element={<RunnerDashboardPage />} />
+                <Route path="/courses/comptoir" element={<MerchantCounterPage />} />
                 <Route path="/courses/:id" element={<ErrandDetailPage />} />
                 {/* L'amorçage du premier administrateur doit rester atteignable
                     avant qu'un rôle n'existe : il est protégé par son propre
@@ -116,26 +118,63 @@ const App = () => (
                   <Route path="/conditions" element={<TermsPage />} />
                 <Route path="/confidentialite" element={<PrivacyPage />} />
 
-                <Route element={<RequireRole role="partner" />}>
+                {/* Le sommaire de la console s'ouvre a un partenaire, et a
+                    quiconque detient un droit de la matrice : un responsable
+                    financier n'a pas le role herite et doit pourtant entrer. */}
+                <Route element={<RequireRole role="partner" personnel />}>
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/admin/places/:id" element={<PlaceEditorPage />} />
                 </Route>
 
-                <Route element={<RequireRole role="moderator" />}>
+                <Route element={<RequireRole role="moderator" droit={["courses.lire"]} />}>
                   {/* Le back-office menait vers ce suivi alors qu'aucune route
                       ne le déclarait : le clic tombait sur la page introuvable,
                       et les alertes d'exploitation, seul écran qui dise s'il y a
                       quelque chose à faire maintenant, restaient
                       inatteignables. */}
                   <Route path="/admin/courses" element={<ErrandsPage />} />
+                </Route>
+
+                {/* Chaque ecran demande le droit qui le decrit, plutot qu'un
+                    rang. Un responsable des dossiers de shopper n'a rien a
+                    faire dans les litiges, et l'inverse est vrai aussi. */}
+                <Route element={<RequireRole role="moderator" droit={["shoppers.lire"]} />}>
                   <Route path="/admin/shoppers" element={<ShoppersPage />} />
+                </Route>
+
+                <Route element={<RequireRole role="moderator" droit={["litiges.lire"]} />}>
                   <Route path="/admin/litiges" element={<DisputesPage />} />
+                </Route>
+
+                <Route element={<RequireRole role="moderator" droit={["exploitation.sante", "courses.lire"]} />}>
                   <Route path="/admin/pilotage" element={<OperationsPage />} />
                 </Route>
 
-                <Route element={<RequireRole role="admin" />}>
+                <Route element={<RequireRole role="admin" droit={["retraits.approuver", "paiements.lire"]} />}>
                   <Route path="/admin/payouts" element={<PayoutsPage />} />
+                </Route>
+
+                <Route
+                  element={
+                    <RequireRole
+                      role="admin"
+                      droit={[
+                        "services.parametrer",
+                        "paiements.fournisseurs",
+                        "bareme.publier",
+                        "notifications.parametrer",
+                        "villes.gerer",
+                      ]}
+                    />
+                  }
+                >
                   <Route path="/admin/parametres" element={<SettingsPage />} />
+                </Route>
+
+                {/* La matrice se lit sans pouvoir attribuer : l'ecran le dit
+                    lui-meme, et refuser l'entree a qui veut savoir ce qu'il
+                    detient serait absurde. */}
+                <Route element={<RequireRole role="admin" personnel />}>
                   <Route path="/admin/droits" element={<PermissionsPage />} />
                 </Route>
               </Route>
