@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { FileSanteCard } from "@/modules/admin/FileSanteCard";
 import { NotificationHealthCard } from "@/modules/admin/NotificationHealthCard";
 import { formatFcfa } from "@/modules/errands/domain";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
@@ -234,6 +235,10 @@ export default function OperationsPage() {
           </div>
 
           <NotificationHealthCard />
+
+          {/* La carte voisine ne parle que de WhatsApp. Les trois autres canaux
+              n'ont pas de porteur, et un message y attend indefiniment. */}
+          <FileSanteCard />
 
           {derives.length > 0 && (
             <>

@@ -2745,6 +2745,39 @@ export type Database = {
         Args: { p_user_id: string; p_sujet: string; p_corps: string }
         Returns: Json
       }
+      mes_avis: {
+        Args: { p_limite?: number }
+        Returns: {
+          id: string
+          evenement: string
+          sujet: string
+          corps: string
+          errand_id: string | null
+          recu_le: string
+          lue_le: string | null
+        }[]
+      }
+      mes_avis_non_lus: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      avis_marquer_lu: {
+        Args: { p_id?: string | null }
+        Returns: number
+      }
+      file_sante: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          canal: string
+          porteur: string | null
+          porteur_actif: boolean
+          en_attente: number
+          plus_ancien: string | null
+          remis: number
+          en_echec: number
+          verdict: string
+        }[]
+      }
       organisation_gerer: {
         Args: {
           p_org: string

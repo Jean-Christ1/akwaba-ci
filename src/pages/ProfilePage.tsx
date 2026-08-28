@@ -15,6 +15,7 @@ import { useTabState } from "@/shared/hooks/useTabState";
 import { toast } from "sonner";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 import { DeleteAccountCard } from "@/modules/account/ui/DeleteAccountCard";
+import { MesAvis } from "@/modules/account/ui/MesAvis";
 import { NotificationChannelCard } from "@/modules/account/ui/NotificationChannelCard";
 import { MyRequestsList } from "@/modules/leads/ui/MyRequestsList";
 
@@ -291,6 +292,11 @@ export default function ProfilePage() {
                     prevenu, et pour celui qui l avait faite elle disparaissait :
                     aucun ecran ne la lui montrait. */}
                 <MyRequestsList />
+
+                {/* Le canal « dans l'application » etait propose sans que rien
+                    ne le delivre : le message partait dans la file d'envoi, que
+                    seul le personnel peut lire. */}
+                <MesAvis />
 
                 <NotificationChannelCard telephone={profile.phone} />
 
