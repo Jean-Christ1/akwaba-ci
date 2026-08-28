@@ -15,6 +15,7 @@
  *        --titre "..." --corps-fichier <chemin>
  *   node scripts/github-pr.mjs --lister
  *   node scripts/github-pr.mjs --fusionner <numero> [--methode merge|squash|rebase]
+ *   node scripts/github-pr.mjs --chaine [<sha>] [--attendre]
  */
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
@@ -85,6 +86,36 @@ if (drapeau("--lister")) {
     console.log(`#${p.number}  ${p.head.ref} -> ${p.base.ref}  ${p.title}`);
   }
   process.exit(0);
+}
+
+if (drapeau("--chaine")) {
+  // Sans argument, la revision poussee la plus recente de la branche courante.
+  // Une revision abregee est resolue en entier : l'API filtre sur l'empreinte
+  // complete et rend une liste vide pour une abreviation, ce qui se lit comme
+  // « aucune execution » alors que la chaine tourne.
+  const sha = execFileSync("git", ["rev-parse", arg("--chaine") ?? "HEAD"], {
+    encoding: "utf8",
+  }).trim();
+  const attendre = drapeau("--attendre");
+
+  for (;;) {
+    const { workflow_runs: courses } = await api(
+      `/actions/runs?head_sha=${sha}&per_page=20`
+    );
+    if (courses.length === 0) {
+      console.log(`Aucune execution pour ${sha.slice(0, 8)} pour l'instant.`);
+    }
+    for (const c of courses) {
+      console.log(`  ${c.name} : ${c.status}${c.conclusion ? " / " + c.conclusion : ""}`);
+    }
+    const finies = courses.length > 0 && courses.every((c) => c.status === "completed");
+    if (!attendre || finies) {
+      const echec = courses.some((c) => c.conclusion && c.conclusion !== "success");
+      process.exit(echec ? 1 : 0);
+    }
+    // La chaine dure plusieurs minutes : on interroge sans marteler l'API.
+    await new Promise((r) => setTimeout(r, 30_000));
+  }
 }
 
 const aFusionner = arg("--fusionner");

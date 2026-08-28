@@ -149,18 +149,27 @@ try {
   });
 
   await etape("un message remis porte la trace de sa requete", async () => {
+    // La trace vivait dans last_error tant que le porteur n'avait rien d'autre
+    // ou l'ecrire. Depuis que la colonne request_id existe, notify_mark efface
+    // last_error en marquant « sent » : chercher la trace la ne trouvait plus
+    // rien, et l'etape se plaignait d'une absence qu'elle causait elle-meme.
     const ligne = (
       await c.query(
-        `select state::text, last_error from public.notification_outbox
+        `select state::text, request_id, last_error from public.notification_outbox
           where channel = 'whatsapp' and event = 'recette_wa'
           order by created_at desc limit 1`
       )
     ).rows[0];
     if (!ligne) throw new Error("le message a disparu");
-    if (ligne.state === "sent" && !String(ligne.last_error).includes("pg_net")) {
-      throw new Error("aucune trace de la requete sortante");
+    if (ligne.state === "sent" && ligne.request_id === null) {
+      throw new Error("remis sans numero de requete : rien ne permet de reconcilier");
     }
-    return `${ligne.state} : ${String(ligne.last_error).slice(0, 40)}`;
+    if (ligne.state === "failed" && !ligne.last_error) {
+      throw new Error("en echec sans motif : la panne serait indiagnosticable");
+    }
+    return ligne.state === "sent"
+      ? `sent, requete #${ligne.request_id}`
+      : `${ligne.state} : ${String(ligne.last_error).slice(0, 40)}`;
   });
 
   await etape("le porteur ne prend rien d'autre que du WhatsApp", async () => {
@@ -187,14 +196,30 @@ try {
   });
 
   await etape("la sante du porteur est reservee au personnel", async () => {
+    // La fonction rendait un vide au non-habilite. Un vide se confond avec
+    // « tout va bien », et l'ecran d'exploitation affichait donc une sante
+    // rassurante a qui n'avait pas le droit de la lire. Elle refuse desormais,
+    // et c'est ce refus que l'etape doit constater.
     const uid = await creerCompte();
+    await c.query("savepoint sante");
     await c.query(`select set_config('request.jwt.claims', $1, true)`, [
       JSON.stringify({ sub: uid, role: "authenticated" }),
     ]);
-    const vu = (await c.query(`select public.whatsapp_sante() s`)).rows[0].s;
-    await c.query(`select set_config('request.jwt.claims', null, true)`);
-    if (vu !== null) throw new Error("un compte ordinaire lit la sante du porteur");
-    return "invisible";
+    let refus = null;
+    try {
+      await c.query(`select public.whatsapp_sante() s`);
+    } catch (e) {
+      refus = e.message;
+    }
+    if (refus === null) {
+      await c.query(`select set_config('request.jwt.claims', null, true)`);
+      await c.query("release savepoint sante");
+      throw new Error("un compte ordinaire lit la sante du porteur");
+    }
+    await c.query("rollback to savepoint sante");
+    await c.query(`select set_config('request.jwt.claims', null, true)`).catch(() => {});
+    if (!refus.toLowerCase().includes("droit")) throw new Error(refus);
+    return "refuse";
   });
 
   if (numeroReel) {

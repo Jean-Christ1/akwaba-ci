@@ -46,6 +46,28 @@ si un droit sensible réapparaît dans cette liste.
 
 À ce jour : **35 droits au catalogue, 35 portes**.
 
+### La portée compte autant que le droit
+
+Treize droits sont déclarés « restreignables à une ou plusieurs villes ».
+Onze ne restreignaient rien : le contrôle appelait `has_permission`, qui répond
+oui sans regarder où. Un responsable recruté pour ouvrir Bouaké tranchait donc
+les litiges d'Abidjan et validait les shoppers de Yamoussoukro.
+
+`portees_qui_ne_restreignent_pas()` liste les droits dont la restriction est
+annoncée et jamais appliquée. Elle doit rendre zéro ligne, et l'audit strict le
+vérifie.
+
+Deux pièges rencontrés, qui valent d'être connus :
+
+- **Consulter un droit ne suffit pas.** `courses.corriger` était bien consulté
+  par la garde des colonnes, mais la politique de modification exigeait
+  toujours un rôle hérité. Le personnel n'atteignait jamais la ligne, et la
+  modification ne touchait rien, sans message d'erreur. La politique ouvre la
+  ligne, la garde décide des colonnes : les deux sont nécessaires.
+- **Une trace peut bloquer un geste.** `log_audit` exigeait un rôle hérité. Un
+  modérateur de la matrice tranchait un litige et échouait à la dernière ligne,
+  celle qui écrit la trace, avec un message parlant du journal d'audit.
+
 ---
 
 ## 3. Accorder un accès
@@ -177,8 +199,9 @@ transaction annulée : elles ne laissent rien derrière elles.
 | `node scripts/recette-gouvernance-acces.mjs` | Confinement, portées, échéances, revue, réconciliation. |
 | `node scripts/recette-suspension-compte.mjs` | La suspension, ses quatre refus, l'annuaire des comptes. |
 | `node scripts/recette-droits-vivants.mjs` | Les lieux, l'envoi d'un message, la gestion d'une organisation, et qu'aucun droit du catalogue n'est mort. |
+| `node scripts/recette-portee-par-ville.mjs` | Une personne restreinte à une ville passe chez elle et se fait refuser ailleurs, sur les treize droits concernés. |
 
-Les quatre tournent dans la chaîne d'intégration à chaque poussée.
+Les cinq tournent dans la chaîne d'intégration à chaque poussée.
 
 ---
 

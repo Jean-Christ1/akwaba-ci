@@ -236,6 +236,25 @@ await controle(
 );
 
 // ---------------------------------------------------------------------------
+// 9b. Une portee annoncee qui ne restreint rien
+//
+// Le catalogue declare treize droits « restreignables a une ou plusieurs
+// villes », et le tiroir de la console le repete a qui les accorde. Onze ne
+// restreignaient rien : le controle appelait has_permission, qui repond oui
+// sans regarder ou. Un responsable recrute pour une seule ville tranchait donc
+// les litiges du pays entier.
+//
+// C'est la meme tromperie qu'un droit que rien ne consulte, un cran plus loin :
+// la porte s'ouvre bien, mais elle s'ouvre partout.
+// ---------------------------------------------------------------------------
+await controle(
+  "Portee annoncee qui ne restreint rien",
+  `select code from public.portees_qui_ne_restreignent_pas() order by code`,
+  (l) => l.code,
+  "Le catalogue annonce une restriction par ville qu'aucun controle n'applique."
+);
+
+// ---------------------------------------------------------------------------
 // 10. Une preuve de consentement que l'interesse peut ecrire lui-meme
 //
 // Les dates de consentement servent de preuve : elles disent qu'a tel moment,
