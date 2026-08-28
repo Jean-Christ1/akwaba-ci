@@ -2661,6 +2661,61 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      catalogue_des_droits: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          code: string
+          categorie: string
+          libelle: string
+          description: string | null
+          ne_permet_pas: string | null
+          sensible: boolean
+          portee: string
+          rang: number
+          roles: string[]
+        }[]
+      }
+      catalogue_des_roles: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          code: string
+          libelle: string
+          description: string | null
+          niveau: number
+          systeme: boolean
+          droits: number
+          membres: number
+        }[]
+      }
+      permissions_effectives: {
+        Args: { _user_id: string }
+        Returns: {
+          code: string
+          libelle: string
+          categorie: string
+          sensible: boolean
+          accordee: boolean
+          source: string
+          detail: string | null
+          perimetre: string
+          expire_le: string | null
+        }[]
+      }
+      gouvernance_reconciliation: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          courriel: string
+          role_herite: string
+          roles_matrice: string
+          ecart: string
+          gravite: string
+        }[]
+      }
+      has_scoped_permission: {
+        Args: { _user_id: string; _code: string; _scope_value?: string | null }
+        Returns: boolean
+      }
       counter_payment_code: {
         Args: { p_id: string }
         Returns: string
@@ -2798,11 +2853,24 @@ export type Database = {
         Returns: boolean
       }
       staff_assign_role: {
-        Args: { p_user_id: string; p_role_code: string; p_accorder?: boolean }
+        Args: {
+          p_user_id: string
+          p_role_code: string
+          p_accorder?: boolean
+          p_scope_value?: string | null
+          p_jours?: number | null
+          p_motif?: string | null
+        }
         Returns: undefined
       }
       staff_set_permission: {
-        Args: { p_user_id: string; p_code: string; p_accorde: boolean; p_motif?: string }
+        Args: {
+          p_user_id: string
+          p_code: string
+          p_accorde: boolean
+          p_motif?: string | null
+          p_jours?: number | null
+        }
         Returns: undefined
       }
       runner_submit_identity: {
